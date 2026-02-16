@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // Options configures the development server.

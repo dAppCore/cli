@@ -9,8 +9,8 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	gt "forge.lthn.ai/core/cli/pkg/gitea"
+	"forge.lthn.ai/core/go/pkg/cli"
+	gt "forge.lthn.ai/core/go/pkg/gitea"
 )
 
 // Sync command flags.

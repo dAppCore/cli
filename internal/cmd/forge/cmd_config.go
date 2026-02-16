@@ -3,8 +3,8 @@ package forge
 import (
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	fg "forge.lthn.ai/core/cli/pkg/forge"
+	"forge.lthn.ai/core/go/pkg/cli"
+	fg "forge.lthn.ai/core/go/pkg/forge"
 )
 
 // Config command flags.

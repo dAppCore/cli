@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // Service represents a managed development service.

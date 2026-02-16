@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/forge"
+	"forge.lthn.ai/core/go/pkg/forge"
 )
 
 // FetcherService fetches issues from configured OSS repositories.

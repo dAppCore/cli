@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/forge"
+	"forge.lthn.ai/core/go/pkg/forge"
 )
 
 // HubService coordinates with the agentic portal for issue assignment and leaderboard.

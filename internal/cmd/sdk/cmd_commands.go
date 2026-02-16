@@ -5,4 +5,4 @@
 //   - validate: Validate OpenAPI spec syntax
 //
 // Configuration via .core/sdk.yaml. For SDK generation, use: core build sdk
-package sdk
+package sdkcmd

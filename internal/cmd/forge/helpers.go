@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // splitOwnerRepo splits "owner/repo" into its parts.

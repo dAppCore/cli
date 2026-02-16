@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/i18n"
-	"forge.lthn.ai/core/cli/pkg/rag"
+	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/rag"
 	"github.com/spf13/cobra"
 )
 
@@ -78,33 +78,4 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// QueryDocs is exported for use by other packages (e.g., MCP).
-func QueryDocs(ctx context.Context, question, collectionName string, topK int) ([]rag.QueryResult, error) {
-	qdrantClient, err := rag.NewQdrantClient(rag.DefaultQdrantConfig())
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = qdrantClient.Close() }()
-
-	ollamaClient, err := rag.NewOllamaClient(rag.DefaultOllamaConfig())
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := rag.DefaultQueryConfig()
-	cfg.Collection = collectionName
-	cfg.Limit = uint64(topK)
-
-	return rag.Query(ctx, qdrantClient, ollamaClient, question, cfg)
-}
-
-// QueryDocsContext is exported and returns context-formatted results.
-func QueryDocsContext(ctx context.Context, question, collectionName string, topK int) (string, error) {
-	results, err := QueryDocs(ctx, question, collectionName, topK)
-	if err != nil {
-		return "", err
-	}
-	return rag.FormatResultsContext(results), nil
 }

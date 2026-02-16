@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 // check represents a tool check configuration

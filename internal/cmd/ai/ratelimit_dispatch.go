@@ -3,8 +3,8 @@ package ai
 import (
 	"context"
 
-	"forge.lthn.ai/core/cli/pkg/log"
-	"forge.lthn.ai/core/cli/pkg/ratelimit"
+	"forge.lthn.ai/core/go/pkg/log"
+	"forge.lthn.ai/core/go/pkg/ratelimit"
 )
 
 // executeWithRateLimit wraps an agent execution with rate limiting logic.

@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/agentic"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/git"
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/agentic"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/git"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 // Work command flags

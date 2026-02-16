@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // Environment represents a deployment environment.

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // CoolifyClient is an HTTP client for the Coolify API.

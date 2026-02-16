@@ -1,12 +1,13 @@
-package sdk
+package sdkcmd
 
 import (
 	"errors"
 	"fmt"
 	"os"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -78,7 +79,7 @@ func runSDKDiff(basePath, specPath string) error {
 
 	// Detect current spec if not provided
 	if specPath == "" {
-		s := New(projectDir, nil)
+		s := sdk.New(projectDir, nil)
 		specPath, err = s.DetectSpec()
 		if err != nil {
 			return err
@@ -94,7 +95,7 @@ func runSDKDiff(basePath, specPath string) error {
 	fmt.Printf("  %s %s\n", i18n.Label("current"), sdkDimStyle.Render(specPath))
 	fmt.Println()
 
-	result, err := Diff(basePath, specPath)
+	result, err := sdk.Diff(basePath, specPath)
 	if err != nil {
 		return cli.Exit(2, cli.Wrap(err, i18n.Label("error")))
 	}
@@ -117,7 +118,7 @@ func runSDKValidate(specPath string) error {
 		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.get", "working directory"), err)
 	}
 
-	s := New(projectDir, &Config{Spec: specPath})
+	s := sdk.New(projectDir, &sdk.Config{Spec: specPath})
 
 	fmt.Printf("%s %s\n", sdkHeaderStyle.Render(i18n.T("cmd.sdk.label.sdk")), i18n.T("cmd.sdk.validate.validating"))
 

@@ -61,5 +61,5 @@ import (
 	_ "forge.lthn.ai/core/cli/internal/cmd/updater"
 	_ "forge.lthn.ai/core/cli/internal/cmd/vm"
 	_ "forge.lthn.ai/core/cli/internal/cmd/workspace"
-	_ "forge.lthn.ai/core/cli/pkg/build/buildcmd"
+	_ "forge.lthn.ai/core/go/pkg/build/buildcmd"
 )

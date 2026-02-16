@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/log"
-	uf "forge.lthn.ai/core/cli/pkg/unifi"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/log"
+	uf "forge.lthn.ai/core/go/pkg/unifi"
 )
 
 // Clients command flags.

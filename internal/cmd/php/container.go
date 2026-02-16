@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // DockerBuildOptions configures Docker image building for PHP projects.
@@ -381,7 +381,7 @@ func getLinuxKitTemplate(name string) (string, error) {
 	}
 
 	// Try to load from container package templates
-	// This would integrate with forge.lthn.ai/core/cli/pkg/container
+	// This would integrate with forge.lthn.ai/core/go/pkg/container
 	return "", cli.Err("template not found: %s", name)
 }
 

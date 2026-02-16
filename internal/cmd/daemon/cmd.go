@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/log"
-	"forge.lthn.ai/core/cli/pkg/mcp"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/log"
+	"forge.lthn.ai/core/go/pkg/mcp"
 )
 
 func init() {

@@ -4,7 +4,7 @@ package php
 import (
 	"embed"
 
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 //go:embed locales/*.json

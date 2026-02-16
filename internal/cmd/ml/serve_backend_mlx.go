@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"forge.lthn.ai/core/cli/pkg/ml"
+	"forge.lthn.ai/core/go/pkg/ml"
 )
 
 func createServeBackend() (ml.Backend, error) {

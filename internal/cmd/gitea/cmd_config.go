@@ -3,8 +3,8 @@ package gitea
 import (
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	gt "forge.lthn.ai/core/cli/pkg/gitea"
+	"forge.lthn.ai/core/go/pkg/cli"
+	gt "forge.lthn.ai/core/go/pkg/gitea"
 )
 
 // Config command flags.

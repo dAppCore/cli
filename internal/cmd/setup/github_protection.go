@@ -12,7 +12,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/cli"
 )
 
 // GitHubBranchProtection represents branch protection rules from the GitHub API.

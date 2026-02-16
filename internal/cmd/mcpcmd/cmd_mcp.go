@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/mcp"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/mcp"
 )
 
 func init() {

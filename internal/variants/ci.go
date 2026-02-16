@@ -19,5 +19,5 @@ import (
 	_ "forge.lthn.ai/core/cli/internal/cmd/ci"
 	_ "forge.lthn.ai/core/cli/internal/cmd/doctor"
 	_ "forge.lthn.ai/core/cli/internal/cmd/sdk"
-	_ "forge.lthn.ai/core/cli/pkg/build/buildcmd"
+	_ "forge.lthn.ai/core/go/pkg/build/buildcmd"
 )

@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/lab"
-	"forge.lthn.ai/core/cli/pkg/lab/collector"
-	"forge.lthn.ai/core/cli/pkg/lab/handler"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/lab"
+	"forge.lthn.ai/core/go/pkg/lab/collector"
+	"forge.lthn.ai/core/go/pkg/lab/handler"
 )
 
 func init() {

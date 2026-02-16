@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"forge.lthn.ai/core/cli/pkg/io"
+	"forge.lthn.ai/core/go/pkg/io"
 )
 
 func TestFindWorkflows_Good(t *testing.T) {

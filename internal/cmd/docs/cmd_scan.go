@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"forge.lthn.ai/core/cli/internal/cmd/workspace"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/i18n"
-	"forge.lthn.ai/core/cli/pkg/io"
-	"forge.lthn.ai/core/cli/pkg/repos"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/io"
+	"forge.lthn.ai/core/go/pkg/repos"
 )
 
 // RepoDocInfo holds documentation info for a repo

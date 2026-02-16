@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	collectpkg "forge.lthn.ai/core/cli/pkg/collect"
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/cli"
+	collectpkg "forge.lthn.ai/core/go/pkg/collect"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 // addDispatchCommand adds the 'dispatch' subcommand to the collect parent.

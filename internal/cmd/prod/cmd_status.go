@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/ansible"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/infra"
+	"forge.lthn.ai/core/go/pkg/ansible"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/infra"
 	"github.com/spf13/cobra"
 )
 

@@ -14,12 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	core "forge.lthn.ai/core/cli/pkg/framework/core"
-	"forge.lthn.ai/core/cli/pkg/git"
-	"forge.lthn.ai/core/cli/pkg/i18n"
-	"forge.lthn.ai/core/cli/pkg/io"
-	"forge.lthn.ai/core/cli/pkg/repos"
+	"forge.lthn.ai/core/go/pkg/cli"
+	core "forge.lthn.ai/core/go/pkg/framework/core"
+	"forge.lthn.ai/core/go/pkg/git"
+	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/io"
+	"forge.lthn.ai/core/go/pkg/repos"
 )
 
 // Apply command flags

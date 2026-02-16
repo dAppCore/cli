@@ -13,10 +13,7 @@
 package variants
 
 import (
-	// Core IDE GUI
-	_ "forge.lthn.ai/core/cli/internal/core-ide"
-
-	// CLI commands available via IPC
+	// CLI commands available via IPC (IDE GUI is now in core/ide repo)
 	_ "forge.lthn.ai/core/cli/internal/cmd/ai"
 	_ "forge.lthn.ai/core/cli/internal/cmd/deploy"
 	_ "forge.lthn.ai/core/cli/internal/cmd/dev"

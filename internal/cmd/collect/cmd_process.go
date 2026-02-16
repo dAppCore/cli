@@ -3,9 +3,9 @@ package collect
 import (
 	"context"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/collect"
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/collect"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 // addProcessCommand adds the 'process' subcommand to the collect parent.

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 func addSecretsCommand(parent *cli.Command) {

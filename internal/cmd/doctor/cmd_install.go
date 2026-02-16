@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 // printInstallInstructions prints OS-specific installation instructions

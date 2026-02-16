@@ -3,9 +3,9 @@ package dev
 import (
 	"context"
 
-	"forge.lthn.ai/core/cli/pkg/agentic"
-	"forge.lthn.ai/core/cli/pkg/framework"
-	"forge.lthn.ai/core/cli/pkg/git"
+	"forge.lthn.ai/core/go/pkg/agentic"
+	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/git"
 )
 
 // WorkBundle contains the Core instance for dev work operations.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/i18n"
-	"forge.lthn.ai/core/cli/pkg/rag"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/rag"
 	"github.com/spf13/cobra"
 )
 
@@ -114,58 +114,4 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Collection:      %s\n", collection)
 
 	return nil
-}
-
-// IngestDirectory is exported for use by other packages (e.g., MCP).
-func IngestDirectory(ctx context.Context, directory, collectionName string, recreateCollection bool) error {
-	qdrantClient, err := rag.NewQdrantClient(rag.DefaultQdrantConfig())
-	if err != nil {
-		return err
-	}
-	defer func() { _ = qdrantClient.Close() }()
-
-	if err := qdrantClient.HealthCheck(ctx); err != nil {
-		return fmt.Errorf("qdrant health check failed: %w", err)
-	}
-
-	ollamaClient, err := rag.NewOllamaClient(rag.DefaultOllamaConfig())
-	if err != nil {
-		return err
-	}
-
-	if err := ollamaClient.VerifyModel(ctx); err != nil {
-		return err
-	}
-
-	cfg := rag.DefaultIngestConfig()
-	cfg.Directory = directory
-	cfg.Collection = collectionName
-	cfg.Recreate = recreateCollection
-
-	_, err = rag.Ingest(ctx, qdrantClient, ollamaClient, cfg, nil)
-	return err
-}
-
-// IngestFile is exported for use by other packages (e.g., MCP).
-func IngestFile(ctx context.Context, filePath, collectionName string) (int, error) {
-	qdrantClient, err := rag.NewQdrantClient(rag.DefaultQdrantConfig())
-	if err != nil {
-		return 0, err
-	}
-	defer func() { _ = qdrantClient.Close() }()
-
-	if err := qdrantClient.HealthCheck(ctx); err != nil {
-		return 0, fmt.Errorf("qdrant health check failed: %w", err)
-	}
-
-	ollamaClient, err := rag.NewOllamaClient(rag.DefaultOllamaConfig())
-	if err != nil {
-		return 0, err
-	}
-
-	if err := ollamaClient.VerifyModel(ctx); err != nil {
-		return 0, err
-	}
-
-	return rag.IngestFile(ctx, qdrantClient, ollamaClient, collectionName, filePath, rag.DefaultChunkConfig())
 }

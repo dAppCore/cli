@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/i18n"
+	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
 type packageCoverage struct {
@@ -32,8 +32,8 @@ func parseTestOutput(output string) testResults {
 	results := testResults{}
 
 	// Regex patterns - handle both timed and cached test results
-	// Example: ok  	forge.lthn.ai/core/cli/pkg/crypt	0.015s	coverage: 91.2% of statements
-	// Example: ok  	forge.lthn.ai/core/cli/pkg/crypt	(cached)	coverage: 91.2% of statements
+	// Example: ok  	forge.lthn.ai/core/go/pkg/crypt	0.015s	coverage: 91.2% of statements
+	// Example: ok  	forge.lthn.ai/core/go/pkg/crypt	(cached)	coverage: 91.2% of statements
 	okPattern := regexp.MustCompile(`^ok\s+(\S+)\s+(?:[\d.]+s|\(cached\))(?:\s+coverage:\s+([\d.]+)%)?`)
 	failPattern := regexp.MustCompile(`^FAIL\s+(\S+)`)
 	skipPattern := regexp.MustCompile(`^\?\s+(\S+)\s+\[no test files\]`)

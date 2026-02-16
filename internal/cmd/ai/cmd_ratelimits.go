@@ -7,9 +7,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/config"
-	"forge.lthn.ai/core/cli/pkg/ratelimit"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/config"
+	"forge.lthn.ai/core/go/pkg/ratelimit"
 )
 
 // AddRateLimitCommands registers the 'ratelimits' subcommand group under 'ai'.

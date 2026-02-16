@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/cli/pkg/ansible"
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/ansible"
+	"forge.lthn.ai/core/go/pkg/cli"
 	"github.com/spf13/cobra"
 )
 

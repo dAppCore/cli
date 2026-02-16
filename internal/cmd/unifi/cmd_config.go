@@ -3,8 +3,8 @@ package unifi
 import (
 	"fmt"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	uf "forge.lthn.ai/core/cli/pkg/unifi"
+	"forge.lthn.ai/core/go/pkg/cli"
+	uf "forge.lthn.ai/core/go/pkg/unifi"
 )
 
 // Config command flags.

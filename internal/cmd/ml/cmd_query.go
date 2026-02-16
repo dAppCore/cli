@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/cli/pkg/ml"
+	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/go/pkg/ml"
 )
 
 var queryCmd = &cli.Command{

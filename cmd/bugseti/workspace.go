@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/go/internal/bugseti"
+	"forge.lthn.ai/core/cli/internal/bugseti"
 	"forge.lthn.ai/core/go/pkg/io/datanode"
 	"github.com/Snider/Borg/pkg/tim"
 )
