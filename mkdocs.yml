@@ -50,19 +50,24 @@ nav:
     - Workflows: workflows.md
   - CLI Reference:
     - Overview: cmd/index.md
-    - AI: cmd/ai/index.md
-    - Build: cmd/build/index.md
-    - CI: cmd/ci/index.md
-    - Dev: cmd/dev/index.md
-    - Go: cmd/go/index.md
-    - PHP: cmd/php/index.md
-    - SDK: cmd/sdk/index.md
-    - Setup: cmd/setup/index.md
-    - Doctor: cmd/doctor/index.md
-    - Test: cmd/test/index.md
-    - VM: cmd/vm/index.md
-    - Pkg: cmd/pkg/index.md
-    - Docs: cmd/docs/index.md
+    - Complete Reference: cli-reference.md
+    - Build Variants: build-variants.md
+    - MCP Integration: mcp-integration.md
+    - Environment Variables: environment-variables.md
+    - Commands:
+      - AI: cmd/ai/index.md
+      - Build: cmd/build/index.md
+      - CI: cmd/ci/index.md
+      - Dev: cmd/dev/index.md
+      - Go: cmd/go/index.md
+      - PHP: cmd/php/index.md
+      - SDK: cmd/sdk/index.md
+      - Setup: cmd/setup/index.md
+      - Doctor: cmd/doctor/index.md
+      - Test: cmd/test/index.md
+      - VM: cmd/vm/index.md
+      - Pkg: cmd/pkg/index.md
+      - Docs: cmd/docs/index.md
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
