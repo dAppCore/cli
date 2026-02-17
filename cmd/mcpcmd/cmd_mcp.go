@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/mcp"
+	"forge.lthn.ai/core/go-ai/mcp"
 )
 
 func init() {

@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"forge.lthn.ai/core/go/pkg/container"
+	"forge.lthn.ai/core/go-devops/container"
 	"forge.lthn.ai/core/go/pkg/i18n"
 	"forge.lthn.ai/core/go/pkg/io"
 	"github.com/spf13/cobra"

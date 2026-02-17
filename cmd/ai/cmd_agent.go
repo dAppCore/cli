@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge.lthn.ai/core/go/pkg/agentci"
+	"forge.lthn.ai/core/go-scm/agentci"
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/config"
 )

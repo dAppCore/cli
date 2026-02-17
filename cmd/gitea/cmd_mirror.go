@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	gt "forge.lthn.ai/core/go/pkg/gitea"
+	gt "forge.lthn.ai/core/go-scm/gitea"
 )
 
 // Mirror command flags.

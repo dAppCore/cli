@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	uf "forge.lthn.ai/core/go/pkg/unifi"
+	uf "forge.lthn.ai/core/go-netops/unifi"
 )
 
 // Config command flags.

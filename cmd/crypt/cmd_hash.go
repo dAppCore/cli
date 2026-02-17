@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/crypt"
+	"forge.lthn.ai/core/go-crypt/crypt"
 	"golang.org/x/crypto/bcrypt"
 )
 

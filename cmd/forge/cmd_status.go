@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	fg "forge.lthn.ai/core/go/pkg/forge"
+	fg "forge.lthn.ai/core/go-scm/forge"
 )
 
 // addStatusCommand adds the 'status' subcommand for instance info.

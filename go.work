@@ -2,5 +2,10 @@ go 1.25.5
 
 use (
 	.
-	../go
+	../core
+	../go-ai
+	../go-crypt
+	../go-devops
+	../go-netops
+	../go-scm
 )

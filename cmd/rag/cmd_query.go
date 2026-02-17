@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/go/pkg/i18n"
-	"forge.lthn.ai/core/go/pkg/rag"
+	"forge.lthn.ai/core/go-ai/rag"
 	"github.com/spf13/cobra"
 )
 

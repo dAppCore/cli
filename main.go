@@ -34,7 +34,7 @@ import (
 	_ "forge.lthn.ai/core/cli/cmd/updater"
 	_ "forge.lthn.ai/core/cli/cmd/vm"
 	_ "forge.lthn.ai/core/cli/cmd/workspace"
-	_ "forge.lthn.ai/core/go/pkg/build/buildcmd"
+	_ "forge.lthn.ai/core/go-devops/build/buildcmd"
 
 	// Variant repos (optional — comment out to exclude)
 	// _ "forge.lthn.ai/core/php"

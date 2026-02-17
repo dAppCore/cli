@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/go/pkg/agentic"
-	"forge.lthn.ai/core/go/pkg/ai"
+	"forge.lthn.ai/core/go-ai/agentic"
+	"forge.lthn.ai/core/go-ai/ai"
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/i18n"
 )

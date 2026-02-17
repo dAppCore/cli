@@ -2,7 +2,14 @@ module forge.lthn.ai/core/cli
 
 go 1.25.5
 
-require forge.lthn.ai/core/go v0.0.0
+require (
+	forge.lthn.ai/core/go v0.0.0
+	forge.lthn.ai/core/go-ai v0.0.0
+	forge.lthn.ai/core/go-crypt v0.0.0
+	forge.lthn.ai/core/go-devops v0.0.0
+	forge.lthn.ai/core/go-netops v0.0.0
+	forge.lthn.ai/core/go-scm v0.0.0
+)
 
 require (
 	code.gitea.io/sdk/gitea v0.23.2
@@ -117,4 +124,11 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace forge.lthn.ai/core/go => ../go
+replace (
+	forge.lthn.ai/core/go => ../core
+	forge.lthn.ai/core/go-ai => ../go-ai
+	forge.lthn.ai/core/go-crypt => ../go-crypt
+	forge.lthn.ai/core/go-devops => ../go-devops
+	forge.lthn.ai/core/go-netops => ../go-netops
+	forge.lthn.ai/core/go-scm => ../go-scm
+)

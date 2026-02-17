@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/crypt"
+	"forge.lthn.ai/core/go-crypt/crypt"
 )
 
 // Checksum command flags

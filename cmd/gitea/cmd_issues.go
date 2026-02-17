@@ -7,7 +7,7 @@ import (
 	"code.gitea.io/sdk/gitea"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	gt "forge.lthn.ai/core/go/pkg/gitea"
+	gt "forge.lthn.ai/core/go-scm/gitea"
 )
 
 // Issues command flags.

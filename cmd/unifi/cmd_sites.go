@@ -3,7 +3,7 @@ package unifi
 import (
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/log"
-	uf "forge.lthn.ai/core/go/pkg/unifi"
+	uf "forge.lthn.ai/core/go-netops/unifi"
 )
 
 // addSitesCommand adds the 'sites' subcommand for listing UniFi sites.

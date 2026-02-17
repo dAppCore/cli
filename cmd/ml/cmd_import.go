@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/ml"
+	"forge.lthn.ai/core/go-ai/ml"
 )
 
 var importCmd = &cli.Command{
