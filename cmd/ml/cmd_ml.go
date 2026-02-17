@@ -22,6 +22,8 @@
 //   - core ml approve: Filter scored expansions into training JSONL
 //   - core ml publish: Upload Parquet dataset to HuggingFace Hub
 //   - core ml coverage: Analyze seed coverage by region and domain
+//   - core ml live: Show live generation progress from InfluxDB
+//   - core ml expand-status: Show expansion pipeline progress
 package ml
 
 import (
@@ -62,6 +64,8 @@ func AddMLCommands(root *cli.Command) {
 	mlCmd.AddCommand(approveCmd)
 	mlCmd.AddCommand(publishCmd)
 	mlCmd.AddCommand(coverageCmd)
+	mlCmd.AddCommand(liveCmd)
+	mlCmd.AddCommand(expandStatusCmd)
 	root.AddCommand(mlCmd)
 }
 
