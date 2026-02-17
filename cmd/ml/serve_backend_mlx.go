@@ -1,4 +1,4 @@
-//go:build darwin && arm64 && mlx
+//go:build darwin && arm64
 
 package ml
 
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"forge.lthn.ai/core/go/pkg/ml"
+	"forge.lthn.ai/core/go-ai/ml"
 )
 
 func createServeBackend() (ml.Backend, error) {

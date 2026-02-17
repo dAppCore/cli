@@ -3,4 +3,4 @@ version: '3'
 tasks:
   build:
     cmds:
-      - go build -o build/bin/core cmd/app/main.go
+      - go build -o build/bin/core .
