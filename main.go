@@ -20,6 +20,7 @@ import (
 	_ "forge.lthn.ai/core/cli/cmd/lab"
 	_ "forge.lthn.ai/core/cli/cmd/mcpcmd"
 	_ "forge.lthn.ai/core/cli/cmd/ml"
+	_ "forge.lthn.ai/core/cli/cmd/module"
 	_ "forge.lthn.ai/core/cli/cmd/monitor"
 	_ "forge.lthn.ai/core/cli/cmd/pkgcmd"
 	_ "forge.lthn.ai/core/cli/cmd/plugin"
