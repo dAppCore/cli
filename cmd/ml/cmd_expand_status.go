@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go-ai/ml"
+	"forge.lthn.ai/core/go-ml"
 )
 
 var expandStatusCmd = &cli.Command{
@@ -34,40 +34,32 @@ func runExpandStatus(cmd *cli.Command, args []string) error {
 	fmt.Fprintln(os.Stdout, "==================================================")
 
 	// Expansion prompts
-	total, pending, err := db.ExpansionPromptCounts()
+	total, pending, err := db.CountExpansionPrompts()
 	if err != nil {
 		fmt.Fprintln(os.Stdout, "  Expansion prompts:  not created (run: normalize)")
 		return nil
 	}
 	fmt.Fprintf(os.Stdout, "  Expansion prompts:  %d total, %d pending\n", total, pending)
 
-	// Generated responses
-	generated, models, err := db.ExpansionRawCounts()
-	if err != nil {
-		generated = 0
+	// Generated responses — query raw counts via SQL
+	generated := 0
+	rows, err := db.QueryRows("SELECT count(*) AS n FROM expansion_raw")
+	if err != nil || len(rows) == 0 {
 		fmt.Fprintln(os.Stdout, "  Generated:          0 (run: core ml expand)")
-	} else if len(models) > 0 {
-		modelStr := ""
-		for i, m := range models {
-			if i > 0 {
-				modelStr += ", "
-			}
-			modelStr += fmt.Sprintf("%s: %d", m.Name, m.Count)
-		}
-		fmt.Fprintf(os.Stdout, "  Generated:          %d (%s)\n", generated, modelStr)
 	} else {
+		if n, ok := rows[0]["n"]; ok {
+			generated = toInt(n)
+		}
 		fmt.Fprintf(os.Stdout, "  Generated:          %d\n", generated)
 	}
 
-	// Scored
-	scored, hPassed, jScored, jPassed, err := db.ExpansionScoreCounts()
-	if err != nil {
+	// Scored — query scoring counts via SQL
+	sRows, err := db.QueryRows("SELECT count(*) AS n FROM scoring_results WHERE suite = 'heuristic'")
+	if err != nil || len(sRows) == 0 {
 		fmt.Fprintln(os.Stdout, "  Scored:             0 (run: score --tier 1)")
 	} else {
-		fmt.Fprintf(os.Stdout, "  Heuristic scored:   %d (%d passed)\n", scored, hPassed)
-		if jScored > 0 {
-			fmt.Fprintf(os.Stdout, "  Judge scored:       %d (%d passed)\n", jScored, jPassed)
-		}
+		scored := toInt(sRows[0]["n"])
+		fmt.Fprintf(os.Stdout, "  Heuristic scored:   %d\n", scored)
 	}
 
 	// Pipeline progress
@@ -77,7 +69,7 @@ func runExpandStatus(cmd *cli.Command, args []string) error {
 	}
 
 	// Golden set context
-	golden, err := db.GoldenSetCount()
+	golden, err := db.CountGoldenSet()
 	if err == nil && golden > 0 {
 		fmt.Fprintf(os.Stdout, "\n  Golden set:         %d / %d\n", golden, targetTotal)
 		if generated > 0 {
@@ -86,4 +78,18 @@ func runExpandStatus(cmd *cli.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// toInt converts an interface{} (typically from QueryRows) to int.
+func toInt(v interface{}) int {
+	switch n := v.(type) {
+	case int:
+		return n
+	case int64:
+		return int(n)
+	case float64:
+		return int(n)
+	default:
+		return 0
+	}
 }

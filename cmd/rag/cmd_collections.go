@@ -6,7 +6,7 @@ import (
 
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/i18n"
-	"forge.lthn.ai/core/go-ai/rag"
+	"forge.lthn.ai/core/go-rag"
 	"github.com/spf13/cobra"
 )
 
@@ -74,8 +74,8 @@ func runCollections(cmd *cobra.Command, args []string) error {
 				continue
 			}
 			fmt.Printf("  %s\n", cli.ValueStyle.Render(name))
-			fmt.Printf("    Points:  %d\n", info.PointsCount)
-			fmt.Printf("    Status:  %s\n", info.Status.String())
+			fmt.Printf("    Points:  %d\n", info.PointCount)
+			fmt.Printf("    Status:  %s\n", info.Status)
 			fmt.Println()
 		} else {
 			fmt.Printf("  %s\n", name)

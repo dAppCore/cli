@@ -2,10 +2,17 @@ go 1.25.5
 
 use (
 	.
-	../core
+	../go
+	../go-agentic
 	../go-ai
 	../go-crypt
 	../go-devops
+	../go-inference
+	../go-ml
+	../go-mlx
 	../go-netops
+	../go-rag
 	../go-scm
+	../go-store
+	../go-webview
 )

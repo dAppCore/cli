@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/go-ai/ml"
+	"forge.lthn.ai/core/go-ml"
 	"forge.lthn.ai/core/go/pkg/cli"
 	"gopkg.in/yaml.v3"
 )

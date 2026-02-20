@@ -4,11 +4,18 @@ go 1.25.5
 
 require (
 	forge.lthn.ai/core/go v0.0.0
+	forge.lthn.ai/core/go-agentic v0.0.0
 	forge.lthn.ai/core/go-ai v0.0.0
 	forge.lthn.ai/core/go-crypt v0.0.0
 	forge.lthn.ai/core/go-devops v0.0.0
+	forge.lthn.ai/core/go-inference v0.0.0
+	forge.lthn.ai/core/go-ml v0.0.0
+	forge.lthn.ai/core/go-mlx v0.0.0
 	forge.lthn.ai/core/go-netops v0.0.0
+	forge.lthn.ai/core/go-rag v0.0.0
 	forge.lthn.ai/core/go-scm v0.0.0
+	forge.lthn.ai/core/go-store v0.0.0
+	forge.lthn.ai/core/go-webview v0.0.0
 )
 
 require (
@@ -125,10 +132,17 @@ require (
 )
 
 replace (
-	forge.lthn.ai/core/go => ../core
+	forge.lthn.ai/core/go => ../go
+	forge.lthn.ai/core/go-agentic => ../go-agentic
 	forge.lthn.ai/core/go-ai => ../go-ai
 	forge.lthn.ai/core/go-crypt => ../go-crypt
 	forge.lthn.ai/core/go-devops => ../go-devops
+	forge.lthn.ai/core/go-inference => ../go-inference
+	forge.lthn.ai/core/go-ml => ../go-ml
+	forge.lthn.ai/core/go-mlx => ../go-mlx
 	forge.lthn.ai/core/go-netops => ../go-netops
+	forge.lthn.ai/core/go-rag => ../go-rag
 	forge.lthn.ai/core/go-scm => ../go-scm
+	forge.lthn.ai/core/go-store => ../go-store
+	forge.lthn.ai/core/go-webview => ../go-webview
 )

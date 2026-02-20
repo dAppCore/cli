@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"forge.lthn.ai/core/go/pkg/cli"
-	"forge.lthn.ai/core/go-ai/ml"
+	"forge.lthn.ai/core/go-ml"
 )
 
 const targetTotal = 15000
@@ -21,24 +21,27 @@ func runLive(cmd *cli.Command, args []string) error {
 	influx := ml.NewInfluxClient(influxURL, influxDB)
 
 	// Total completed generations
-	total, err := influx.QueryScalar("SELECT count(DISTINCT i) AS n FROM gold_gen")
+	totalRows, err := influx.QuerySQL("SELECT count(DISTINCT i) AS n FROM gold_gen")
 	if err != nil {
 		return fmt.Errorf("live: query total: %w", err)
 	}
+	total := sqlScalar(totalRows)
 
 	// Distinct domains and voices
-	domains, err := influx.QueryScalar("SELECT count(DISTINCT d) AS n FROM gold_gen")
+	domainRows, err := influx.QuerySQL("SELECT count(DISTINCT d) AS n FROM gold_gen")
 	if err != nil {
 		return fmt.Errorf("live: query domains: %w", err)
 	}
+	domains := sqlScalar(domainRows)
 
-	voices, err := influx.QueryScalar("SELECT count(DISTINCT v) AS n FROM gold_gen")
+	voiceRows, err := influx.QuerySQL("SELECT count(DISTINCT v) AS n FROM gold_gen")
 	if err != nil {
 		return fmt.Errorf("live: query voices: %w", err)
 	}
+	voices := sqlScalar(voiceRows)
 
 	// Per-worker breakdown
-	workers, err := influx.QueryRows("SELECT w, count(DISTINCT i) AS n FROM gold_gen GROUP BY w ORDER BY n DESC")
+	workers, err := influx.QuerySQL("SELECT w, count(DISTINCT i) AS n FROM gold_gen GROUP BY w ORDER BY n DESC")
 	if err != nil {
 		return fmt.Errorf("live: query workers: %w", err)
 	}
@@ -65,4 +68,15 @@ func runLive(cmd *cli.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// sqlScalar extracts the first numeric value from a QuerySQL result.
+func sqlScalar(rows []map[string]interface{}) int {
+	if len(rows) == 0 {
+		return 0
+	}
+	for _, v := range rows[0] {
+		return toInt(v)
+	}
+	return 0
 }

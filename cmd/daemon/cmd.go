@@ -3,7 +3,6 @@ package daemon
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/log"
-	"forge.lthn.ai/core/go/pkg/process"
 	"forge.lthn.ai/core/go-ai/mcp"
 )
 
@@ -301,61 +299,33 @@ func runForeground(cfg Config) error {
 		return fmt.Errorf("failed to start daemon: %w", err)
 	}
 
-	// Create supervisor for managed services
-	sup := process.NewSupervisor(nil) // nil service — we only supervise Go functions
-
-	// Register MCP server as a supervised service
-	sup.RegisterFunc(process.GoSpec{
-		Name: "mcp",
-		Func: func(ctx context.Context) error {
-			return startMCP(ctx, mcpSvc, cfg)
-		},
-		Restart: process.RestartPolicy{
-			Delay:       3 * time.Second,
-			MaxRestarts: -1, // Unlimited restarts
-		},
-	})
-
-	// Start supervised services
-	sup.Start()
-
 	// Mark as ready
 	daemon.SetReady(true)
 
-	// Add supervisor status to health checks
-	daemon.AddHealthCheck(func() error {
-		statuses := sup.Statuses()
-		for name, status := range statuses {
-			if !status.Running {
-				return fmt.Errorf("service %s is not running (restarts: %d)", name, status.RestartCount)
-			}
-		}
-		return nil
-	})
+	// Start MCP server in a goroutine
+	ctx := cli.Context()
+	mcpErr := make(chan error, 1)
+	go func() {
+		mcpErr <- startMCP(ctx, mcpSvc, cfg)
+	}()
 
 	log.Info("Daemon ready",
 		"pid", os.Getpid(),
 		"health", daemon.HealthAddr(),
-		"services", strings.Join(sup.UnitNames(), ", "),
+		"services", "mcp",
 	)
 
-	// Print supervised service status as JSON for machine consumption
-	statuses := sup.Statuses()
-	if data, err := json.Marshal(statuses); err == nil {
-		log.Debug("Supervised services", "statuses", string(data))
+	// Wait for shutdown signal or MCP error
+	select {
+	case <-ctx.Done():
+		log.Info("Shutting down daemon")
+	case err := <-mcpErr:
+		if err != nil {
+			log.Error("MCP server exited", "error", err)
+		}
 	}
 
-	// Get context that cancels on SIGINT/SIGTERM
-	ctx := cli.Context()
-
-	// Wait for shutdown signal
-	<-ctx.Done()
-	log.Info("Shutting down daemon")
-
-	// Stop supervised services first
-	sup.Stop()
-
-	// Then stop the daemon (releases PID, stops health server)
+	// Stop the daemon (releases PID, stops health server)
 	return daemon.Stop()
 }
 

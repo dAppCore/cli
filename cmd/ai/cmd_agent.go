@@ -6,7 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
+	agentic "forge.lthn.ai/core/go-agentic"
 	"forge.lthn.ai/core/go-scm/agentci"
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/config"
@@ -25,6 +27,7 @@ func AddAgentCommands(parent *cli.Command) {
 	agentCmd.AddCommand(agentLogsCmd())
 	agentCmd.AddCommand(agentSetupCmd())
 	agentCmd.AddCommand(agentRemoveCmd())
+	agentCmd.AddCommand(agentFleetCmd())
 
 	parent.AddCommand(agentCmd)
 }
@@ -319,6 +322,76 @@ func agentRemoveCmd() *cli.Command {
 			return nil
 		},
 	}
+}
+
+func agentFleetCmd() *cli.Command {
+	cmd := &cli.Command{
+		Use:   "fleet",
+		Short: "Show fleet status from the go-agentic registry",
+		RunE: func(cmd *cli.Command, args []string) error {
+			workDir, _ := cmd.Flags().GetString("work-dir")
+			if workDir == "" {
+				home, _ := os.UserHomeDir()
+				workDir = filepath.Join(home, defaultWorkDir)
+			}
+			dbPath := filepath.Join(workDir, "registry.db")
+
+			if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+				fmt.Println(dimStyle.Render("No registry found. Start a dispatch watcher first: core ai dispatch watch"))
+				return nil
+			}
+
+			registry, err := agentic.NewSQLiteRegistry(dbPath)
+			if err != nil {
+				return fmt.Errorf("failed to open registry: %w", err)
+			}
+			defer registry.Close()
+
+			// Reap stale agents (no heartbeat for 10 minutes).
+			reaped := registry.Reap(10 * time.Minute)
+			if len(reaped) > 0 {
+				for _, id := range reaped {
+					fmt.Printf("  Reaped stale agent: %s\n", dimStyle.Render(id))
+				}
+				fmt.Println()
+			}
+
+			agents := registry.List()
+			if len(agents) == 0 {
+				fmt.Println(dimStyle.Render("No agents registered."))
+				return nil
+			}
+
+			table := cli.NewTable("ID", "STATUS", "LOAD", "LAST HEARTBEAT", "CAPABILITIES")
+			for _, a := range agents {
+				status := dimStyle.Render(string(a.Status))
+				switch a.Status {
+				case agentic.AgentAvailable:
+					status = successStyle.Render("available")
+				case agentic.AgentBusy:
+					status = taskPriorityMediumStyle.Render("busy")
+				case agentic.AgentOffline:
+					status = errorStyle.Render("offline")
+				}
+
+				load := fmt.Sprintf("%d/%d", a.CurrentLoad, a.MaxLoad)
+				hb := a.LastHeartbeat.Format("15:04:05")
+				ago := time.Since(a.LastHeartbeat).Truncate(time.Second)
+				hbStr := fmt.Sprintf("%s (%s ago)", hb, ago)
+
+				caps := "-"
+				if len(a.Capabilities) > 0 {
+					caps = strings.Join(a.Capabilities, ", ")
+				}
+
+				table.AddRow(a.ID, status, load, hbStr, caps)
+			}
+			table.Render()
+			return nil
+		},
+	}
+	cmd.Flags().String("work-dir", "", "Working directory (default: ~/ai-work)")
+	return cmd
 }
 
 // findSetupScript looks for agent-setup.sh in common locations.

@@ -18,6 +18,8 @@ import (
 
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/log"
+
+	agentic "forge.lthn.ai/core/go-agentic"
 )
 
 // AddDispatchCommands registers the 'dispatch' subcommand group under 'ai'.
@@ -125,30 +127,45 @@ func dispatchWatchCmd() *cli.Command {
 		RunE: func(cmd *cli.Command, args []string) error {
 			workDir, _ := cmd.Flags().GetString("work-dir")
 			interval, _ := cmd.Flags().GetDuration("interval")
+			agentID, _ := cmd.Flags().GetString("agent-id")
 			paths := getPaths(workDir)
 
 			if err := ensureDispatchDirs(paths); err != nil {
 				return err
 			}
 
-			log.Info("Starting dispatch watcher", "dir", paths.root, "interval", interval)
+			// Register this agent in the go-agentic registry.
+			registry, events, cleanup := registerAgent(agentID, paths)
+			if cleanup != nil {
+				defer cleanup()
+			}
+
+			log.Info("Starting dispatch watcher", "dir", paths.root, "interval", interval, "agent", agentID)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			sigChan := make(chan os.Signal, 1)
 			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
+			// Heartbeat loop — keeps agent status fresh.
+			if registry != nil {
+				go heartbeatLoop(ctx, registry, agentID, interval/2)
+			}
+
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
 
-			runCycle(paths)
+			runCycleWithEvents(paths, registry, events, agentID)
 
 			for {
 				select {
 				case <-ticker.C:
-					runCycle(paths)
+					runCycleWithEvents(paths, registry, events, agentID)
 				case <-sigChan:
 					log.Info("Shutting down watcher...")
+					if registry != nil {
+						_ = registry.Deregister(agentID)
+					}
 					return nil
 				case <-ctx.Done():
 					return nil
@@ -158,7 +175,93 @@ func dispatchWatchCmd() *cli.Command {
 	}
 	cmd.Flags().String("work-dir", "", "Working directory (default: ~/ai-work)")
 	cmd.Flags().Duration("interval", 5*time.Minute, "Polling interval")
+	cmd.Flags().String("agent-id", defaultAgentID(), "Agent identifier for registry")
 	return cmd
+}
+
+// defaultAgentID returns a sensible agent ID from hostname.
+func defaultAgentID() string {
+	host, _ := os.Hostname()
+	if host == "" {
+		return "unknown"
+	}
+	return host
+}
+
+// registerAgent creates a SQLite registry and registers this agent.
+// Returns the registry, event emitter, and a cleanup function.
+func registerAgent(agentID string, paths runnerPaths) (agentic.AgentRegistry, agentic.EventEmitter, func()) {
+	dbPath := filepath.Join(paths.root, "registry.db")
+	registry, err := agentic.NewSQLiteRegistry(dbPath)
+	if err != nil {
+		log.Warn("Failed to create agent registry", "error", err, "path", dbPath)
+		return nil, nil, nil
+	}
+
+	info := agentic.AgentInfo{
+		ID:            agentID,
+		Name:          agentID,
+		Status:        agentic.AgentAvailable,
+		LastHeartbeat: time.Now().UTC(),
+		MaxLoad:       1,
+	}
+	if err := registry.Register(info); err != nil {
+		log.Warn("Failed to register agent", "error", err)
+	} else {
+		log.Info("Agent registered", "id", agentID)
+	}
+
+	events := agentic.NewChannelEmitter(64)
+
+	// Drain events to log.
+	go func() {
+		for ev := range events.Events() {
+			log.Debug("Event", "type", string(ev.Type), "task", ev.TaskID, "agent", ev.AgentID)
+		}
+	}()
+
+	return registry, events, func() {
+		events.Close()
+	}
+}
+
+// heartbeatLoop sends periodic heartbeats to keep the agent status fresh.
+func heartbeatLoop(ctx context.Context, registry agentic.AgentRegistry, agentID string, interval time.Duration) {
+	if interval < 30*time.Second {
+		interval = 30 * time.Second
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			_ = registry.Heartbeat(agentID)
+		}
+	}
+}
+
+// runCycleWithEvents wraps runCycle with registry status updates and event emission.
+func runCycleWithEvents(paths runnerPaths, registry agentic.AgentRegistry, events agentic.EventEmitter, agentID string) {
+	if registry != nil {
+		// Set busy while processing.
+		if agent, err := registry.Get(agentID); err == nil {
+			agent.Status = agentic.AgentBusy
+			_ = registry.Register(agent)
+		}
+	}
+
+	runCycle(paths)
+
+	if registry != nil {
+		// Back to available.
+		if agent, err := registry.Get(agentID); err == nil {
+			agent.Status = agentic.AgentAvailable
+			agent.LastHeartbeat = time.Now().UTC()
+			_ = registry.Register(agent)
+		}
+	}
 }
 
 func dispatchStatusCmd() *cli.Command {

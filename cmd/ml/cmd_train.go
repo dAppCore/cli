@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/go-ai/ml"
-	"forge.lthn.ai/core/go-ai/mlx"
+	"forge.lthn.ai/core/go-ml"
+	"forge.lthn.ai/core/go-mlx"
 	"forge.lthn.ai/core/go-ai/mlx/model"
 	"forge.lthn.ai/core/go-ai/mlx/tokenizer"
 	"forge.lthn.ai/core/go/pkg/cli"
