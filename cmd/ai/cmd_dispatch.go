@@ -506,6 +506,15 @@ func execAgent(ctx context.Context, runner, model, prompt, dir, logPath string) 
 }
 
 func reportToForge(t dispatchTicket, success bool, body string) {
+	token := t.ForgeToken
+	if token == "" {
+		token = os.Getenv("FORGE_TOKEN")
+	}
+	if token == "" {
+		log.Warn("No forge token available, skipping report")
+		return
+	}
+
 	url := fmt.Sprintf("%s/api/v1/repos/%s/%s/issues/%d/comments",
 		strings.TrimSuffix(t.ForgeURL, "/"), t.RepoOwner, t.RepoName, t.IssueNumber)
 
@@ -517,7 +526,7 @@ func reportToForge(t dispatchTicket, success bool, body string) {
 		log.Error("Failed to create request", "err", err)
 		return
 	}
-	req.Header.Set("Authorization", "token "+t.ForgeToken)
+	req.Header.Set("Authorization", "token "+token)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
