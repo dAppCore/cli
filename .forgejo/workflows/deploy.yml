@@ -1,12 +1,5 @@
 # Host UK Production Deployment Pipeline
-# Runs on Forgejo Actions (gitea.snider.dev)
-# Runner: build.de.host.uk.com
-#
-# Workflow:
-#   1. composer install + test
-#   2. npm ci + build
-#   3. docker build + push
-#   4. Coolify deploy webhook (rolling restart)
+# Builds 3 Docker images via reusable workflow, then triggers Coolify deploy.
 
 name: Deploy
 
@@ -14,12 +7,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
-env:
-  REGISTRY: dappco.re/osi
-  IMAGE_APP: host-uk/app
-  IMAGE_WEB: host-uk/web
-  IMAGE_CORE: host-uk/core
 
 jobs:
   test:
@@ -47,87 +34,32 @@ jobs:
   build-app:
     name: Build App Image
     needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Login to registry
-        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
-
-      - name: Build and push app image
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          docker build \
-            -f docker/Dockerfile.app \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_APP }}:${SHA} \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_APP }}:latest \
-            .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_APP }}:${SHA}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_APP }}:latest
+    uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
+    with:
+      image: lthn/app
+      dockerfile: docker/Dockerfile.app
+      registry: docker.io
+    secrets: inherit
 
   build-web:
     name: Build Web Image
     needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login to registry
-        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
-
-      - name: Build and push web image
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          docker build \
-            -f docker/Dockerfile.web \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${SHA} \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:latest \
-            .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${SHA}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:latest
+    uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
+    with:
+      image: lthn/web
+      dockerfile: docker/Dockerfile.web
+      registry: docker.io
+    secrets: inherit
 
   build-core:
     name: Build Core Image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
-      - name: Build core binary
-        run: |
-          go build -ldflags '-s -w' -o bin/core .
-
-      - name: Login to registry
-        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
-
-      - name: Build and push core image
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          cat > Dockerfile.core <<'EOF'
-          FROM alpine:3.20
-          RUN apk add --no-cache ca-certificates
-          COPY bin/core /usr/local/bin/core
-          RUN adduser -D -h /home/core core
-          USER core
-          ENTRYPOINT ["core"]
-          EOF
-          docker build \
-            -f Dockerfile.core \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_CORE }}:${SHA} \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_CORE }}:latest \
-            .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_CORE }}:${SHA}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_CORE }}:latest
+    needs: test
+    uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
+    with:
+      image: lthn/core
+      dockerfile: docker/Dockerfile.core
+      registry: docker.io
+    secrets: inherit
 
   deploy:
     name: Deploy to Production
