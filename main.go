@@ -5,6 +5,7 @@ import (
 
 	// Commands via self-registration
 	_ "forge.lthn.ai/core/cli/cmd/ai"
+	_ "forge.lthn.ai/core/cli/cmd/api"
 	_ "forge.lthn.ai/core/cli/cmd/collect"
 	_ "forge.lthn.ai/core/cli/cmd/config"
 	_ "forge.lthn.ai/core/cli/cmd/crypt"
