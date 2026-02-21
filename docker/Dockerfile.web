@@ -16,4 +16,5 @@ COPY docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.con
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget -qO- http://localhost/health || exit 1
 
+USER nginx
 EXPOSE 80
