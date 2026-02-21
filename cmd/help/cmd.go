@@ -7,10 +7,6 @@ import (
 	"forge.lthn.ai/core/go/pkg/help"
 )
 
-func init() {
-	cli.RegisterCommands(AddHelpCommands)
-}
-
 func AddHelpCommands(root *cli.Command) {
 	var searchFlag string
 

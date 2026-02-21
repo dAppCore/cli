@@ -2,10 +2,6 @@ package config
 
 import "forge.lthn.ai/core/go/pkg/cli"
 
-func init() {
-	cli.RegisterCommands(AddConfigCommands)
-}
-
 // AddConfigCommands registers the 'config' command group and all subcommands.
 func AddConfigCommands(root *cli.Command) {
 	configCmd := cli.NewGroup("config", "Manage configuration", "")

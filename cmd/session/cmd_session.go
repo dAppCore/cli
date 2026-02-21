@@ -11,10 +11,6 @@ import (
 	"forge.lthn.ai/core/go/pkg/session"
 )
 
-func init() {
-	cli.RegisterCommands(AddSessionCommands)
-}
-
 // AddSessionCommands registers the 'session' command group.
 func AddSessionCommands(root *cli.Command) {
 	sessionCmd := &cli.Command{

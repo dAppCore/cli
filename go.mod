@@ -3,7 +3,7 @@ module forge.lthn.ai/core/cli
 go 1.26.0
 
 require (
-	forge.lthn.ai/core/go v0.0.0-20260221191103-d091fa62023f
+	forge.lthn.ai/core/go v0.0.0-20260221220640-2a90ae65b7c7
 	forge.lthn.ai/core/go-crypt v0.0.0-20260221193816-fde12e1539b2 // indirect
 )
 

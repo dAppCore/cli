@@ -17,10 +17,6 @@ import (
 	"forge.lthn.ai/core/go/pkg/store"
 )
 
-func init() {
-	cli.RegisterCommands(AddModuleCommands)
-}
-
 // AddModuleCommands registers the 'module' command and all subcommands.
 func AddModuleCommands(root *cli.Command) {
 	moduleCmd := &cli.Command{

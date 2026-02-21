@@ -7,10 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	cli.RegisterCommands(AddPkgCommands)
-}
-
 // Style and utility aliases
 var (
 	repoNameStyle   = cli.RepoStyle

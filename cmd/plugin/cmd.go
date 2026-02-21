@@ -13,10 +13,6 @@ import (
 	"forge.lthn.ai/core/go/pkg/i18n"
 )
 
-func init() {
-	cli.RegisterCommands(AddPluginCommands)
-}
-
 // AddPluginCommands registers the 'plugin' command and all subcommands.
 func AddPluginCommands(root *cli.Command) {
 	pluginCmd := &cli.Command{
