@@ -64,11 +64,11 @@ func addListCommand(parent *cli.Command) {
 				return nil
 			}
 
-			cli.Print(cli.HeaderStyle.Render("Recent Sessions"))
-			cli.Print("")
+			cli.Print("%s", cli.HeaderStyle.Render("Recent Sessions"))
+			cli.Print("%s", "")
 			for i, s := range sessions {
 				if i >= 20 {
-					cli.Print(cli.DimStyle.Render(fmt.Sprintf("  ... and %d more", len(sessions)-20)))
+					cli.Print("  ... and %d more", len(sessions)-20)
 					break
 				}
 				dur := s.EndTime.Sub(s.StartTime)
@@ -80,10 +80,10 @@ func addListCommand(parent *cli.Command) {
 				if len(id) > 8 {
 					id = id[:8]
 				}
-				cli.Print(fmt.Sprintf("  %s  %s%s",
+				cli.Print("  %s  %s%s",
 					cli.ValueStyle.Render(id),
 					s.StartTime.Format("2006-01-02 15:04"),
-					cli.DimStyle.Render(durStr)))
+					cli.DimStyle.Render(durStr))
 			}
 			return nil
 		},
@@ -106,7 +106,7 @@ func addReplayCommand(parent *cli.Command) {
 				return fmt.Errorf("session not found: %s", id)
 			}
 
-			cli.Print(fmt.Sprintf("Parsing %s...", cli.ValueStyle.Render(filepath.Base(path))))
+			cli.Print("Parsing %s...", cli.ValueStyle.Render(filepath.Base(path)))
 
 			sess, err := session.ParseTranscript(path)
 			if err != nil {
@@ -119,8 +119,8 @@ func addReplayCommand(parent *cli.Command) {
 					toolCount++
 				}
 			}
-			cli.Print(fmt.Sprintf("  %d events, %d tool calls",
-				len(sess.Events), toolCount))
+			cli.Print("  %d events, %d tool calls",
+				len(sess.Events), toolCount)
 
 			// HTML output
 			htmlPath := output
@@ -130,15 +130,15 @@ func addReplayCommand(parent *cli.Command) {
 			if err := session.RenderHTML(sess, htmlPath); err != nil {
 				return fmt.Errorf("render html: %w", err)
 			}
-			cli.Print(cli.SuccessStyle.Render(fmt.Sprintf("  HTML: %s", htmlPath)))
+			cli.Print("%s", cli.SuccessStyle.Render(fmt.Sprintf("  HTML: %s", htmlPath)))
 
 			// MP4 output
 			if mp4 {
 				mp4Path := strings.TrimSuffix(htmlPath, ".html") + ".mp4"
 				if err := session.RenderMP4(sess, mp4Path); err != nil {
-					cli.Print(cli.ErrorStyle.Render(fmt.Sprintf("  MP4: %s", err)))
+					cli.Print("%s", cli.ErrorStyle.Render(fmt.Sprintf("  MP4: %s", err)))
 				} else {
-					cli.Print(cli.SuccessStyle.Render(fmt.Sprintf("  MP4: %s", mp4Path)))
+					cli.Print("%s", cli.SuccessStyle.Render(fmt.Sprintf("  MP4: %s", mp4Path)))
 				}
 			}
 
@@ -166,19 +166,19 @@ func addSearchCommand(parent *cli.Command) {
 				return nil
 			}
 
-			cli.Print(cli.HeaderStyle.Render(fmt.Sprintf("Found %d matches", len(results))))
-			cli.Print("")
+			cli.Print("%s", cli.HeaderStyle.Render(fmt.Sprintf("Found %d matches", len(results))))
+			cli.Print("%s", "")
 			for _, r := range results {
 				id := r.SessionID
 				if len(id) > 8 {
 					id = id[:8]
 				}
-				cli.Print(fmt.Sprintf("  %s  %s  %s",
+				cli.Print("  %s  %s  %s",
 					cli.ValueStyle.Render(id),
 					r.Timestamp.Format("15:04:05"),
-					cli.DimStyle.Render(r.Tool)))
-				cli.Print(fmt.Sprintf("    %s", truncateStr(r.Match, 100)))
-				cli.Print("")
+					cli.DimStyle.Render(r.Tool))
+				cli.Print("    %s", truncateStr(r.Match, 100))
+				cli.Print("%s", "")
 			}
 			return nil
 		},
