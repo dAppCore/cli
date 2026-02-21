@@ -19,7 +19,6 @@ import (
 	_ "forge.lthn.ai/core/cli/cmd/qa"
 	_ "forge.lthn.ai/core/cli/cmd/session"
 	_ "forge.lthn.ai/core/cli/cmd/setup"
-	_ "forge.lthn.ai/core/cli/cmd/updater"
 	_ "forge.lthn.ai/core/cli/cmd/workspace"
 )
 
