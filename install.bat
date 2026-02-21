@@ -27,13 +27,14 @@ if "!VARIANT!"=="{{CORE_VARIANT}}" (
 REM === Configuration ===
 set "VERSION=%~1"
 if "%VERSION%"=="" set "VERSION=latest"
-set "REPO=host-uk/core"
+set "FORGE=https://forge.lthn.ai"
+set "REPO=core/cli"
 set "BINARY=core"
 set "INSTALL_DIR=%LOCALAPPDATA%\Programs\core"
 
 REM === Resolve Version ===
 if "%VERSION%"=="latest" (
-    for /f "tokens=2 delims=:" %%a in ('curl -fsSL --max-time 10 "https://api.github.com/repos/%REPO%/releases/latest" ^| findstr "tag_name"') do (
+    for /f "tokens=2 delims=:" %%a in ('curl -fsSL --max-time 10 "%FORGE%/api/v1/repos/%REPO%/releases/latest" ^| findstr "tag_name"') do (
         set "VERSION=%%a"
         set "VERSION=!VERSION:"=!"
         set "VERSION=!VERSION: =!"
@@ -121,7 +122,7 @@ set "_result=%~2"
 REM Try variant-specific first, then full
 if not "%_variant%"=="" (
     set "_try=%BINARY%-%_variant%-windows-amd64.zip"
-    curl -fsSLI --max-time 10 "https://github.com/%REPO%/releases/download/!VERSION!/!_try!" 2>nul | findstr /r "HTTP/[12].* [23][0-9][0-9]" >nul
+    curl -fsSLI --max-time 10 "%FORGE%/%REPO%/releases/download/!VERSION!/!_try!" 2>nul | findstr /r "HTTP/[12].* [23][0-9][0-9]" >nul
     if not errorlevel 1 (
         set "%_result%=!_try!"
         exit /b 0
@@ -133,7 +134,7 @@ set "%_result%=%BINARY%-windows-amd64.zip"
 exit /b 0
 
 :download_and_extract
-curl -fsSL --connect-timeout 10 "https://github.com/%REPO%/releases/download/!VERSION!/!ARCHIVE!" -o "%TEMP%\!ARCHIVE!"
+curl -fsSL --connect-timeout 10 "%FORGE%/%REPO%/releases/download/!VERSION!/!ARCHIVE!" -o "%TEMP%\!ARCHIVE!"
 if errorlevel 1 (
     echo ERROR: Failed to download !ARCHIVE!
     exit /b 1

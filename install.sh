@@ -25,7 +25,8 @@ VARIANT="{{CORE_VARIANT}}"     # go, php, agent (when MODE=variant)
 
 # === Configuration ===
 VERSION="${1:-latest}"
-REPO="host-uk/core"
+FORGE="https://forge.lthn.ai"
+REPO="core/cli"
 BINARY="core"
 
 # === Colours ===
@@ -62,9 +63,9 @@ detect_platform() {
 resolve_version() {
   if [ "$VERSION" = "latest" ]; then
     info "Fetching latest version..."
-    VERSION=$(curl -fsSL --max-time 10 "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    VERSION=$(curl -fsSL --max-time 10 "${FORGE}/api/v1/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
     if [ -z "$VERSION" ]; then
-      error "Failed to fetch latest version from GitHub API"
+      error "Failed to fetch latest version from Forge API"
     fi
   fi
 }
@@ -88,7 +89,7 @@ find_archive() {
   candidates+=("${base}-${OS}-${ARCH}.tar.gz")
 
   for archive in "${candidates[@]}"; do
-    local url="https://github.com/${REPO}/releases/download/${VERSION}/${archive}"
+    local url="${FORGE}/${REPO}/releases/download/${VERSION}/${archive}"
     if url_exists "$url"; then
       ARCHIVE="$archive"
       DOWNLOAD_URL="$url"
