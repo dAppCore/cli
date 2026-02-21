@@ -33,8 +33,18 @@ jobs:
           fetch-depth: 0
       - name: Install gitleaks
         run: |
-          GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r '.tag_name' | tr -d 'v')
-          curl -sL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz -C /usr/local/bin gitleaks
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64)  ARCH_SUFFIX="x64" ;;
+            aarch64) ARCH_SUFFIX="arm64" ;;
+            *)       echo "Unsupported arch: $ARCH"; exit 1 ;;
+          esac
+          URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH_SUFFIX}.tar.gz"
+          echo "Downloading gitleaks v${GITLEAKS_VERSION} for ${ARCH_SUFFIX}..."
+          curl -fsSL "$URL" | tar xz -C /usr/local/bin gitleaks
+          gitleaks version
       - name: Scan for secrets
         run: gitleaks detect --source . --no-banner
 
