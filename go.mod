@@ -5,27 +5,24 @@ go 1.25.5
 require (
 	forge.lthn.ai/core/go v0.0.0-20260221191103-d091fa62023f
 	forge.lthn.ai/core/go-agentic v0.0.0-20260221191948-ad0cf5c932a3
-	forge.lthn.ai/core/go-ai v0.0.0-20260221192232-bc9597c19153
-	forge.lthn.ai/core/go-api v0.0.0-20260221015744-0d3479839dc5
-	forge.lthn.ai/core/go-crypt v0.0.0-20260221190941-9585da8e6649
-	forge.lthn.ai/core/go-devops v0.0.0-20260221192100-4b5739fbd7ac
+	forge.lthn.ai/core/go-ai v0.0.0-20260221193804-c3de6c4935d5
+	forge.lthn.ai/core/go-api v0.0.0-20260221193814-9d35070573b8
+	forge.lthn.ai/core/go-crypt v0.0.0-20260221193816-fde12e1539b2
+	forge.lthn.ai/core/go-devops v0.0.0-20260221193818-400d8a76901e
 	forge.lthn.ai/core/go-inference v0.0.0-20260220151119-1576f744d105 // indirect
 	forge.lthn.ai/core/go-ml v0.0.0-20260221191458-812c926dac42
 	forge.lthn.ai/core/go-mlx v0.0.0-20260221191404-2292557fd65f // indirect
-	forge.lthn.ai/core/go-netops v0.0.0-20260221192152-565b16a848ae
-	forge.lthn.ai/core/go-rag v0.0.0-20260221191926-4c741992dc78
-	forge.lthn.ai/core/go-scm v0.0.0-20260221192735-5bfafcd6fc87
+	forge.lthn.ai/core/go-netops v0.0.0-20260221193827-b865250390a4
+	forge.lthn.ai/core/go-rag v0.0.0-20260221193811-2a8d8b0820b5
+	forge.lthn.ai/core/go-scm v0.0.0-20260221193836-7eb28df79d0b
 	forge.lthn.ai/core/go-store v0.1.1-0.20260220151120-0284110ccadf // indirect
 )
 
 require (
-	code.gitea.io/sdk/gitea v0.23.2
-	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
 	github.com/Snider/Borg v0.2.0
 	github.com/minio/selfupdate v0.6.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/crypto v0.48.0
 	golang.org/x/mod v0.33.0
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/term v0.40.0
@@ -36,6 +33,7 @@ require (
 require (
 	aead.dev/minisign v0.3.0 // indirect
 	cloud.google.com/go v0.123.0 // indirect
+	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/99designs/gqlgen v0.17.87 // indirect
@@ -204,6 +202,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.23.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

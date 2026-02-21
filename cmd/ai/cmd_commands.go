@@ -13,7 +13,7 @@
 package ai
 
 import (
-	ragcmd "forge.lthn.ai/core/cli/cmd/rag"
+	ragcmd "forge.lthn.ai/core/go-rag/cmd/rag"
 	"forge.lthn.ai/core/go/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/i18n"
 )
