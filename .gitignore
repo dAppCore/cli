@@ -17,6 +17,7 @@ dist/
 tasks
 /cli
 /core
+local.test
 /i18n-validate
 .angular/
 
