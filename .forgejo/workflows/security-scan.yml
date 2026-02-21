@@ -1,6 +1,5 @@
-# Sovereign security scanning — no cloud dependencies
-# Replaces: GitHub Dependabot, CodeQL, Advanced Security
-# PCI DSS: Req 6.3.2 (code review), Req 11.3 (vulnerability scanning)
+# Security scanning via reusable workflow
+# Source: core/go-devops/.forgejo/workflows/security-scan.yml
 
 name: Security Scan
 
@@ -11,50 +10,6 @@ on:
     branches: [main]
 
 jobs:
-  govulncheck:
-    name: Go Vulnerability Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-      - name: Run govulncheck
-        run: govulncheck ./...
-
-  gitleaks:
-    name: Secret Detection
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Install gitleaks
-        run: |
-          set -euo pipefail
-          GITLEAKS_VERSION="8.24.3"
-          ARCH=$(uname -m)
-          case "$ARCH" in
-            x86_64)  ARCH_SUFFIX="x64" ;;
-            aarch64) ARCH_SUFFIX="arm64" ;;
-            *)       echo "Unsupported arch: $ARCH"; exit 1 ;;
-          esac
-          URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH_SUFFIX}.tar.gz"
-          echo "Downloading gitleaks v${GITLEAKS_VERSION} for ${ARCH_SUFFIX}..."
-          curl -fsSL "$URL" | tar xz -C /usr/local/bin gitleaks
-          gitleaks version
-      - name: Scan for secrets
-        run: gitleaks detect --source . --no-banner
-
-  trivy:
-    name: Dependency & Config Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-      - name: Filesystem scan
-        run: trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --exit-code 1 .
+  security:
+    uses: core/go-devops/.forgejo/workflows/security-scan.yml@main
+    secrets: inherit
