@@ -1,5 +1,4 @@
-# Host UK Production Deployment Pipeline
-# Builds 3 Docker images via reusable workflow, then triggers Coolify deploy.
+# Core CLI Docker image build + push
 
 name: Deploy
 
@@ -9,72 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          extensions: bcmath, gd, intl, mbstring, pdo_mysql, redis, zip
-          coverage: none
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Run tests
-        run: composer test
-
-      - name: Check code style
-        run: ./vendor/bin/pint --test
-
-  build-app:
-    name: Build App Image
-    needs: test
-    uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
-    with:
-      image: lthn/app
-      dockerfile: docker/Dockerfile.app
-      registry: docker.io
-    secrets: inherit
-
-  build-web:
-    name: Build Web Image
-    needs: test
-    uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
-    with:
-      image: lthn/web
-      dockerfile: docker/Dockerfile.web
-      registry: docker.io
-    secrets: inherit
-
-  build-core:
-    name: Build Core Image
-    needs: test
+  build:
     uses: core/go-devops/.forgejo/workflows/docker-publish.yml@main
     with:
       image: lthn/core
-      dockerfile: docker/Dockerfile.core
+      dockerfile: Dockerfile
       registry: docker.io
     secrets: inherit
-
-  deploy:
-    name: Deploy to Production
-    needs: [build-app, build-web, build-core]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Coolify deploy
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            "${{ secrets.COOLIFY_URL }}/api/v1/deploy" \
-            -H "Content-Type: application/json" \
-            -d '{"uuid": "${{ secrets.COOLIFY_APP_UUID }}", "force": false}'
-
-      - name: Wait for deployment
-        run: |
-          echo "Deployment triggered. Coolify will perform rolling restart."
-          echo "Monitor at: ${{ secrets.COOLIFY_URL }}"
