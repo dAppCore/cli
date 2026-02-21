@@ -22,6 +22,7 @@ type RepoDocInfo struct {
 	ClaudeMd  string
 	Changelog string
 	DocsFiles []string // All files in docs/ directory (recursive)
+	KBFiles   []string // All files in KB/ directory (recursive)
 }
 
 func loadRegistry(registryPath string) (*repos.Registry, string, error) {
@@ -132,6 +133,23 @@ func scanRepoDocs(repo *repos.Repo) RepoDocInfo {
 			// Get relative path from docs/
 			relPath, _ := filepath.Rel(docsDir, path)
 			info.DocsFiles = append(info.DocsFiles, relPath)
+			info.HasDocs = true
+			return nil
+		})
+	}
+
+	// Recursively scan KB/ directory for .md files
+	kbDir := filepath.Join(repo.Path, "KB")
+	if _, err := io.Local.List(kbDir); err == nil {
+		_ = filepath.WalkDir(kbDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			if d.IsDir() || !strings.HasSuffix(d.Name(), ".md") {
+				return nil
+			}
+			relPath, _ := filepath.Rel(kbDir, path)
+			info.KBFiles = append(info.KBFiles, relPath)
 			info.HasDocs = true
 			return nil
 		})
