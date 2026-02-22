@@ -1,7 +1,7 @@
 package main
 
 import (
-	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/cli/pkg/cli"
 
 	// Commands via self-registration (local to CLI)
 	_ "forge.lthn.ai/core/cli/cmd/config"
