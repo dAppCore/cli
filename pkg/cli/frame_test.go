@@ -261,6 +261,44 @@ func TestKeyMap_Good(t *testing.T) {
 	})
 }
 
+func TestFrameFocus_Good(t *testing.T) {
+	t.Run("default focus is Content", func(t *testing.T) {
+		f := NewFrame("HCF")
+		assert.Equal(t, RegionContent, f.Focused())
+	})
+
+	t.Run("Focus sets focused region", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Focus(RegionHeader)
+		assert.Equal(t, RegionHeader, f.Focused())
+	})
+
+	t.Run("Focus ignores invalid region", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Focus(RegionLeft) // Left not in "HCF"
+		assert.Equal(t, RegionContent, f.Focused()) // unchanged
+	})
+
+	t.Run("WithKeyMap returns frame for chaining", func(t *testing.T) {
+		km := DefaultKeyMap()
+		km.Quit = tea.KeyCtrlQ
+		f := NewFrame("HCF").WithKeyMap(km)
+		assert.Equal(t, tea.KeyCtrlQ, f.keyMap.Quit)
+	})
+
+	t.Run("focusRing builds from variant", func(t *testing.T) {
+		f := NewFrame("HLCRF")
+		ring := f.buildFocusRing()
+		assert.Equal(t, []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}, ring)
+	})
+
+	t.Run("focusRing respects variant order", func(t *testing.T) {
+		f := NewFrame("HCF")
+		ring := f.buildFocusRing()
+		assert.Equal(t, []Region{RegionHeader, RegionContent, RegionFooter}, ring)
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
 )
 
@@ -40,6 +41,13 @@ type Frame struct {
 	out     io.Writer
 	done    chan struct{}
 	mu      sync.Mutex
+
+	// Focus management (bubbletea upgrade)
+	focused Region
+	keyMap  KeyMap
+	width   int
+	height  int
+	program *tea.Program
 }
 
 // NewFrame creates a new Frame with the given HLCRF variant string.
@@ -53,6 +61,10 @@ func NewFrame(variant string) *Frame {
 		models:  make(map[Region]Model),
 		out:     os.Stdout,
 		done:    make(chan struct{}),
+		focused: RegionContent,
+		keyMap:  DefaultKeyMap(),
+		width:   80,
+		height:  24,
 	}
 }
 
@@ -108,6 +120,42 @@ func (f *Frame) Stop() {
 	default:
 		close(f.done)
 	}
+}
+
+// WithKeyMap sets custom key bindings for Frame navigation.
+func (f *Frame) WithKeyMap(km KeyMap) *Frame {
+	f.keyMap = km
+	return f
+}
+
+// Focused returns the currently focused region.
+func (f *Frame) Focused() Region {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.focused
+}
+
+// Focus sets focus to a specific region.
+// Ignores the request if the region is not in this Frame's variant.
+func (f *Frame) Focus(r Region) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, exists := f.layout.regions[r]; exists {
+		f.focused = r
+	}
+}
+
+// buildFocusRing returns the ordered list of regions in this Frame's variant.
+// Order follows HLCRF convention.
+func (f *Frame) buildFocusRing() []Region {
+	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
+	var ring []Region
+	for _, r := range order {
+		if _, exists := f.layout.regions[r]; exists {
+			ring = append(ring, r)
+		}
+	}
+	return ring
 }
 
 // Run renders the frame and blocks. In TTY mode, it live-refreshes at ~12fps.
