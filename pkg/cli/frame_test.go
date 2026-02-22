@@ -299,6 +299,133 @@ func TestFrameFocus_Good(t *testing.T) {
 	})
 }
 
+func TestFrameTeaModel_Good(t *testing.T) {
+	t.Run("Init collects FrameModel inits", func(t *testing.T) {
+		f := NewFrame("HCF")
+		fm := &testFrameModel{viewText: "x"}
+		f.Content(fm)
+
+		cmd := f.Init()
+		// Should produce a batch command (non-nil if any FrameModel has Init)
+		// fm.Init returns nil, so batch of nils = nil
+		_ = cmd // no panic = success
+		assert.True(t, fm.initCalled)
+	})
+
+	t.Run("Update routes key to focused region", func(t *testing.T) {
+		f := NewFrame("HCF")
+		header := &testFrameModel{viewText: "h"}
+		content := &testFrameModel{viewText: "c"}
+		f.Header(header)
+		f.Content(content)
+
+		// Focus is Content by default
+		keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}
+		f.Update(keyMsg)
+
+		assert.True(t, content.updateCalled, "focused region should receive key")
+		assert.False(t, header.updateCalled, "unfocused region should not receive key")
+	})
+
+	t.Run("Update broadcasts WindowSizeMsg to all", func(t *testing.T) {
+		f := NewFrame("HCF")
+		header := &testFrameModel{viewText: "h"}
+		content := &testFrameModel{viewText: "c"}
+		footer := &testFrameModel{viewText: "f"}
+		f.Header(header)
+		f.Content(content)
+		f.Footer(footer)
+
+		sizeMsg := tea.WindowSizeMsg{Width: 120, Height: 40}
+		f.Update(sizeMsg)
+
+		assert.True(t, header.updateCalled, "header should get resize")
+		assert.True(t, content.updateCalled, "content should get resize")
+		assert.True(t, footer.updateCalled, "footer should get resize")
+		assert.Equal(t, 120, f.width)
+		assert.Equal(t, 40, f.height)
+	})
+
+	t.Run("Update handles quit key", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Content(StaticModel("c"))
+
+		quitMsg := tea.KeyMsg{Type: tea.KeyCtrlC}
+		_, cmd := f.Update(quitMsg)
+
+		// cmd should be tea.Quit
+		assert.NotNil(t, cmd)
+	})
+
+	t.Run("Update handles back key", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Content(StaticModel("page-1"))
+		f.Navigate(StaticModel("page-2"))
+
+		escMsg := tea.KeyMsg{Type: tea.KeyEsc}
+		f.Update(escMsg)
+
+		assert.Contains(t, f.String(), "page-1")
+	})
+
+	t.Run("Update cycles focus with Tab", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Header(StaticModel("h"))
+		f.Content(StaticModel("c"))
+		f.Footer(StaticModel("f"))
+
+		assert.Equal(t, RegionContent, f.Focused())
+
+		tabMsg := tea.KeyMsg{Type: tea.KeyTab}
+		f.Update(tabMsg)
+		assert.Equal(t, RegionFooter, f.Focused())
+
+		f.Update(tabMsg)
+		assert.Equal(t, RegionHeader, f.Focused()) // wraps around
+
+		shiftTabMsg := tea.KeyMsg{Type: tea.KeyShiftTab}
+		f.Update(shiftTabMsg)
+		assert.Equal(t, RegionFooter, f.Focused()) // back
+	})
+
+	t.Run("View produces non-empty output", func(t *testing.T) {
+		SetColorEnabled(false)
+		defer SetColorEnabled(true)
+
+		f := NewFrame("HCF")
+		f.Header(StaticModel("HEAD"))
+		f.Content(StaticModel("BODY"))
+		f.Footer(StaticModel("FOOT"))
+
+		view := f.View()
+		assert.Contains(t, view, "HEAD")
+		assert.Contains(t, view, "BODY")
+		assert.Contains(t, view, "FOOT")
+	})
+
+	t.Run("View lipgloss layout: header before content before footer", func(t *testing.T) {
+		SetColorEnabled(false)
+		defer SetColorEnabled(true)
+
+		f := NewFrame("HCF")
+		f.Header(StaticModel("AAA"))
+		f.Content(StaticModel("BBB"))
+		f.Footer(StaticModel("CCC"))
+		f.width = 80
+		f.height = 24
+
+		view := f.View()
+		posA := indexOf(view, "AAA")
+		posB := indexOf(view, "BBB")
+		posC := indexOf(view, "CCC")
+		assert.Greater(t, posA, -1, "header should be present")
+		assert.Greater(t, posB, -1, "content should be present")
+		assert.Greater(t, posC, -1, "footer should be present")
+		assert.Less(t, posA, posB, "header before content")
+		assert.Less(t, posB, posC, "content before footer")
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {

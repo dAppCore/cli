@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/term"
 )
 
@@ -156,6 +157,234 @@ func (f *Frame) buildFocusRing() []Region {
 		}
 	}
 	return ring
+}
+
+// Init implements tea.Model. Collects Init() from all FrameModel regions.
+func (f *Frame) Init() tea.Cmd {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	var cmds []tea.Cmd
+	for _, m := range f.models {
+		fm := adaptModel(m)
+		if cmd := fm.Init(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+	return tea.Batch(cmds...)
+}
+
+// Update implements tea.Model. Routes messages based on type and focus.
+func (f *Frame) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		f.width = msg.Width
+		f.height = msg.Height
+		return f, f.broadcastLocked(msg)
+
+	case tea.KeyMsg:
+		switch msg.Type {
+		case f.keyMap.Quit:
+			return f, tea.Quit
+
+		case f.keyMap.Back:
+			f.backLocked()
+			return f, nil
+
+		case f.keyMap.FocusNext:
+			f.cycleFocusLocked(1)
+			return f, nil
+
+		case f.keyMap.FocusPrev:
+			f.cycleFocusLocked(-1)
+			return f, nil
+
+		case f.keyMap.FocusUp:
+			f.spatialFocusLocked(RegionHeader)
+			return f, nil
+
+		case f.keyMap.FocusDown:
+			f.spatialFocusLocked(RegionFooter)
+			return f, nil
+
+		case f.keyMap.FocusLeft:
+			f.spatialFocusLocked(RegionLeft)
+			return f, nil
+
+		case f.keyMap.FocusRight:
+			f.spatialFocusLocked(RegionRight)
+			return f, nil
+
+		default:
+			// Forward to focused region
+			return f, f.updateFocusedLocked(msg)
+		}
+
+	default:
+		// Broadcast non-key messages to all regions
+		return f, f.broadcastLocked(msg)
+	}
+}
+
+// View implements tea.Model. Composes region views using lipgloss.
+func (f *Frame) View() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.viewLocked()
+}
+
+func (f *Frame) viewLocked() string {
+	w, h := f.width, f.height
+	if w == 0 || h == 0 {
+		w, h = f.termSize()
+	}
+
+	// Calculate region dimensions
+	headerH, footerH := 0, 0
+	if _, ok := f.layout.regions[RegionHeader]; ok {
+		if _, ok := f.models[RegionHeader]; ok {
+			headerH = 1
+		}
+	}
+	if _, ok := f.layout.regions[RegionFooter]; ok {
+		if _, ok := f.models[RegionFooter]; ok {
+			footerH = 1
+		}
+	}
+	middleH := h - headerH - footerH
+	if middleH < 1 {
+		middleH = 1
+	}
+
+	// Render each region
+	header := f.renderRegionLocked(RegionHeader, w, headerH)
+	footer := f.renderRegionLocked(RegionFooter, w, footerH)
+
+	// Calculate sidebar widths
+	leftW, rightW := 0, 0
+	if _, ok := f.layout.regions[RegionLeft]; ok {
+		if _, ok := f.models[RegionLeft]; ok {
+			leftW = w / 4
+		}
+	}
+	if _, ok := f.layout.regions[RegionRight]; ok {
+		if _, ok := f.models[RegionRight]; ok {
+			rightW = w / 4
+		}
+	}
+	contentW := w - leftW - rightW
+	if contentW < 1 {
+		contentW = 1
+	}
+
+	left := f.renderRegionLocked(RegionLeft, leftW, middleH)
+	right := f.renderRegionLocked(RegionRight, rightW, middleH)
+	content := f.renderRegionLocked(RegionContent, contentW, middleH)
+
+	// Compose middle row
+	var middleParts []string
+	if leftW > 0 {
+		middleParts = append(middleParts, left)
+	}
+	middleParts = append(middleParts, content)
+	if rightW > 0 {
+		middleParts = append(middleParts, right)
+	}
+
+	middle := content
+	if len(middleParts) > 1 {
+		middle = lipgloss.JoinHorizontal(lipgloss.Top, middleParts...)
+	}
+
+	// Compose full layout
+	var verticalParts []string
+	if headerH > 0 {
+		verticalParts = append(verticalParts, header)
+	}
+	verticalParts = append(verticalParts, middle)
+	if footerH > 0 {
+		verticalParts = append(verticalParts, footer)
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, verticalParts...)
+}
+
+func (f *Frame) renderRegionLocked(r Region, w, h int) string {
+	if w <= 0 || h <= 0 {
+		return ""
+	}
+	m, ok := f.models[r]
+	if !ok {
+		return ""
+	}
+	fm := adaptModel(m)
+	return fm.View(w, h)
+}
+
+// cycleFocusLocked moves focus forward (+1) or backward (-1) in the focus ring.
+// Must be called with f.mu held.
+func (f *Frame) cycleFocusLocked(dir int) {
+	ring := f.buildFocusRing()
+	if len(ring) == 0 {
+		return
+	}
+	idx := 0
+	for i, r := range ring {
+		if r == f.focused {
+			idx = i
+			break
+		}
+	}
+	idx = (idx + dir + len(ring)) % len(ring)
+	f.focused = ring[idx]
+}
+
+// spatialFocusLocked moves focus to a specific region if it exists in the layout.
+// Must be called with f.mu held.
+func (f *Frame) spatialFocusLocked(target Region) {
+	if _, exists := f.layout.regions[target]; exists {
+		f.focused = target
+	}
+}
+
+// backLocked pops the content history. Must be called with f.mu held.
+func (f *Frame) backLocked() {
+	if len(f.history) == 0 {
+		return
+	}
+	f.models[RegionContent] = f.history[len(f.history)-1]
+	f.history = f.history[:len(f.history)-1]
+}
+
+// broadcastLocked sends a message to all FrameModel regions.
+// Must be called with f.mu held.
+func (f *Frame) broadcastLocked(msg tea.Msg) tea.Cmd {
+	var cmds []tea.Cmd
+	for r, m := range f.models {
+		fm := adaptModel(m)
+		updated, cmd := fm.Update(msg)
+		f.models[r] = updated
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+	return tea.Batch(cmds...)
+}
+
+// updateFocusedLocked sends a message to only the focused region.
+// Must be called with f.mu held.
+func (f *Frame) updateFocusedLocked(msg tea.Msg) tea.Cmd {
+	m, ok := f.models[f.focused]
+	if !ok {
+		return nil
+	}
+	fm := adaptModel(m)
+	updated, cmd := fm.Update(msg)
+	f.models[f.focused] = updated
+	return cmd
 }
 
 // Run renders the frame and blocks. In TTY mode, it live-refreshes at ~12fps.
