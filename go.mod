@@ -3,12 +3,12 @@ module forge.lthn.ai/core/cli
 go 1.26.0
 
 require (
-	forge.lthn.ai/core/go v0.0.0-20260221191103-d091fa62023f
-	forge.lthn.ai/core/go-agentic v0.0.0-20260221191948-ad0cf5c932a3
-	forge.lthn.ai/core/go-crypt v0.0.0-20260221193816-fde12e1539b2 // indirect
-	forge.lthn.ai/core/go-devops v0.0.0-20260221193818-400d8a76901e
-	forge.lthn.ai/core/go-scm v0.0.0-20260221193836-7eb28df79d0b
-	forge.lthn.ai/core/go-store v0.1.1-0.20260220151120-0284110ccadf // indirect
+	forge.lthn.ai/core/go main
+	forge.lthn.ai/core/go-agentic main
+	forge.lthn.ai/core/go-crypt main // indirect
+	forge.lthn.ai/core/go-devops main
+	forge.lthn.ai/core/go-scm main
+	forge.lthn.ai/core/go-store main // indirect
 )
 
 require (
