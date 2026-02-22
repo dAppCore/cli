@@ -517,6 +517,39 @@ func TestFrameNavigateFrameModel_Good(t *testing.T) {
 	})
 }
 
+func TestFrameMessageRouting_Good(t *testing.T) {
+	t.Run("custom message broadcasts to all FrameModels", func(t *testing.T) {
+		f := NewFrame("HCF")
+		header := &testFrameModel{viewText: "h"}
+		content := &testFrameModel{viewText: "c"}
+		footer := &testFrameModel{viewText: "f"}
+		f.Header(header)
+		f.Content(content)
+		f.Footer(footer)
+
+		// Send a custom message (not KeyMsg, not WindowSizeMsg)
+		type customMsg struct{ data string }
+		f.Update(customMsg{data: "hello"})
+
+		assert.True(t, header.updateCalled, "header should receive custom msg")
+		assert.True(t, content.updateCalled, "content should receive custom msg")
+		assert.True(t, footer.updateCalled, "footer should receive custom msg")
+	})
+
+	t.Run("plain Model regions ignore messages gracefully", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Header(StaticModel("h"))
+		f.Content(StaticModel("c"))
+		f.Footer(StaticModel("f"))
+
+		// Should not panic — modelAdapter ignores all messages
+		assert.NotPanics(t, func() {
+			f.Update(tea.WindowSizeMsg{Width: 100, Height: 50})
+			f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+		})
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {
