@@ -116,10 +116,22 @@ func (f *Frame) Back() bool {
 
 // Stop signals the Frame to exit its Run loop.
 func (f *Frame) Stop() {
+	if f.program != nil {
+		f.program.Quit()
+		return
+	}
 	select {
 	case <-f.done:
 	default:
 		close(f.done)
+	}
+}
+
+// Send injects a message into the Frame's tea.Program.
+// Safe to call before Run() (message is discarded).
+func (f *Frame) Send(msg tea.Msg) {
+	if f.program != nil {
+		f.program.Send(msg)
 	}
 }
 
@@ -482,60 +494,18 @@ func (f *Frame) regionSize(r Region, totalW, totalH int) (int, int) {
 }
 
 func (f *Frame) runLive() {
-	// Enter alt-screen.
-	fmt.Fprint(f.out, "\033[?1049h")
-	// Hide cursor.
-	fmt.Fprint(f.out, "\033[?25l")
-
-	defer func() {
-		// Show cursor.
-		fmt.Fprint(f.out, "\033[?25h")
-		// Leave alt-screen.
-		fmt.Fprint(f.out, "\033[?1049l")
-	}()
-
-	ticker := time.NewTicker(80 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		f.renderFrame()
-
-		select {
-		case <-f.done:
-			return
-		case <-ticker.C:
-		}
+	opts := []tea.ProgramOption{
+		tea.WithAltScreen(),
 	}
-}
+	if f.out != os.Stdout {
+		opts = append(opts, tea.WithOutput(f.out))
+	}
 
-func (f *Frame) renderFrame() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	p := tea.NewProgram(f, opts...)
+	f.program = p
 
-	w, h := f.termSize()
-
-	// Move to top-left.
-	fmt.Fprint(f.out, "\033[H")
-	// Clear screen.
-	fmt.Fprint(f.out, "\033[2J")
-
-	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
-	for _, r := range order {
-		if _, exists := f.layout.regions[r]; !exists {
-			continue
-		}
-		m, ok := f.models[r]
-		if !ok {
-			continue
-		}
-		rw, rh := f.regionSize(r, w, h)
-		view := m.View(rw, rh)
-		if view != "" {
-			fmt.Fprint(f.out, view)
-			if !strings.HasSuffix(view, "\n") {
-				fmt.Fprintln(f.out)
-			}
-		}
+	if _, err := p.Run(); err != nil {
+		Error(err.Error())
 	}
 }
 

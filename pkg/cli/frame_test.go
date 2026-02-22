@@ -426,6 +426,19 @@ func TestFrameTeaModel_Good(t *testing.T) {
 	})
 }
 
+func TestFrameSend_Good(t *testing.T) {
+	t.Run("Send is safe before Run", func(t *testing.T) {
+		f := NewFrame("C")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("x"))
+
+		// Should not panic when program is nil
+		assert.NotPanics(t, func() {
+			f.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+		})
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {
