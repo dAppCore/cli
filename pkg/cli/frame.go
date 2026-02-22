@@ -430,29 +430,15 @@ func (f *Frame) String() string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	w, h := f.termSize()
-	var sb strings.Builder
-
-	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
-	for _, r := range order {
-		if _, exists := f.layout.regions[r]; !exists {
-			continue
-		}
-		m, ok := f.models[r]
-		if !ok {
-			continue
-		}
-		rw, rh := f.regionSize(r, w, h)
-		view := m.View(rw, rh)
-		if view != "" {
-			sb.WriteString(view)
-			if !strings.HasSuffix(view, "\n") {
-				sb.WriteByte('\n')
-			}
-		}
+	view := f.viewLocked()
+	if view == "" {
+		return ""
 	}
-
-	return sb.String()
+	// Ensure trailing newline for non-TTY consistency
+	if !strings.HasSuffix(view, "\n") {
+		view += "\n"
+	}
+	return view
 }
 
 func (f *Frame) isTTY() bool {
@@ -472,26 +458,6 @@ func (f *Frame) termSize() (int, int) {
 	return 80, 24 // sensible default
 }
 
-func (f *Frame) regionSize(r Region, totalW, totalH int) (int, int) {
-	// Simple allocation: Header/Footer get 1 line, sidebars get 1/4 width,
-	// Content gets the rest.
-	switch r {
-	case RegionHeader, RegionFooter:
-		return totalW, 1
-	case RegionLeft, RegionRight:
-		return totalW / 4, totalH - 2 // minus header + footer
-	case RegionContent:
-		sideW := 0
-		if _, ok := f.models[RegionLeft]; ok {
-			sideW += totalW / 4
-		}
-		if _, ok := f.models[RegionRight]; ok {
-			sideW += totalW / 4
-		}
-		return totalW - sideW, totalH - 2
-	}
-	return totalW, totalH
-}
 
 func (f *Frame) runLive() {
 	opts := []tea.ProgramOption{
