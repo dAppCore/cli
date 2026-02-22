@@ -247,6 +247,20 @@ func (m *testFrameModel) Update(msg tea.Msg) (FrameModel, tea.Cmd) {
 	return m, nil
 }
 
+func TestKeyMap_Good(t *testing.T) {
+	t.Run("default keymap has expected bindings", func(t *testing.T) {
+		km := DefaultKeyMap()
+		assert.Equal(t, tea.KeyTab, km.FocusNext)
+		assert.Equal(t, tea.KeyShiftTab, km.FocusPrev)
+		assert.Equal(t, tea.KeyUp, km.FocusUp)
+		assert.Equal(t, tea.KeyDown, km.FocusDown)
+		assert.Equal(t, tea.KeyLeft, km.FocusLeft)
+		assert.Equal(t, tea.KeyRight, km.FocusRight)
+		assert.Equal(t, tea.KeyEsc, km.Back)
+		assert.Equal(t, tea.KeyCtrlC, km.Quit)
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {
