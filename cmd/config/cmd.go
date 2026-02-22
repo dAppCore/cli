@@ -1,6 +1,6 @@
 package config
 
-import "forge.lthn.ai/core/go/pkg/cli"
+import "forge.lthn.ai/core/cli/pkg/cli"
 
 // AddConfigCommands registers the 'config' command group and all subcommands.
 func AddConfigCommands(root *cli.Command) {

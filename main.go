@@ -8,7 +8,7 @@ import (
 	"forge.lthn.ai/core/cli/cmd/pkgcmd"
 	"forge.lthn.ai/core/cli/cmd/plugin"
 	"forge.lthn.ai/core/cli/cmd/session"
-	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/cli/pkg/cli"
 )
 
 func main() {

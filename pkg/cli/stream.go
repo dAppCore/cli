@@ -1,0 +1,140 @@
+package cli
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"sync"
+	"unicode/utf8"
+)
+
+// StreamOption configures a Stream.
+type StreamOption func(*Stream)
+
+// WithWordWrap sets the word-wrap column width.
+func WithWordWrap(cols int) StreamOption {
+	return func(s *Stream) { s.wrap = cols }
+}
+
+// WithStreamOutput sets the output writer (default: os.Stdout).
+func WithStreamOutput(w io.Writer) StreamOption {
+	return func(s *Stream) { s.out = w }
+}
+
+// Stream renders growing text as tokens arrive, with optional word-wrap.
+// Safe for concurrent writes from a single producer goroutine.
+//
+//	stream := cli.NewStream(cli.WithWordWrap(80))
+//	go func() {
+//	    for token := range tokens {
+//	        stream.Write(token)
+//	    }
+//	    stream.Done()
+//	}()
+//	stream.Wait()
+type Stream struct {
+	out  io.Writer
+	wrap int
+	col  int // current column position (visible characters)
+	done chan struct{}
+	mu   sync.Mutex
+}
+
+// NewStream creates a streaming text renderer.
+func NewStream(opts ...StreamOption) *Stream {
+	s := &Stream{
+		out:  os.Stdout,
+		done: make(chan struct{}),
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+// Write appends text to the stream. Handles word-wrap if configured.
+func (s *Stream) Write(text string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.wrap <= 0 {
+		fmt.Fprint(s.out, text)
+		// Track column across newlines for Done() trailing-newline logic.
+		if idx := strings.LastIndex(text, "\n"); idx >= 0 {
+			s.col = utf8.RuneCountInString(text[idx+1:])
+		} else {
+			s.col += utf8.RuneCountInString(text)
+		}
+		return
+	}
+
+	for _, r := range text {
+		if r == '\n' {
+			fmt.Fprintln(s.out)
+			s.col = 0
+			continue
+		}
+
+		if s.col >= s.wrap {
+			fmt.Fprintln(s.out)
+			s.col = 0
+		}
+
+		fmt.Fprint(s.out, string(r))
+		s.col++
+	}
+}
+
+// WriteFrom reads from r and streams all content until EOF.
+func (s *Stream) WriteFrom(r io.Reader) error {
+	buf := make([]byte, 256)
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			s.Write(string(buf[:n]))
+		}
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+	}
+}
+
+// Done signals that no more text will arrive.
+func (s *Stream) Done() {
+	s.mu.Lock()
+	if s.col > 0 {
+		fmt.Fprintln(s.out) // ensure trailing newline
+	}
+	s.mu.Unlock()
+	close(s.done)
+}
+
+// Wait blocks until Done is called.
+func (s *Stream) Wait() {
+	<-s.done
+}
+
+// Content returns the current column position (for testing).
+func (s *Stream) Column() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.col
+}
+
+// Captured returns the stream output as a string when using a bytes.Buffer.
+// Panics if the output writer is not a *strings.Builder or fmt.Stringer.
+func (s *Stream) Captured() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if sb, ok := s.out.(*strings.Builder); ok {
+		return sb.String()
+	}
+	if st, ok := s.out.(fmt.Stringer); ok {
+		return st.String()
+	}
+	return ""
+}
