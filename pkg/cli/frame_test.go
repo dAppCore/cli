@@ -482,6 +482,41 @@ func TestFrameSpatialFocus_Good(t *testing.T) {
 	})
 }
 
+func TestFrameNavigateFrameModel_Good(t *testing.T) {
+	t.Run("Navigate with FrameModel preserves focus on Content", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.Header(StaticModel("h"))
+		f.Content(&testFrameModel{viewText: "page-1"})
+		f.Footer(StaticModel("f"))
+
+		// Focus something else
+		f.Focus(RegionHeader)
+		assert.Equal(t, RegionHeader, f.Focused())
+
+		// Navigate replaces Content, focus should remain where it was
+		f.Navigate(&testFrameModel{viewText: "page-2"})
+		assert.Equal(t, RegionHeader, f.Focused())
+		assert.Contains(t, f.String(), "page-2")
+	})
+
+	t.Run("Back restores FrameModel", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		fm1 := &testFrameModel{viewText: "page-1"}
+		fm2 := &testFrameModel{viewText: "page-2"}
+		f.Header(StaticModel("h"))
+		f.Content(fm1)
+		f.Footer(StaticModel("f"))
+
+		f.Navigate(fm2)
+		assert.Contains(t, f.String(), "page-2")
+
+		ok := f.Back()
+		assert.True(t, ok)
+		assert.Contains(t, f.String(), "page-1")
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {
