@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -194,6 +195,56 @@ func TestBreadcrumb_Good(t *testing.T) {
 func TestStaticModel_Good(t *testing.T) {
 	m := StaticModel("hello")
 	assert.Equal(t, "hello", m.View(80, 24))
+}
+
+func TestFrameModel_Good(t *testing.T) {
+	t.Run("modelAdapter wraps plain Model", func(t *testing.T) {
+		m := StaticModel("hello")
+		adapted := adaptModel(m)
+
+		// Should return nil cmd from Init
+		cmd := adapted.Init()
+		assert.Nil(t, cmd)
+
+		// Should return itself from Update
+		updated, cmd := adapted.Update(nil)
+		assert.Equal(t, adapted, updated)
+		assert.Nil(t, cmd)
+
+		// Should delegate View to wrapped model
+		assert.Equal(t, "hello", adapted.View(80, 24))
+	})
+
+	t.Run("FrameModel passes through without wrapping", func(t *testing.T) {
+		fm := &testFrameModel{viewText: "interactive"}
+		adapted := adaptModel(fm)
+
+		// Should be the same object, not wrapped
+		_, ok := adapted.(*testFrameModel)
+		assert.True(t, ok, "FrameModel should not be wrapped")
+		assert.Equal(t, "interactive", adapted.View(80, 24))
+	})
+}
+
+// testFrameModel is a mock FrameModel for testing.
+type testFrameModel struct {
+	viewText     string
+	initCalled   bool
+	updateCalled bool
+	lastMsg      tea.Msg
+}
+
+func (m *testFrameModel) View(w, h int) string { return m.viewText }
+
+func (m *testFrameModel) Init() tea.Cmd {
+	m.initCalled = true
+	return nil
+}
+
+func (m *testFrameModel) Update(msg tea.Msg) (FrameModel, tea.Cmd) {
+	m.updateCalled = true
+	m.lastMsg = msg
+	return m, nil
 }
 
 // indexOf returns the position of substr in s, or -1 if not found.
