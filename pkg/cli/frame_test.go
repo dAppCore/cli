@@ -439,6 +439,49 @@ func TestFrameSend_Good(t *testing.T) {
 	})
 }
 
+func TestFrameSpatialFocus_Good(t *testing.T) {
+	t.Run("arrow keys move to target region", func(t *testing.T) {
+		f := NewFrame("HLCRF")
+		f.Header(StaticModel("h"))
+		f.Left(StaticModel("l"))
+		f.Content(StaticModel("c"))
+		f.Right(StaticModel("r"))
+		f.Footer(StaticModel("f"))
+
+		// Start at Content
+		assert.Equal(t, RegionContent, f.Focused())
+
+		// Up → Header
+		f.Update(tea.KeyMsg{Type: tea.KeyUp})
+		assert.Equal(t, RegionHeader, f.Focused())
+
+		// Down → Footer
+		f.Update(tea.KeyMsg{Type: tea.KeyDown})
+		assert.Equal(t, RegionFooter, f.Focused())
+
+		// Left → Left sidebar
+		f.Update(tea.KeyMsg{Type: tea.KeyLeft})
+		assert.Equal(t, RegionLeft, f.Focused())
+
+		// Right → Right sidebar
+		f.Update(tea.KeyMsg{Type: tea.KeyRight})
+		assert.Equal(t, RegionRight, f.Focused())
+	})
+
+	t.Run("spatial focus ignores missing regions", func(t *testing.T) {
+		f := NewFrame("HCF") // no Left or Right
+		f.Header(StaticModel("h"))
+		f.Content(StaticModel("c"))
+		f.Footer(StaticModel("f"))
+
+		assert.Equal(t, RegionContent, f.Focused())
+
+		// Left arrow → no Left region, focus stays
+		f.Update(tea.KeyMsg{Type: tea.KeyLeft})
+		assert.Equal(t, RegionContent, f.Focused())
+	})
+}
+
 // indexOf returns the position of substr in s, or -1 if not found.
 func indexOf(s, substr string) int {
 	for i := range len(s) - len(substr) + 1 {
