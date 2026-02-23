@@ -1,8 +1,17 @@
 package cli
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cobra Re-exports
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PositionalArgs is the cobra positional args type.
+type PositionalArgs = cobra.PositionalArgs
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Command Type Re-export
@@ -69,23 +78,6 @@ func NewRun(use, short, long string, run func(cmd *Command, args []string)) *Com
 	return cmd
 }
 
-// NewPassthrough creates a command that passes all arguments (including flags)
-// to the given function. Used for commands that do their own flag parsing
-// (e.g. incremental migration from flag.FlagSet to cobra).
-//
-//	cmd := cli.NewPassthrough("train", "Train a model", func(args []string) {
-//	    // args includes all flags: ["--model", "gemma-3-1b", "--epochs", "10"]
-//	    fs := flag.NewFlagSet("train", flag.ExitOnError)
-//	    // ...
-//	})
-func NewPassthrough(use, short string, fn func(args []string)) *Command {
-	cmd := NewRun(use, short, "", func(_ *Command, args []string) {
-		fn(args)
-	})
-	cmd.DisableFlagParsing = true
-	return cmd
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Flag Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,6 +118,45 @@ func IntFlag(cmd *Command, ptr *int, name, short string, def int, usage string) 
 		cmd.Flags().IntVarP(ptr, name, short, def, usage)
 	} else {
 		cmd.Flags().IntVar(ptr, name, def, usage)
+	}
+}
+
+// Float64Flag adds a float64 flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var threshold float64
+//	cli.Float64Flag(cmd, &threshold, "threshold", "t", 0.0, "Score threshold")
+func Float64Flag(cmd *Command, ptr *float64, name, short string, def float64, usage string) {
+	if short != "" {
+		cmd.Flags().Float64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().Float64Var(ptr, name, def, usage)
+	}
+}
+
+// Int64Flag adds an int64 flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var seed int64
+//	cli.Int64Flag(cmd, &seed, "seed", "s", 0, "Random seed")
+func Int64Flag(cmd *Command, ptr *int64, name, short string, def int64, usage string) {
+	if short != "" {
+		cmd.Flags().Int64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().Int64Var(ptr, name, def, usage)
+	}
+}
+
+// DurationFlag adds a time.Duration flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var timeout time.Duration
+//	cli.DurationFlag(cmd, &timeout, "timeout", "t", 30*time.Second, "Request timeout")
+func DurationFlag(cmd *Command, ptr *time.Duration, name, short string, def time.Duration, usage string) {
+	if short != "" {
+		cmd.Flags().DurationVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().DurationVar(ptr, name, def, usage)
 	}
 }
 

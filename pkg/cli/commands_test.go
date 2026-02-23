@@ -164,22 +164,3 @@ func TestWithAppName_Good(t *testing.T) {
 	})
 }
 
-// TestNewPassthrough_Good tests the passthrough command builder.
-func TestNewPassthrough_Good(t *testing.T) {
-	t.Run("passes all args including flags", func(t *testing.T) {
-		var received []string
-		cmd := NewPassthrough("train", "Train", func(args []string) {
-			received = args
-		})
-
-		cmd.SetArgs([]string{"--model", "gemma", "--epochs", "10"})
-		err := cmd.Execute()
-		require.NoError(t, err)
-		assert.Equal(t, []string{"--model", "gemma", "--epochs", "10"}, received)
-	})
-
-	t.Run("flag parsing is disabled", func(t *testing.T) {
-		cmd := NewPassthrough("run", "Run", func(_ []string) {})
-		assert.True(t, cmd.DisableFlagParsing)
-	})
-}
