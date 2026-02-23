@@ -1,7 +1,7 @@
-forge.lthn.ai/core/go v0.0.1 h1:ubk4nmkA3treOUNgPS28wKd1jB6cUlEQUV7jDdGa3zM=
-forge.lthn.ai/core/go v0.0.1/go.mod h1:59YsnuMaAGQUxIhX68oK2/HnhQJEPWL1iEZhDTrNCbY=
-forge.lthn.ai/core/go-crypt v0.0.2 h1:m8mCIrmC0tserVx9bfmrB8h4GtgAgQeedBPeNBvCxx0=
-forge.lthn.ai/core/go-crypt v0.0.2/go.mod h1:+JoZ4mwjzTklysI/DI7f6/0iocdJoJG2ZF/nQy6HTuI=
+forge.lthn.ai/core/go v0.0.9 h1:f1FlnFGBvV280N+rI0MEejNT7yNt42PE3Nm9kHE73Rw=
+forge.lthn.ai/core/go v0.0.9/go.mod h1:k3dpMA1jzxIiuFrwmZUzK3cMZd5xQRmPiYI7DInFJug=
+forge.lthn.ai/core/go-crypt v0.0.3 h1:KG5dQstPfcohIitZJRF7jEdR4H1gjb4YrxjkzIQ8CGE=
+forge.lthn.ai/core/go-crypt v0.0.3/go.mod h1:BFHULU7hJBXkg4EXDO62pZvpUctzrzrW9x8gJEaBKX8=
 github.com/ProtonMail/go-crypto v1.3.0 h1:ILq8+Sf5If5DCpHQp4PbZdS1J7HDFRXz/+xKBiRGFrw=
 github.com/ProtonMail/go-crypto v1.3.0/go.mod h1:9whxjD8Rbs29b4XWbB8irEcE8KHMqaR2e7GWU1R+/PE=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
