@@ -1,6 +1,9 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+	"iter"
+)
 
 // Region represents one of the 5 HLCRF regions.
 type Region rune
@@ -24,6 +27,28 @@ type Composite struct {
 	path    string
 	regions map[Region]*Slot
 	parent  *Composite
+}
+
+// Regions returns an iterator over the regions in the composite.
+func (c *Composite) Regions() iter.Seq[Region] {
+	return func(yield func(Region) bool) {
+		for r := range c.regions {
+			if !yield(r) {
+				return
+			}
+		}
+	}
+}
+
+// Slots returns an iterator over the slots in the composite.
+func (c *Composite) Slots() iter.Seq2[Region, *Slot] {
+	return func(yield func(Region, *Slot) bool) {
+		for r, s := range c.regions {
+			if !yield(r, s) {
+				return
+			}
+		}
+	}
 }
 
 // Slot holds content for a region.

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 )
 
@@ -53,6 +54,17 @@ func (n *TreeNode) AddTree(child *TreeNode) *TreeNode {
 func (n *TreeNode) WithStyle(style *AnsiStyle) *TreeNode {
 	n.style = style
 	return n
+}
+
+// Children returns an iterator over the node's children.
+func (n *TreeNode) Children() iter.Seq[*TreeNode] {
+	return func(yield func(*TreeNode) bool) {
+		for _, child := range n.children {
+			if !yield(child) {
+				return
+			}
+		}
+	}
 }
 
 // String renders the tree with box-drawing characters.

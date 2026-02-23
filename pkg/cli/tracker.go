@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"iter"
 	"os"
 	"strings"
 	"sync"
@@ -81,6 +82,33 @@ type TaskTracker struct {
 	out     io.Writer
 	mu      sync.Mutex
 	started bool
+}
+
+// Tasks returns an iterator over the tasks in the tracker.
+func (tr *TaskTracker) Tasks() iter.Seq[*TrackedTask] {
+	return func(yield func(*TrackedTask) bool) {
+		tr.mu.Lock()
+		defer tr.mu.Unlock()
+		for _, t := range tr.tasks {
+			if !yield(t) {
+				return
+			}
+		}
+	}
+}
+
+// Snapshots returns an iterator over snapshots of tasks in the tracker.
+func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
+	return func(yield func(string, string) bool) {
+		tr.mu.Lock()
+		defer tr.mu.Unlock()
+		for _, t := range tr.tasks {
+			name, status, _ := t.snapshot()
+			if !yield(name, status) {
+				return
+			}
+		}
+	}
 }
 
 // NewTaskTracker creates a new parallel task tracker.

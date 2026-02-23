@@ -3,6 +3,7 @@ package cli
 
 import (
 	"context"
+	"iter"
 	"sync"
 
 	"forge.lthn.ai/core/go/pkg/framework"
@@ -65,6 +66,19 @@ func RegisterCommands(fn CommandRegistration) {
 	}
 }
 
+// RegisteredCommands returns an iterator over the registered command functions.
+func RegisteredCommands() iter.Seq[CommandRegistration] {
+	return func(yield func(CommandRegistration) bool) {
+		registeredCommandsMu.Lock()
+		defer registeredCommandsMu.Unlock()
+		for _, fn := range registeredCommands {
+			if !yield(fn) {
+				return
+			}
+		}
+	}
+}
+
 // attachRegisteredCommands calls all registered command functions.
 // Called by Init() after creating the root command.
 func attachRegisteredCommands(root *cobra.Command) {
@@ -76,3 +90,4 @@ func attachRegisteredCommands(root *cobra.Command) {
 	}
 	commandsAttached = true
 }
+

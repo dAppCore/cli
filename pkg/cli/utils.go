@@ -427,12 +427,14 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 // Returns 0-based indices.
 func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	selected := make(map[int]bool)
-	parts := strings.Fields(input)
 
-	for _, part := range parts {
+	for part := range strings.FieldsSeq(input) {
 		// Check for range (e.g., "1-3")
 		if strings.Contains(part, "-") {
-			rangeParts := strings.Split(part, "-")
+			var rangeParts []string
+			for p := range strings.SplitSeq(part, "-") {
+				rangeParts = append(rangeParts, p)
+			}
 			if len(rangeParts) != 2 {
 				return nil, fmt.Errorf("invalid range: %s", part)
 			}
@@ -464,13 +466,14 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 
 	// Convert map to sorted slice
 	result := make([]int, 0, len(selected))
-	for i := 0; i < maxItems; i++ {
+	for i := range maxItems {
 		if selected[i] {
 			result = append(result, i)
 		}
 	}
 	return result, nil
 }
+
 
 // ChooseMultiAction prompts for multiple selections using grammar composition.
 //
