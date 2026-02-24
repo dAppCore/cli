@@ -46,7 +46,7 @@ func checkGitHubCLI() bool {
 func checkWorkspace() {
 	registryPath, err := repos.FindRegistry(io.Local)
 	if err == nil {
-		fmt.Printf("  %s %s\n", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_yaml_found", map[string]interface{}{"Path": registryPath}))
+		fmt.Printf("  %s %s\n", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_yaml_found", map[string]any{"Path": registryPath}))
 
 		reg, err := repos.LoadRegistry(io.Local, registryPath)
 		if err == nil {
@@ -71,7 +71,7 @@ func checkWorkspace() {
 					cloned++
 				}
 			}
-			fmt.Printf("  %s %s\n", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_cloned", map[string]interface{}{"Cloned": cloned, "Total": len(allRepos)}))
+			fmt.Printf("  %s %s\n", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_cloned", map[string]any{"Cloned": cloned, "Total": len(allRepos)}))
 		}
 	} else {
 		fmt.Printf("  %s %s\n", dimStyle.Render("○"), i18n.T("cmd.doctor.no_repos_yaml"))
