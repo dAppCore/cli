@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -22,7 +23,7 @@ func addUpdateCommand(parent *cli.Command) {
 				return runUpdateAll()
 			}
 			if len(args) == 0 {
-				return fmt.Errorf("plugin name required (or use --all)")
+				return errors.New("plugin name required (or use --all)")
 			}
 			return runUpdate(args[0])
 		},

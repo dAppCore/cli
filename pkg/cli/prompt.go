@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -45,7 +46,7 @@ func Select(label string, options []string) (string, error) {
 
 	n, err := strconv.Atoi(strings.TrimSpace(input))
 	if err != nil || n < 1 || n > len(options) {
-		return "", fmt.Errorf("invalid selection")
+		return "", errors.New("invalid selection")
 	}
 	return options[n-1], nil
 }

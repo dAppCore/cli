@@ -1,13 +1,14 @@
 package pkgcmd
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -147,8 +148,8 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		return nil
 	}
 
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].Name < filtered[j].Name
+	slices.SortFunc(filtered, func(a, b ghRepo) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	fmt.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")

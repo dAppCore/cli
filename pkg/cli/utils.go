@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -474,7 +475,6 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	return result, nil
 }
 
-
 // ChooseMultiAction prompts for multiple selections using grammar composition.
 //
 //	files := ChooseMultiAction("select", "files", files)
@@ -495,14 +495,14 @@ func GitClone(ctx context.Context, org, repo, path string) error {
 		}
 		errStr := strings.TrimSpace(string(output))
 		if strings.Contains(errStr, "already exists") {
-			return fmt.Errorf("%s", errStr)
+			return errors.New(errStr)
 		}
 	}
 	// Fall back to SSH clone
 	cmd := exec.CommandContext(ctx, "git", "clone", fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s", strings.TrimSpace(string(output)))
+		return errors.New(strings.TrimSpace(string(output)))
 	}
 	return nil
 }

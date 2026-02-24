@@ -2,6 +2,7 @@
 package doctor
 
 import (
+	"errors"
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -95,10 +96,10 @@ func runDoctor(verbose bool) error {
 	// Summary
 	fmt.Println()
 	if failed > 0 {
-		cli.Error(i18n.T("cmd.doctor.issues", map[string]interface{}{"Count": failed}))
+		cli.Error(i18n.T("cmd.doctor.issues", map[string]any{"Count": failed}))
 		fmt.Printf("\n%s\n", i18n.T("cmd.doctor.install_missing"))
 		printInstallInstructions()
-		return fmt.Errorf("%s", i18n.T("cmd.doctor.issues_error", map[string]interface{}{"Count": failed}))
+		return errors.New(i18n.T("cmd.doctor.issues_error", map[string]any{"Count": failed}))
 	}
 
 	cli.Success(i18n.T("cmd.doctor.ready"))

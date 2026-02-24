@@ -2,7 +2,7 @@ package module
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go/pkg/i18n"
@@ -21,7 +21,7 @@ func addInstallCommand(parent *cli.Command) {
 		i18n.T("Install a module by cloning its Git repository, verifying the manifest signature, and registering it.\n\nThe --repo flag is required and specifies the Git URL to clone from."),
 		func(cmd *cli.Command, args []string) error {
 			if installRepo == "" {
-				return fmt.Errorf("--repo flag is required")
+				return errors.New("--repo flag is required")
 			}
 			return runInstall(args[0], installRepo, installSignKey)
 		},

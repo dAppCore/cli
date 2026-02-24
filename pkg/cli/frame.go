@@ -266,10 +266,7 @@ func (f *Frame) viewLocked() string {
 			footerH = 1
 		}
 	}
-	middleH := h - headerH - footerH
-	if middleH < 1 {
-		middleH = 1
-	}
+	middleH := max(h-headerH-footerH, 1)
 
 	// Render each region
 	header := f.renderRegionLocked(RegionHeader, w, headerH)
@@ -287,10 +284,7 @@ func (f *Frame) viewLocked() string {
 			rightW = w / 4
 		}
 	}
-	contentW := w - leftW - rightW
-	if contentW < 1 {
-		contentW = 1
-	}
+	contentW := max(w-leftW-rightW, 1)
 
 	left := f.renderRegionLocked(RegionLeft, leftW, middleH)
 	right := f.renderRegionLocked(RegionRight, rightW, middleH)
