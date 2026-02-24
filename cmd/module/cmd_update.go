@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -20,7 +21,7 @@ func addUpdateCommand(parent *cli.Command) {
 				return runUpdateAll()
 			}
 			if len(args) == 0 {
-				return fmt.Errorf("module code required (or use --all)")
+				return errors.New("module code required (or use --all)")
 			}
 			return runUpdate(args[0])
 		},

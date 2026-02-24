@@ -3,6 +3,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -309,7 +310,7 @@ func (d *Daemon) Start() error {
 	defer d.mu.Unlock()
 
 	if d.running {
-		return fmt.Errorf("daemon already running")
+		return errors.New("daemon already running")
 	}
 
 	// Acquire PID file
@@ -339,7 +340,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 	d.mu.Lock()
 	if !d.running {
 		d.mu.Unlock()
-		return fmt.Errorf("daemon not started - call Start() first")
+		return errors.New("daemon not started - call Start() first")
 	}
 	d.mu.Unlock()
 
