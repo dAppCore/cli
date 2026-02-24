@@ -288,10 +288,7 @@ func (t *Table) constrainWidths(widths []int) {
 	}
 
 	// Shrink widest columns first until we fit.
-	budget := t.maxWidth - overhead
-	if budget < cols {
-		budget = cols
-	}
+	budget := max(t.maxWidth-overhead, cols)
 	for total-overhead > budget {
 		maxIdx, maxW := 0, 0
 		for i, w := range widths {
