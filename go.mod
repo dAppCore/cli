@@ -3,8 +3,8 @@ module forge.lthn.ai/core/cli
 go 1.26.0
 
 require (
-	forge.lthn.ai/core/go v0.0.9
-	forge.lthn.ai/core/go-crypt v0.0.3
+	forge.lthn.ai/core/go v0.1.0
+	forge.lthn.ai/core/go-crypt v0.1.0
 )
 
 require (
