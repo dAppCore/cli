@@ -6,7 +6,7 @@ import (
 	"iter"
 	"sync"
 
-	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/core"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +18,14 @@ import (
 //	    cli.WithCommands("config", config.AddConfigCommands),
 //	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
 //	)
-func WithCommands(name string, register func(root *Command)) framework.Option {
-	return framework.WithName("cmd."+name, func(c *framework.Core) (any, error) {
+func WithCommands(name string, register func(root *Command)) core.Option {
+	return core.WithName("cmd."+name, func(c *core.Core) (any, error) {
 		return &commandService{core: c, register: register}, nil
 	})
 }
 
 type commandService struct {
-	core     *framework.Core
+	core     *core.Core
 	register func(root *Command)
 }
 

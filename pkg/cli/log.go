@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/core"
 	"forge.lthn.ai/core/go/pkg/log"
 )
 
@@ -31,8 +31,8 @@ type LogService struct {
 type LogOptions = log.Options
 
 // NewLogService creates a log service factory with CLI styling.
-func NewLogService(opts LogOptions) func(*framework.Core) (any, error) {
-	return func(c *framework.Core) (any, error) {
+func NewLogService(opts LogOptions) func(*core.Core) (any, error) {
+	return func(c *core.Core) (any, error) {
 		// Create the underlying service
 		factory := log.NewService(opts)
 		svc, err := factory(c)
@@ -61,7 +61,7 @@ func Log() *LogService {
 	if instance == nil {
 		return nil
 	}
-	svc, err := framework.ServiceFor[*LogService](instance.core, "log")
+	svc, err := core.ServiceFor[*LogService](instance.core, "log")
 	if err != nil {
 		return nil
 	}

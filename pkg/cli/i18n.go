@@ -4,13 +4,13 @@ import (
 	"context"
 	"sync"
 
-	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/core"
 	"forge.lthn.ai/core/go-i18n"
 )
 
 // I18nService wraps i18n as a Core service.
 type I18nService struct {
-	*framework.ServiceRuntime[I18nOptions]
+	*core.ServiceRuntime[I18nOptions]
 	svc *i18n.Service
 
 	// Collect mode state
@@ -27,8 +27,8 @@ type I18nOptions struct {
 }
 
 // NewI18nService creates an i18n service factory.
-func NewI18nService(opts I18nOptions) func(*framework.Core) (any, error) {
-	return func(c *framework.Core) (any, error) {
+func NewI18nService(opts I18nOptions) func(*core.Core) (any, error) {
+	return func(c *core.Core) (any, error) {
 		svc, err := i18n.New()
 		if err != nil {
 			return nil, err
@@ -45,7 +45,7 @@ func NewI18nService(opts I18nOptions) func(*framework.Core) (any, error) {
 		i18n.SetDefault(svc)
 
 		return &I18nService{
-			ServiceRuntime: framework.NewServiceRuntime(c, opts),
+			ServiceRuntime: core.NewServiceRuntime(c, opts),
 			svc:            svc,
 			missingKeys:    make([]i18n.MissingKey, 0),
 		}, nil
@@ -113,7 +113,7 @@ type QueryTranslate struct {
 	Args map[string]any
 }
 
-func (s *I18nService) handleQuery(c *framework.Core, q framework.Query) (any, bool, error) {
+func (s *I18nService) handleQuery(c *core.Core, q core.Query) (any, bool, error) {
 	switch m := q.(type) {
 	case QueryTranslate:
 		return s.svc.T(m.Key, m.Args), true, nil
@@ -157,7 +157,7 @@ func T(key string, args ...map[string]any) string {
 		return i18n.T(key)
 	}
 
-	svc, err := framework.ServiceFor[*I18nService](instance.core, "i18n")
+	svc, err := core.ServiceFor[*I18nService](instance.core, "i18n")
 	if err != nil {
 		// i18n service not registered, use global
 		if len(args) > 0 {

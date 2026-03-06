@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 
 	"forge.lthn.ai/core/go-crypt/crypt/openpgp"
-	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/core"
 	"forge.lthn.ai/core/go-log"
 	"forge.lthn.ai/core/go-io/workspace"
 	"github.com/spf13/cobra"
@@ -66,7 +66,7 @@ func WithAppName(name string) {
 //	)
 //
 // Exits with code 1 on error or panic.
-func Main(commands ...framework.Option) {
+func Main(commands ...core.Option) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
@@ -77,13 +77,13 @@ func Main(commands ...framework.Option) {
 	}()
 
 	// Core services load first, then command services
-	services := []framework.Option{
-		framework.WithName("i18n", NewI18nService(I18nOptions{})),
-		framework.WithName("log", NewLogService(log.Options{
+	services := []core.Option{
+		core.WithName("i18n", NewI18nService(I18nOptions{})),
+		core.WithName("log", NewLogService(log.Options{
 			Level: log.LevelInfo,
 		})),
-		framework.WithName("crypt", openpgp.New),
-		framework.WithName("workspace", workspace.New),
+		core.WithName("crypt", openpgp.New),
+		core.WithName("workspace", workspace.New),
 	}
 	services = append(services, commands...)
 

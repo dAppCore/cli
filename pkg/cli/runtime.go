@@ -20,7 +20,7 @@ import (
 	"sync"
 	"syscall"
 
-	"forge.lthn.ai/core/go/pkg/framework"
+	"forge.lthn.ai/core/go/pkg/core"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ var (
 
 // runtime is the CLI's internal Core runtime.
 type runtime struct {
-	core   *framework.Core
+	core   *core.Core
 	root   *cobra.Command
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -41,7 +41,7 @@ type runtime struct {
 type Options struct {
 	AppName  string
 	Version  string
-	Services []framework.Option // Additional services to register
+	Services []core.Option // Additional services to register
 
 	// OnReload is called when SIGHUP is received (daemon mode).
 	// Use for configuration reloading. Leave nil to ignore SIGHUP.
@@ -73,14 +73,14 @@ func Init(opts Options) error {
 		}
 
 		// Build options: app, signal service + any additional services
-		coreOpts := []framework.Option{
-			framework.WithApp(rootCmd),
-			framework.WithName("signal", newSignalService(cancel, signalOpts...)),
+		coreOpts := []core.Option{
+			core.WithApp(rootCmd),
+			core.WithName("signal", newSignalService(cancel, signalOpts...)),
 		}
 		coreOpts = append(coreOpts, opts.Services...)
-		coreOpts = append(coreOpts, framework.WithServiceLock())
+		coreOpts = append(coreOpts, core.WithServiceLock())
 
-		c, err := framework.New(coreOpts...)
+		c, err := core.New(coreOpts...)
 		if err != nil {
 			initErr = err
 			cancel()
@@ -111,7 +111,7 @@ func mustInit() {
 // --- Core Access ---
 
 // Core returns the CLI's framework Core instance.
-func Core() *framework.Core {
+func Core() *core.Core {
 	mustInit()
 	return instance.core
 }
@@ -164,8 +164,8 @@ func WithReloadHandler(fn func() error) SignalOption {
 	}
 }
 
-func newSignalService(cancel context.CancelFunc, opts ...SignalOption) func(*framework.Core) (any, error) {
-	return func(c *framework.Core) (any, error) {
+func newSignalService(cancel context.CancelFunc, opts ...SignalOption) func(*core.Core) (any, error) {
+	return func(c *core.Core) (any, error) {
 		svc := &signalService{
 			cancel:  cancel,
 			sigChan: make(chan os.Signal, 1),
