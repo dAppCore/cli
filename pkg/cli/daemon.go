@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"forge.lthn.ai/core/go/pkg/io"
+	"forge.lthn.ai/core/go-io"
 	"golang.org/x/term"
 )
 

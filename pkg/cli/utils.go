@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go/pkg/log"
+	"forge.lthn.ai/core/go-log"
 )
 
 // GhAuthenticated checks if the GitHub CLI is authenticated.

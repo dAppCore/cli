@@ -8,6 +8,10 @@ require (
 )
 
 require (
+	forge.lthn.ai/core/go-help v0.1.2
+	forge.lthn.ai/core/go-i18n v0.1.0
+	forge.lthn.ai/core/go-io v0.0.1
+	forge.lthn.ai/core/go-log v0.0.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/spf13/cobra v1.10.2
@@ -17,6 +21,7 @@ require (
 )
 
 require (
+	forge.lthn.ai/core/go-inference v0.0.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect
@@ -53,6 +58,7 @@ require (
 	github.com/spf13/viper v1.21.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/yuin/goldmark v1.7.16 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
