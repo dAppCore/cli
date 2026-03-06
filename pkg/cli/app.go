@@ -8,7 +8,7 @@ import (
 	"forge.lthn.ai/core/go-crypt/crypt/openpgp"
 	"forge.lthn.ai/core/go/pkg/framework"
 	"forge.lthn.ai/core/go-log"
-	"forge.lthn.ai/core/go/pkg/workspace"
+	"forge.lthn.ai/core/go-io/workspace"
 	"github.com/spf13/cobra"
 )
 

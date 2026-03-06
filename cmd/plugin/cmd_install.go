@@ -8,7 +8,7 @@ import (
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-io"
-	"forge.lthn.ai/core/go/pkg/plugin"
+	"forge.lthn.ai/core/go-scm/plugin"
 )
 
 func addInstallCommand(parent *cli.Command) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/config"
+	"forge.lthn.ai/core/go-config"
 )
 
 func addGetCommand(parent *cli.Command) {

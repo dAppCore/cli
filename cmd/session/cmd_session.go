@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/session"
+	"forge.lthn.ai/core/go-session"
 )
 
 // AddSessionCommands registers the 'session' command group.
@@ -104,7 +104,7 @@ func addReplayCommand(parent *cli.Command) {
 
 			cli.Print("Parsing %s...", cli.ValueStyle.Render(filepath.Base(path)))
 
-			sess, err := session.ParseTranscript(path)
+			sess, _, err := session.ParseTranscript(path)
 			if err != nil {
 				return fmt.Errorf("parse: %w", err)
 			}

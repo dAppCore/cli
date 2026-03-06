@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/go/pkg/cache"
+	"forge.lthn.ai/core/go-cache"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
-	"forge.lthn.ai/core/go/pkg/repos"
+	"forge.lthn.ai/core/go-scm/repos"
 	"github.com/spf13/cobra"
 )
 
