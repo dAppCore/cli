@@ -3,6 +3,7 @@ package main
 import (
 	"forge.lthn.ai/core/cli/cmd/config"
 	"forge.lthn.ai/core/cli/cmd/doctor"
+	"forge.lthn.ai/core/cli/cmd/gocmd"
 	"forge.lthn.ai/core/cli/cmd/help"
 	"forge.lthn.ai/core/cli/cmd/module"
 	"forge.lthn.ai/core/cli/cmd/pkgcmd"
@@ -20,5 +21,6 @@ func main() {
 		cli.WithCommands("pkg", pkgcmd.AddPkgCommands),
 		cli.WithCommands("plugin", plugin.AddPluginCommands),
 		cli.WithCommands("session", session.AddSessionCommands),
+		cli.WithCommands("go", gocmd.AddGoCommands),
 	)
 }
