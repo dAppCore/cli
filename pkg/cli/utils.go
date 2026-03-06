@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go/pkg/log"
 )
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go-i18n"
 )
 
 var updateAll bool

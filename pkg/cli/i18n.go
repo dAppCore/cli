@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"forge.lthn.ai/core/go/pkg/framework"
-	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go-i18n"
 )
 
 // I18nService wraps i18n as a Core service.

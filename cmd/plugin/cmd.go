@@ -10,7 +10,7 @@ package plugin
 
 import (
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/i18n"
+	"forge.lthn.ai/core/go-i18n"
 )
 
 // AddPluginCommands registers the 'plugin' command and all subcommands.
