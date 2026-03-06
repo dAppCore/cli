@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go/pkg/help"
+	"forge.lthn.ai/core/go-help"
 )
 
 func AddHelpCommands(root *cli.Command) {
