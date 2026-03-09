@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,9 +39,9 @@ func TestFrame_Good(t *testing.T) {
 		f.Footer(StaticModel("CCC"))
 
 		out := f.String()
-		posA := indexOf(out, "AAA")
-		posB := indexOf(out, "BBB")
-		posC := indexOf(out, "CCC")
+		posA := strings.Index(out, "AAA")
+		posB := strings.Index(out, "BBB")
+		posC := strings.Index(out, "CCC")
 		assert.Less(t, posA, posB, "header before content")
 		assert.Less(t, posB, posC, "content before footer")
 	})
@@ -415,9 +416,9 @@ func TestFrameTeaModel_Good(t *testing.T) {
 		f.height = 24
 
 		view := f.View()
-		posA := indexOf(view, "AAA")
-		posB := indexOf(view, "BBB")
-		posC := indexOf(view, "CCC")
+		posA := strings.Index(view, "AAA")
+		posB := strings.Index(view, "BBB")
+		posC := strings.Index(view, "CCC")
 		assert.Greater(t, posA, -1, "header should be present")
 		assert.Greater(t, posB, -1, "content should be present")
 		assert.Greater(t, posC, -1, "footer should be present")
@@ -483,7 +484,7 @@ func TestFrameSpatialFocus_Good(t *testing.T) {
 }
 
 func TestFrameNavigateFrameModel_Good(t *testing.T) {
-	t.Run("Navigate with FrameModel preserves focus on Content", func(t *testing.T) {
+	t.Run("Navigate preserves current focus", func(t *testing.T) {
 		f := NewFrame("HCF")
 		f.Header(StaticModel("h"))
 		f.Content(&testFrameModel{viewText: "page-1"})
@@ -550,12 +551,3 @@ func TestFrameMessageRouting_Good(t *testing.T) {
 	})
 }
 
-// indexOf returns the position of substr in s, or -1 if not found.
-func indexOf(s, substr string) int {
-	for i := range len(s) - len(substr) + 1 {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}

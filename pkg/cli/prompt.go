@@ -4,12 +4,24 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 )
 
-var stdin = bufio.NewReader(os.Stdin)
+var stdin io.Reader = os.Stdin
+
+// SetStdin overrides the default stdin reader for testing.
+func SetStdin(r io.Reader) { stdin = r }
+
+// newReader wraps stdin in a bufio.Reader if it isn't one already.
+func newReader() *bufio.Reader {
+	if br, ok := stdin.(*bufio.Reader); ok {
+		return br
+	}
+	return bufio.NewReader(stdin)
+}
 
 // Prompt asks for text input with a default value.
 func Prompt(label, defaultVal string) (string, error) {
@@ -19,7 +31,8 @@ func Prompt(label, defaultVal string) (string, error) {
 		fmt.Printf("%s: ", label)
 	}
 
-	input, err := stdin.ReadString('\n')
+	r := newReader()
+	input, err := r.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +52,8 @@ func Select(label string, options []string) (string, error) {
 	}
 	fmt.Printf("Choose [1-%d]: ", len(options))
 
-	input, err := stdin.ReadString('\n')
+	r := newReader()
+	input, err := r.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +73,8 @@ func MultiSelect(label string, options []string) ([]string, error) {
 	}
 	fmt.Printf("Choose (space-separated) [1-%d]: ", len(options))
 
-	input, err := stdin.ReadString('\n')
+	r := newReader()
+	input, err := r.ReadString('\n')
 	if err != nil {
 		return nil, err
 	}

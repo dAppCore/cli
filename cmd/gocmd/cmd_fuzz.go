@@ -87,7 +87,7 @@ func runGoFuzz(duration time.Duration, pkg, run string, verbose bool) error {
 		args = append(args, t.Pkg)
 
 		cmd := exec.Command("go", args...)
-		cmd.Env = append(os.Environ(), "MACOSX_DEPLOYMENT_TARGET=26.0", "CGO_ENABLED=0")
+		cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 		cmd.Dir, _ = os.Getwd()
 
 		output, runErr := cmd.CombinedOutput()

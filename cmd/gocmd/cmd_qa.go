@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-devops/cmd/qa"
+	"forge.lthn.ai/core/lint/cmd/qa"
 	"forge.lthn.ai/core/go-i18n"
 )
 
@@ -291,27 +291,33 @@ func runGoQA(cmd *cli.Command, args []string) error {
 
 	duration := time.Since(startTime).Round(time.Millisecond)
 
-	// JSON output
 	if qaJSON {
-		qaResult := QAResult{
-			Success:        failed == 0,
-			Duration:       duration.String(),
-			Checks:         results,
-			Coverage:       coverageVal,
-			BranchCoverage: branchVal,
-		}
-		if qaThreshold > 0 {
-			qaResult.Threshold = &qaThreshold
-		}
-		if qaBranchThreshold > 0 {
-			qaResult.BranchThreshold = &qaBranchThreshold
-		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(qaResult)
+		return emitQAJSON(results, coverageVal, branchVal, failed, duration)
 	}
 
-	// Summary
+	return emitQASummary(passed, failed, duration)
+}
+
+func emitQAJSON(results []CheckResult, coverageVal, branchVal *float64, failed int, duration time.Duration) error {
+	qaResult := QAResult{
+		Success:        failed == 0,
+		Duration:       duration.String(),
+		Checks:         results,
+		Coverage:       coverageVal,
+		BranchCoverage: branchVal,
+	}
+	if qaThreshold > 0 {
+		qaResult.Threshold = &qaThreshold
+	}
+	if qaBranchThreshold > 0 {
+		qaResult.BranchThreshold = &qaBranchThreshold
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(qaResult)
+}
+
+func emitQASummary(passed, failed int, duration time.Duration) error {
 	if !qaQuiet {
 		cli.Blank()
 		if failed > 0 {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-config"
 )
 
 func addGetCommand(parent *cli.Command) {
@@ -29,12 +28,4 @@ func addGetCommand(parent *cli.Command) {
 	cli.WithExample(cmd, "core config get dev.editor")
 
 	parent.AddCommand(cmd)
-}
-
-func loadConfig() (*config.Config, error) {
-	cfg, err := config.New()
-	if err != nil {
-		return nil, cli.Wrap(err, "failed to load config")
-	}
-	return cfg, nil
 }

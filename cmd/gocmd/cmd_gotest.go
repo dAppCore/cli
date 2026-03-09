@@ -88,7 +88,7 @@ func runGoTest(coverage bool, pkg, run string, short, race, jsonOut, verbose boo
 	}
 
 	cmd := exec.Command("go", args...)
-	cmd.Env = append(os.Environ(), "MACOSX_DEPLOYMENT_TARGET=26.0", "CGO_ENABLED=0")
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	cmd.Dir, _ = os.Getwd()
 
 	output, err := cmd.CombinedOutput()
@@ -243,7 +243,7 @@ func addGoCovCommand(parent *cli.Command) {
 			cmdArgs := append([]string{"test", "-coverprofile=" + covPath, "-covermode=atomic"}, pkgArgs...)
 
 			goCmd := exec.Command("go", cmdArgs...)
-			goCmd.Env = append(os.Environ(), "MACOSX_DEPLOYMENT_TARGET=26.0")
+			goCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 			goCmd.Stdout = os.Stdout
 			goCmd.Stderr = os.Stderr
 

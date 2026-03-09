@@ -33,10 +33,13 @@ forge.lthn.ai/core/go/pkg/bar.go:10.1,12.20 10 5
 
 	// Test empty file (only header)
 	contentEmpty := "mode: atomic\n"
-	tmpfileEmpty, _ := os.CreateTemp("", "test-coverage-empty-*.out")
+	tmpfileEmpty, err := os.CreateTemp("", "test-coverage-empty-*.out")
+	assert.NoError(t, err)
 	defer os.Remove(tmpfileEmpty.Name())
-	tmpfileEmpty.Write([]byte(contentEmpty))
-	tmpfileEmpty.Close()
+	_, err = tmpfileEmpty.Write([]byte(contentEmpty))
+	assert.NoError(t, err)
+	err = tmpfileEmpty.Close()
+	assert.NoError(t, err)
 
 	pct, err = calculateBlockCoverage(tmpfileEmpty.Name())
 	assert.NoError(t, err)
@@ -52,10 +55,13 @@ forge.lthn.ai/core/go/pkg/bar.go:10.1,12.20 10 5
 forge.lthn.ai/core/go/pkg/foo.go:1.2,3.4 5
 forge.lthn.ai/core/go/pkg/foo.go:1.2,3.4 5 notanumber
 `
-	tmpfileMalformed, _ := os.CreateTemp("", "test-coverage-malformed-*.out")
+	tmpfileMalformed, err := os.CreateTemp("", "test-coverage-malformed-*.out")
+	assert.NoError(t, err)
 	defer os.Remove(tmpfileMalformed.Name())
-	tmpfileMalformed.Write([]byte(contentMalformed))
-	tmpfileMalformed.Close()
+	_, err = tmpfileMalformed.Write([]byte(contentMalformed))
+	assert.NoError(t, err)
+	err = tmpfileMalformed.Close()
+	assert.NoError(t, err)
 
 	pct, err = calculateBlockCoverage(tmpfileMalformed.Name())
 	assert.NoError(t, err)
@@ -65,19 +71,24 @@ forge.lthn.ai/core/go/pkg/foo.go:1.2,3.4 5 notanumber
 	contentMalformed2 := `mode: set
 forge.lthn.ai/core/go/pkg/foo.go:1.2,3.4 5
 `
-	tmpfileMalformed2, _ := os.CreateTemp("", "test-coverage-malformed2-*.out")
+	tmpfileMalformed2, err := os.CreateTemp("", "test-coverage-malformed2-*.out")
+	assert.NoError(t, err)
 	defer os.Remove(tmpfileMalformed2.Name())
-	tmpfileMalformed2.Write([]byte(contentMalformed2))
-	tmpfileMalformed2.Close()
+	_, err = tmpfileMalformed2.Write([]byte(contentMalformed2))
+	assert.NoError(t, err)
+	err = tmpfileMalformed2.Close()
+	assert.NoError(t, err)
 
 	pct, err = calculateBlockCoverage(tmpfileMalformed2.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, 0.0, pct)
 
 	// Test completely empty file
-	tmpfileEmpty2, _ := os.CreateTemp("", "test-coverage-empty2-*.out")
+	tmpfileEmpty2, err := os.CreateTemp("", "test-coverage-empty2-*.out")
+	assert.NoError(t, err)
 	defer os.Remove(tmpfileEmpty2.Name())
-	tmpfileEmpty2.Close()
+	err = tmpfileEmpty2.Close()
+	assert.NoError(t, err)
 	pct, err = calculateBlockCoverage(tmpfileEmpty2.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, 0.0, pct)

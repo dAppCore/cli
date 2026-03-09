@@ -1,0 +1,52 @@
+package cli
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPrompt_Good(t *testing.T) {
+	SetStdin(strings.NewReader("hello\n"))
+	defer SetStdin(nil) // reset
+
+	val, err := Prompt("Name", "")
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", val)
+}
+
+func TestPrompt_Good_Default(t *testing.T) {
+	SetStdin(strings.NewReader("\n"))
+	defer SetStdin(nil)
+
+	val, err := Prompt("Name", "world")
+	assert.NoError(t, err)
+	assert.Equal(t, "world", val)
+}
+
+func TestSelect_Good(t *testing.T) {
+	SetStdin(strings.NewReader("2\n"))
+	defer SetStdin(nil)
+
+	val, err := Select("Pick", []string{"a", "b", "c"})
+	assert.NoError(t, err)
+	assert.Equal(t, "b", val)
+}
+
+func TestSelect_Bad_Invalid(t *testing.T) {
+	SetStdin(strings.NewReader("5\n"))
+	defer SetStdin(nil)
+
+	_, err := Select("Pick", []string{"a", "b"})
+	assert.Error(t, err)
+}
+
+func TestMultiSelect_Good(t *testing.T) {
+	SetStdin(strings.NewReader("1 3\n"))
+	defer SetStdin(nil)
+
+	vals, err := MultiSelect("Pick", []string{"a", "b", "c"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "c"}, vals)
+}

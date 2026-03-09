@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"maps"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"gopkg.in/yaml.v3"
@@ -14,7 +15,7 @@ func addListCommand(parent *cli.Command) {
 			return err
 		}
 
-		all := cfg.All()
+		all := maps.Collect(cfg.All())
 		if len(all) == 0 {
 			cli.Dim("No configuration values set")
 			return nil
