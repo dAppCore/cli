@@ -10,11 +10,11 @@ require (
 )
 
 require (
-	forge.lthn.ai/core/go-devops v0.0.3
 	forge.lthn.ai/core/go-help v0.1.2
 	forge.lthn.ai/core/go-i18n v0.1.0
 	forge.lthn.ai/core/go-io v0.0.3
 	forge.lthn.ai/core/go-log v0.0.1
+	forge.lthn.ai/core/lint v0.2.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/spf13/cobra v1.10.2
@@ -25,6 +25,7 @@ require (
 
 require (
 	forge.lthn.ai/core/go-inference v0.0.2 // indirect
+	forge.lthn.ai/core/go-process v0.1.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect

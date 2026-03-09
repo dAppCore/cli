@@ -1,7 +1,9 @@
 forge.lthn.ai/core/go v0.1.0 h1:Ow/1NTajrrNPO0zgkskEyEGdx4SKpiNqTaqM0txNOYI=
 forge.lthn.ai/core/go v0.1.0/go.mod h1:lwi0tccAlg5j3k6CfoNJEueBc5l9mUeSBX/x6uY8ZbQ=
 forge.lthn.ai/core/go-cache v0.1.0 h1:yxPf4bWPZ1jxMnXg8UHBv2xLhet2CRsq5E9PLQYjyj4=
+forge.lthn.ai/core/go-cache v0.1.0/go.mod h1:7WbprZVfx/+t4cbJFXMo4sloWk2Eny+rZd8x1Ay9rLk=
 forge.lthn.ai/core/go-config v0.1.0 h1:bQnlt8MvFvgPisl//jw4IMHMoCcaIt5FLurwYWqlMx0=
+forge.lthn.ai/core/go-config v0.1.0/go.mod h1:jsCzg3BykHqlHZs13PDhP/dq8yTZjsiEyZ35q6jA3Aw=
 forge.lthn.ai/core/go-crypt v0.1.0 h1:92gwdQi7iAwktpvZhL/8Cu+QS6xKCtGP4FJfyInPGnw=
 forge.lthn.ai/core/go-crypt v0.1.0/go.mod h1:zVAgx6ZiGtC+dbX4R/VKvEPqsEqjyuLl4gQZH9SXBUw=
 forge.lthn.ai/core/go-devops v0.0.3 h1:tiSZ2x6a/H1A1IYYUmaM+bEuZqT9Hot7KGCEFN6PSYY=
@@ -13,9 +15,13 @@ forge.lthn.ai/core/go-i18n v0.1.0/go.mod h1:Q4xsrxuNCl/6NfMv1daria7t1RSiyy8ml+6j
 forge.lthn.ai/core/go-inference v0.0.2 h1:aHjBkYyLKxLr9tbO4AvzzV/lsZueGq/jeo33SLh113k=
 forge.lthn.ai/core/go-inference v0.0.2/go.mod h1:jfWz+IJX55wAH98+ic6FEqqGB6/P31CHlg7VY7pxREw=
 forge.lthn.ai/core/go-io v0.0.3 h1:TlhYpGTyjPgAlbEHyYrVSeUChZPhJXcLZ7D/8IbFqfI=
+forge.lthn.ai/core/go-io v0.0.3/go.mod h1:ZlU9OQpsvNFNmTJoaHbFIkisZyc0eCq0p8znVWQLRf0=
 forge.lthn.ai/core/go-log v0.0.1 h1:x/E6EfF9vixzqiLHQOl2KT25HyBcMc9qiBkomqVlpPg=
 forge.lthn.ai/core/go-log v0.0.1/go.mod h1:r14MXKOD3LF/sI8XUJQhRk/SZHBE7jAFVuCfgkXoZPw=
+forge.lthn.ai/core/go-process v0.1.2 h1:0fdLJq/DPssilN9E5yude/xHNfZRKHghIjo++b5aXgc=
+forge.lthn.ai/core/go-process v0.1.2/go.mod h1:9oxVALrZaZCqFe8YDdheIS5bRUV1SBz4tVW/MflAtxM=
 forge.lthn.ai/core/go-scm v0.0.2 h1:Ue+gS5vxZkDgTvQrqYu9QdaqEezuTV1kZY3TMqM2uho=
+forge.lthn.ai/core/lint v0.2.0/go.mod h1:kSWEE3MQ/msM5qnNhnmEGQvg/NmYn6ME7oNmPCZvtkM=
 github.com/ProtonMail/go-crypto v1.3.0 h1:ILq8+Sf5If5DCpHQp4PbZdS1J7HDFRXz/+xKBiRGFrw=
 github.com/ProtonMail/go-crypto v1.3.0/go.mod h1:9whxjD8Rbs29b4XWbB8irEcE8KHMqaR2e7GWU1R+/PE=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
