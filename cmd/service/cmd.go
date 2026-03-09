@@ -175,9 +175,13 @@ func stopDaemon(reg *process.Registry, code, daemon string) error {
 	}
 
 	// Wait for process to exit, escalate to SIGKILL after 30s.
+	// Poll the process directly via Signal(0) rather than relying on
+	// the daemon to self-unregister, which avoids PID reuse issues.
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		if _, still := reg.Get(code, daemon); !still {
+		if err := proc.Signal(syscall.Signal(0)); err != nil {
+			// Process is gone.
+			_ = reg.Unregister(code, daemon)
 			cli.LogInfo(fmt.Sprintf("Stopped %s/%s (PID %d)", code, daemon, entry.PID))
 			return nil
 		}
