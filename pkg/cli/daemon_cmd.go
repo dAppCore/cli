@@ -170,7 +170,9 @@ func daemonRunStop(cfg DaemonCommandConfig) error {
 
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		if _, still := process.ReadPID(cfg.PIDFile); !still {
+		if err := proc.Signal(syscall.Signal(0)); err != nil {
+			// Process is gone — clean up PID file if it lingers.
+			_ = os.Remove(cfg.PIDFile)
 			LogInfo("Daemon stopped")
 			return nil
 		}
