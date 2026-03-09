@@ -230,6 +230,11 @@ func MaximumNArgs(n int) cobra.PositionalArgs {
 	return cobra.MaximumNArgs(n)
 }
 
+// RangeArgs returns a PositionalArgs that accepts between min and max arguments.
+func RangeArgs(min int, max int) cobra.PositionalArgs {
+	return cobra.RangeArgs(min, max)
+}
+
 // NoArgs returns a PositionalArgs that accepts no arguments.
 func NoArgs() cobra.PositionalArgs {
 	return cobra.NoArgs
