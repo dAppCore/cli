@@ -1,3 +1,8 @@
+---
+title: Core CLI
+description: Unified CLI for building, releasing, and deploying Go, Wails, PHP, and container workloads.
+---
+
 # Core CLI
 
 Core is a unified CLI for the host-uk ecosystem - build, release, and deploy Go, Wails, PHP, and container workloads.
