@@ -4,162 +4,108 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Core is a Web3 Framework written in Go using Wails v3 to replace Electron for desktop applications. It provides a dependency injection framework for managing services with lifecycle support.
+Core CLI (`forge.lthn.ai/core/cli`) is a Go CLI tool for managing development workflows across Go, PHP, and Wails projects. It wraps common tooling (testing, linting, building, releasing, multi-repo management) behind a unified `core` command. Built on Cobra with the Core framework's dependency injection for service lifecycle management.
 
 ## Build & Development Commands
 
-This project uses [Task](https://taskfile.dev/) for automation. Key commands:
-
 ```bash
 # Run all tests
-task test
+go test ./...
 
-# Generate test coverage
-task cov
-task cov-view          # Opens coverage HTML report
+# Run a single test
+go test -run TestName ./...
 
-# GUI application (Wails)
-task gui:dev           # Development mode with hot-reload
-task gui:build         # Production build
+# Build CLI binary
+go build -o dist/core .
 
-# CLI application
-task cli:build         # Build CLI
-task cli:run           # Build and run CLI
+# Install from source
+go install forge.lthn.ai/core/cli@latest
 
-# Code review
-task review            # Submit for CodeRabbit review
-task check             # Run mod tidy + tests + review
+# Verify environment
+go run . doctor
+
+# Format and lint
+gofmt -w .
+go vet ./...
+golangci-lint run ./...
 ```
 
-Run a single test: `go test -run TestName ./...`
+**Go version:** 1.26+
 
 ## Architecture
 
-### Core Framework (`core.go`, `interfaces.go`)
+### Entry Point & Command Registration
 
-The `Core` struct is the central application container managing:
-- **Services**: Named service registry with type-safe retrieval via `ServiceFor[T]()`
-- **Actions/IPC**: Message-passing system where services communicate via `ACTION(msg Message)` and register handlers via `RegisterAction()`
-- **Lifecycle**: Services implementing `Startable` (OnStartup) and/or `Stoppable` (OnShutdown) interfaces are automatically called during app lifecycle
+`main.go` wires everything together. Commands register in two ways:
 
-Creating a Core instance:
+1. **Explicit registration** via `cli.WithCommands()` — local command packages in `cmd/` pass an `AddXCommands(root *cli.Command)` function that receives the root cobra command during service startup.
+
+2. **Self-registration** via `cli.RegisterCommands()` — ecosystem packages (imported as blank `_` imports in `main.go`) call `cli.RegisterCommands()` in their `init()` functions. This is how external modules like `go-build`, `go-devops`, `go-scm`, `agent`, etc. contribute commands without coupling to `main.go`.
+
+### `pkg/cli` — The CLI Runtime
+
+This is the core package. Everything commands need is re-exported here to avoid direct Cobra/lipgloss/bubbletea imports:
+
+- **`runtime.go`**: Singleton `Init()`/`Shutdown()`/`Execute()` lifecycle. Creates a Core framework instance, attaches services, handles signals (SIGINT/SIGTERM/SIGHUP).
+- **`command.go`**: `NewCommand()`, `NewGroup()`, `NewRun()` builders, flag helpers (`StringFlag`, `BoolFlag`, etc.), arg validators — all wrapping Cobra types so command packages don't import cobra directly. `Command` is a type alias for `cobra.Command`.
+- **`output.go`**: Styled output functions — `Success()`, `Error()`, `Warn()`, `Info()`, `Dim()`, `Progress()`, `Label()`, `Section()`, `Hint()`, `Severity()`. Use these instead of raw `fmt.Print`.
+- **`errors.go`**: `Err()`, `Wrap()`, `WrapVerb()`, `Exit()` for error creation. Re-exports `errors.Is`/`As`/`Join`. Commands should return errors (via `RunE`), not call `Fatal()` (deprecated).
+- **`frame.go`**: Bubbletea-based TUI framework. `NewFrame("HCF")` with HLCRF region layout (Header, Left, Content, Right, Footer), focus management, content navigation stack.
+- **`tracker.go`**: `TaskTracker` for concurrent task display with spinners. TTY-aware (live updates vs static output).
+- **`daemon.go`**: Execution mode detection (`ModeInteractive`/`ModePipe`/`ModeDaemon`).
+- **`styles.go`**: Shared lipgloss styles and colour constants.
+- **`glyph.go`**: Shortcode system for emoji/symbols (`:check:`, `:cross:`, `:warn:`, `:info:`).
+
+### Command Package Pattern
+
+Every command package in `cmd/` follows this structure:
+
 ```go
-core, err := core.New(
-    core.WithService(myServiceFactory),
-    core.WithAssets(assets),
-    core.WithServiceLock(),  // Prevents late service registration
-)
-```
+package mycommand
 
-### Service Registration Pattern
+import "forge.lthn.ai/core/cli/pkg/cli"
 
-Services are registered via factory functions that receive the Core instance:
-```go
-func NewMyService(c *core.Core) (any, error) {
-    return &MyService{runtime: core.NewServiceRuntime(c, opts)}, nil
-}
-
-core.New(core.WithService(NewMyService))
-```
-
-- `WithService`: Auto-discovers service name from package path, registers IPC handler if service has `HandleIPCEvents` method
-- `WithName`: Explicitly names a service
-
-### Runtime (`runtime_pkg.go`)
-
-`Runtime` is the Wails service wrapper that bootstraps the Core and its services. Use `NewWithFactories()` for custom service registration or `NewRuntime()` for basic setup.
-
-### ServiceRuntime Generic Helper (`runtime.go`)
-
-Embed `ServiceRuntime[T]` in services to get access to Core and typed options:
-```go
-type MyService struct {
-    *core.ServiceRuntime[MyServiceOptions]
+func AddMyCommands(root *cli.Command) {
+    myCmd := cli.NewGroup("my", "My commands", "")
+    root.AddCommand(myCmd)
+    // Add subcommands...
 }
 ```
 
-### Error Handling (`e.go`)
+Commands use `cli.NewCommand()` (returns error) or `cli.NewRun()` (no error) and the `cli.StringFlag()`/`cli.BoolFlag()` helpers for flags.
 
-Use the `E()` helper for contextual errors:
-```go
-return core.E("service.Method", "what failed", underlyingErr)
-```
+### External Module Integration
 
-### Test Naming Convention
+The CLI imports ecosystem modules as blank imports that self-register via `init()`:
+- `forge.lthn.ai/core/go-build` — build, CI, SDK commands
+- `forge.lthn.ai/core/go-devops` — dev, deploy, docs, git, setup commands
+- `forge.lthn.ai/core/go-scm` — forge, gitea, collect commands
+- `forge.lthn.ai/core/agent` — agent, dispatch, task commands
+- `forge.lthn.ai/core/lint` — QA commands
+- Others: go-ansible, go-api, go-container, go-crypt, go-infra
+
+### Daemon/Service Management
+
+`cmd/service/` implements `start`/`stop`/`list`/`restart` for manifest-driven daemons. Reads `.core/manifest.yaml` from the project directory (walks up). Daemons run detached with `CORE_DAEMON=1` env var and are tracked in `~/.core/daemons/`.
+
+## Test Naming Convention
 
 Tests use `_Good`, `_Bad`, `_Ugly` suffix pattern:
 - `_Good`: Happy path tests
 - `_Bad`: Expected error conditions
 - `_Ugly`: Panic/edge cases
 
-## Go Workspace
+## Commit Message Convention
 
-Uses Go 1.25 workspaces. The workspace includes:
-- Root module (Core framework)
-- `cmd/core-gui` (Wails GUI application)
-- `cmd/bugseti` (BugSETI system tray app - distributed bug fixing)
-- `cmd/examples/*` (Example applications)
+[Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`
 
-After adding modules: `go work sync`
+## Configuration
 
-## Additional Packages
+- Global config: `~/.core/config.yaml` (YAML, dot-notation keys)
+- Project config: `.core/build.yaml`, `.core/release.yaml`, `.core/ci.yaml`
+- Environment override: `CORE_CONFIG_<KEY>` (underscores become dots, lowercased)
+- Multi-repo registry: `repos.yaml` (searched cwd upward, then `~/.config/core/repos.yaml`)
 
-### pkg/ws (WebSocket Hub)
+## i18n
 
-Real-time streaming via WebSocket connections. Implements a hub pattern for managing connections and channel-based subscriptions.
-
-```go
-hub := ws.NewHub()
-go hub.Run(ctx)
-
-// Register HTTP handler
-http.HandleFunc("/ws", hub.Handler())
-
-// Send process output to subscribers
-hub.SendProcessOutput(processID, "output line")
-```
-
-Message types: `process_output`, `process_status`, `event`, `error`, `ping/pong`, `subscribe/unsubscribe`
-
-### pkg/webview (Browser Automation)
-
-Chrome DevTools Protocol (CDP) client for browser automation, testing, and scraping.
-
-```go
-wv, err := webview.New(webview.WithDebugURL("http://localhost:9222"))
-defer wv.Close()
-
-wv.Navigate("https://example.com")
-wv.Click("#submit-button")
-wv.Type("#input", "text")
-screenshot, _ := wv.Screenshot()
-```
-
-Features: Navigation, DOM queries, console capture, screenshots, JavaScript evaluation, Angular helpers
-
-### pkg/mcp (MCP Server)
-
-Model Context Protocol server with tools for:
-- **File operations**: file_read, file_write, file_edit, file_delete, file_rename, file_exists, dir_list, dir_create
-- **RAG**: rag_query, rag_ingest, rag_collections (Qdrant + Ollama)
-- **Metrics**: metrics_record, metrics_query (JSONL storage)
-- **Language detection**: lang_detect, lang_list
-- **Process management**: process_start, process_stop, process_kill, process_list, process_output, process_input
-- **WebSocket**: ws_start, ws_info
-- **Webview/CDP**: webview_connect, webview_navigate, webview_click, webview_type, webview_query, webview_console, webview_eval, webview_screenshot, webview_wait, webview_disconnect
-
-Run server: `core mcp serve` (stdio) or `MCP_ADDR=:9000 core mcp serve` (TCP)
-
-## BugSETI Application
-
-System tray application for distributed bug fixing - "like SETI@home but for code".
-
-Features:
-- Fetches OSS issues from GitHub
-- AI-powered context preparation via seeder
-- Issue queue management
-- Automated PR submission
-- Stats tracking and leaderboard
-
-Build: `task bugseti:build`
-Run: `task bugseti:dev`
+Commands use `i18n.T("key")` for translatable strings and the grammar system (`i18n.ActionFailed()`, `i18n.Progress()`) for consistent error/progress messages. The CLI wraps these in `cli.Echo()`, `cli.WrapVerb()`, `cli.ErrorWrapVerb()`.
