@@ -17,7 +17,7 @@ import (
 	_ "forge.lthn.ai/core/agent/cmd/dispatch"
 	_ "forge.lthn.ai/core/agent/cmd/taskgit"
 	_ "forge.lthn.ai/core/go-ansible/cmd/ansible"
-	_ "forge.lthn.ai/core/go-api/cmd/api"
+	_ "forge.lthn.ai/core/api/cmd/api"
 	_ "forge.lthn.ai/core/go-build/cmd/build"
 	_ "forge.lthn.ai/core/go-build/cmd/ci"
 	_ "forge.lthn.ai/core/go-build/cmd/sdk"
