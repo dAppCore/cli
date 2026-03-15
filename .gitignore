@@ -24,3 +24,5 @@ local.test
 patch_cov.*
 go.work.sum
 .kb
+.core/
+.idea/
