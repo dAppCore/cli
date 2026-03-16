@@ -5,8 +5,9 @@ import (
 	"os"
 	"runtime/debug"
 
-	"forge.lthn.ai/core/go/pkg/core"
+	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-log"
+	"forge.lthn.ai/core/go/pkg/core"
 	"github.com/spf13/cobra"
 )
 
@@ -76,10 +77,7 @@ func Main(commands ...core.Option) {
 
 	// Core services load first, then command services
 	services := []core.Option{
-		core.WithName("i18n", NewI18nService(I18nOptions{})),
-		core.WithName("log", NewLogService(log.Options{
-			Level: log.LevelInfo,
-		})),
+		core.WithName("i18n", i18n.NewCoreService(i18n.ServiceOptions{})),
 	}
 	services = append(services, commands...)
 

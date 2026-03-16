@@ -1,115 +1,28 @@
 package cli
 
 import (
-	"forge.lthn.ai/core/go/pkg/core"
-	"forge.lthn.ai/core/go/pkg/log"
+	"forge.lthn.ai/core/go-log"
 )
 
-// LogLevel aliases for backwards compatibility.
+// LogLevel aliases for convenience.
 type LogLevel = log.Level
 
-// Log level constants aliased from the log package.
 const (
-	// LogLevelQuiet suppresses all output.
 	LogLevelQuiet = log.LevelQuiet
-	// LogLevelError shows only error messages.
 	LogLevelError = log.LevelError
-	// LogLevelWarn shows warnings and errors.
-	LogLevelWarn = log.LevelWarn
-	// LogLevelInfo shows info, warnings, and errors.
-	LogLevelInfo = log.LevelInfo
-	// LogLevelDebug shows all messages including debug.
+	LogLevelWarn  = log.LevelWarn
+	LogLevelInfo  = log.LevelInfo
 	LogLevelDebug = log.LevelDebug
 )
 
-// LogService wraps log.Service with CLI styling.
-type LogService struct {
-	*log.Service
-}
+// LogDebug logs a debug message if the default logger is available.
+func LogDebug(msg string, keyvals ...any) { log.Debug(msg, keyvals...) }
 
-// LogOptions configures the log service.
-type LogOptions = log.Options
+// LogInfo logs an info message.
+func LogInfo(msg string, keyvals ...any) { log.Info(msg, keyvals...) }
 
-// NewLogService creates a log service factory with CLI styling.
-func NewLogService(opts LogOptions) func(*core.Core) (any, error) {
-	return func(c *core.Core) (any, error) {
-		// Create the underlying service
-		factory := log.NewService(opts)
-		svc, err := factory(c)
-		if err != nil {
-			return nil, err
-		}
+// LogWarn logs a warning message.
+func LogWarn(msg string, keyvals ...any) { log.Warn(msg, keyvals...) }
 
-		logSvc := svc.(*log.Service)
-
-		// Apply CLI styles
-		logSvc.StyleTimestamp = func(s string) string { return DimStyle.Render(s) }
-		logSvc.StyleDebug = func(s string) string { return DimStyle.Render(s) }
-		logSvc.StyleInfo = func(s string) string { return InfoStyle.Render(s) }
-		logSvc.StyleWarn = func(s string) string { return WarningStyle.Render(s) }
-		logSvc.StyleError = func(s string) string { return ErrorStyle.Render(s) }
-		logSvc.StyleSecurity = func(s string) string { return SecurityStyle.Render(s) }
-
-		return &LogService{Service: logSvc}, nil
-	}
-}
-
-// --- Package-level convenience ---
-
-// Log returns the CLI's log service, or nil if not available.
-func Log() *LogService {
-	if instance == nil {
-		return nil
-	}
-	svc, err := core.ServiceFor[*LogService](instance.core, "log")
-	if err != nil {
-		return nil
-	}
-	return svc
-}
-
-// LogDebug logs a debug message with optional key-value pairs if log service is available.
-func LogDebug(msg string, keyvals ...any) {
-	if l := Log(); l != nil {
-		l.Debug(msg, keyvals...)
-	}
-}
-
-// LogInfo logs an info message with optional key-value pairs if log service is available.
-func LogInfo(msg string, keyvals ...any) {
-	if l := Log(); l != nil {
-		l.Info(msg, keyvals...)
-	}
-}
-
-// LogWarn logs a warning message with optional key-value pairs if log service is available.
-func LogWarn(msg string, keyvals ...any) {
-	if l := Log(); l != nil {
-		l.Warn(msg, keyvals...)
-	}
-}
-
-// LogError logs an error message with optional key-value pairs if log service is available.
-func LogError(msg string, keyvals ...any) {
-	if l := Log(); l != nil {
-		l.Error(msg, keyvals...)
-	}
-}
-
-// LogSecurity logs a security message if log service is available.
-func LogSecurity(msg string, keyvals ...any) {
-	if l := Log(); l != nil {
-		// Ensure user context is included if not already present
-		hasUser := false
-		for i := 0; i < len(keyvals); i += 2 {
-			if keyvals[i] == "user" {
-				hasUser = true
-				break
-			}
-		}
-		if !hasUser {
-			keyvals = append(keyvals, "user", log.Username())
-		}
-		l.Security(msg, keyvals...)
-	}
-}
+// LogError logs an error message.
+func LogError(msg string, keyvals ...any) { log.Error(msg, keyvals...) }

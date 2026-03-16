@@ -22,9 +22,9 @@ func GhAuthenticated() bool {
 	authenticated := strings.Contains(string(output), "Logged in")
 
 	if authenticated {
-		LogSecurity("GitHub CLI authenticated", "user", log.Username())
+		LogWarn("GitHub CLI authenticated", "user", log.Username())
 	} else {
-		LogSecurity("GitHub CLI not authenticated", "user", log.Username())
+		LogWarn("GitHub CLI not authenticated", "user", log.Username())
 	}
 
 	return authenticated

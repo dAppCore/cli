@@ -4,8 +4,6 @@ forge.lthn.ai/core/go-i18n v0.1.0 h1:F7JVSoVkZtzx9JfhpntM9z3iQm1vnuMUi/Zklhz8PCI
 forge.lthn.ai/core/go-i18n v0.1.0/go.mod h1:Q4xsrxuNCl/6NfMv1daria7t1RSiyy8ml+6jiPtUcBs=
 forge.lthn.ai/core/go-inference v0.1.0 h1:pO7etYgqV8LMKFdpW8/2RWncuECZJCIcf8nnezeZ5R4=
 forge.lthn.ai/core/go-inference v0.1.0/go.mod h1:jfWz+IJX55wAH98+ic6FEqqGB6/P31CHlg7VY7pxREw=
-forge.lthn.ai/core/go-io v0.1.0 h1:aYNvmbU2VVsjXnut0WQ4DfVxcFdheziahJB32mfeJ7g=
-forge.lthn.ai/core/go-io v0.1.0/go.mod h1:ZlU9OQpsvNFNmTJoaHbFIkisZyc0eCq0p8znVWQLRf0=
 forge.lthn.ai/core/go-log v0.0.1 h1:x/E6EfF9vixzqiLHQOl2KT25HyBcMc9qiBkomqVlpPg=
 forge.lthn.ai/core/go-log v0.0.1/go.mod h1:r14MXKOD3LF/sI8XUJQhRk/SZHBE7jAFVuCfgkXoZPw=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
