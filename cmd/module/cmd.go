@@ -13,8 +13,9 @@ import (
 
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go-scm/marketplace"
+	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-io/store"
+	"forge.lthn.ai/core/go-scm/marketplace"
 )
 
 // AddModuleCommands registers the 'module' command and all subcommands.
@@ -50,6 +51,6 @@ func moduleSetup() (string, *store.Store, *marketplace.Installer, error) {
 		return "", nil, nil, cli.Wrap(err, "failed to open module store")
 	}
 
-	inst := marketplace.NewInstaller(modulesDir, st)
+	inst := marketplace.NewInstaller(coreio.Local, modulesDir, st)
 	return modulesDir, st, inst, nil
 }
