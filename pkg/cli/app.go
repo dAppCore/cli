@@ -5,10 +5,8 @@ import (
 	"os"
 	"runtime/debug"
 
-	"forge.lthn.ai/core/go-crypt/crypt/openpgp"
 	"forge.lthn.ai/core/go/pkg/core"
 	"forge.lthn.ai/core/go-log"
-	"forge.lthn.ai/core/go-io/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -82,8 +80,6 @@ func Main(commands ...core.Option) {
 		core.WithName("log", NewLogService(log.Options{
 			Level: log.LevelInfo,
 		})),
-		core.WithName("crypt", openpgp.New),
-		core.WithName("workspace", workspace.New),
 	}
 	services = append(services, commands...)
 

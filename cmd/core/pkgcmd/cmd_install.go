@@ -2,7 +2,6 @@ package pkgcmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +11,10 @@ import (
 	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-scm/repos"
 	"github.com/spf13/cobra"
+)
+
+import (
+	"errors"
 )
 
 var (
