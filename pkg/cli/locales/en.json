@@ -1,0 +1,135 @@
+{
+	"cmd": {
+		"doctor": {
+			"short": "Check development environment",
+			"long": "Diagnose your development environment and report missing tools, configuration issues, and connectivity problems.",
+			"verbose_flag": "Show detailed output",
+			"required": "Required tools:",
+			"optional": "Optional tools:",
+			"github": "GitHub integration:",
+			"workspace": "Workspace:",
+			"ready": "Environment is ready",
+			"install_missing": "Install missing tools:",
+			"install_macos": "brew install",
+			"install_macos_cask": "brew install --cask",
+			"install_linux_header": "Install on Linux:",
+			"install_linux_git": "sudo apt install git",
+			"install_linux_node": "curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs",
+			"install_linux_php": "sudo apt install php php-cli php-mbstring php-xml php-curl",
+			"install_linux_pnpm": "npm install -g pnpm",
+			"install_linux_gh": "See https://github.com/cli/cli/blob/trunk/docs/install_linux.md",
+			"install_other": "See tool documentation for installation",
+			"issues": "Open issues assigned to you:",
+			"issues_error": "Failed to fetch issues",
+			"cli_auth": "GitHub CLI authenticated",
+			"cli_auth_missing": "GitHub CLI not authenticated — run: gh auth login",
+			"ssh_found": "SSH key found",
+			"ssh_missing": "SSH key not found — run: ssh-keygen",
+			"repos_yaml_found": "Workspace registry found: {{.Path}}",
+			"repos_cloned": "{{.Cloned}}/{{.Total}} repos cloned",
+			"no_repos_yaml": "No repos.yaml found (run from workspace root)",
+			"check": {
+				"git": { "name": "Git", "description": "Version control" },
+				"docker": { "name": "Docker", "description": "Container runtime" },
+				"node": { "name": "Node.js", "description": "JavaScript runtime" },
+				"php": { "name": "PHP", "description": "PHP interpreter" },
+				"composer": { "name": "Composer", "description": "PHP package manager" },
+				"pnpm": { "name": "pnpm", "description": "Node package manager" },
+				"gh": { "name": "GitHub CLI", "description": "GitHub integration" },
+				"claude": { "name": "Claude Code", "description": "AI coding assistant" }
+			}
+		},
+		"pkg": {
+			"short": "Manage packages",
+			"long": "Install, list, search, update, and remove packages from the Core ecosystem.",
+			"no_description": "(no description)",
+			"error": {
+				"repo_required": "Repository argument required (e.g., core/go-io)",
+				"invalid_repo_format": "Invalid format — use org/repo (e.g., core/go-io)",
+				"no_repos_yaml": "No repos.yaml found",
+				"no_repos_yaml_workspace": "No repos.yaml found in workspace",
+				"specify_package": "Specify a package name",
+				"auth_failed": "Authentication failed",
+				"gh_not_authenticated": "GitHub CLI not authenticated — run: gh auth login",
+				"search_failed": "Search failed"
+			},
+			"install": {
+				"short": "Install a package",
+				"long": "Clone a package from the Git forge into your workspace.",
+				"installing_label": "Installing",
+				"already_exists": "{{.Name}} already exists at {{.Path}}",
+				"installed": "{{.Name}} installed successfully",
+				"add_to_registry": "Adding to registry",
+				"added_to_registry": "Added to repos.yaml",
+				"flag": {
+					"dir": "Target directory (default: workspace base path)",
+					"add": "Add to repos.yaml registry after install"
+				}
+			},
+			"list": {
+				"short": "List installed packages",
+				"long": "Show all packages registered in repos.yaml with their status.",
+				"title": "Installed packages",
+				"no_packages": "No packages found",
+				"summary": "{{.Count}} packages",
+				"install_missing": "Install missing: core pkg install"
+			},
+			"search": {
+				"short": "Search available packages",
+				"long": "Search the forge for available packages by name or pattern.",
+				"fetching_label": "Searching",
+				"cache_label": "Cached",
+				"found_repos": "Found {{.Count}} repositories",
+				"no_repos_found": "No matching repositories found",
+				"private_label": "private",
+				"gh_token_unset": "GITHUB_TOKEN not set",
+				"gh_token_warning": "Set GITHUB_TOKEN for private repo access",
+				"flag": {
+					"org": "Organisation to search (default: core)",
+					"pattern": "Filter by name pattern",
+					"type": "Filter by type (package, application, template)",
+					"limit": "Maximum results",
+					"refresh": "Refresh cache"
+				}
+			},
+			"update": {
+				"short": "Update a package",
+				"long": "Pull latest changes for a package or all packages.",
+				"updating": "Updating {{.Name}}",
+				"not_installed": "{{.Name}} is not installed",
+				"summary": "{{.Updated}}/{{.Total}} updated",
+				"flag": {
+					"all": "Update all packages"
+				}
+			},
+			"outdated": {
+				"short": "Show outdated packages",
+				"long": "Check which packages have unpulled commits.",
+				"all_up_to_date": "All packages are up to date",
+				"commits_behind": "{{.Count}} commits behind",
+				"update_with": "Update with: core pkg update {{.Name}}",
+				"summary": "{{.Outdated}}/{{.Total}} outdated"
+			}
+		}
+	},
+	"common": {
+		"hint": {
+			"install_with": "Install with: {{.Command}}"
+		},
+		"progress": {
+			"checking": "Checking {{.Item}}...",
+			"checking_updates": "Checking for updates..."
+		},
+		"status": {
+			"cloning": "Cloning",
+			"up_to_date": "Up to date"
+		}
+	},
+	"i18n": {
+		"fail": {
+			"create": "Failed to create {{.Item}}",
+			"load": "Failed to load {{.Item}}",
+			"parse": "Failed to parse {{.Item}}"
+		}
+	}
+}

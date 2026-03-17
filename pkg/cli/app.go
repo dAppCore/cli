@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"runtime/debug"
 
@@ -10,6 +12,9 @@ import (
 	"forge.lthn.ai/core/go/pkg/core"
 	"github.com/spf13/cobra"
 )
+
+//go:embed locales/*.json
+var cliLocaleFS embed.FS
 
 // AppName is the default CLI application name.
 // Override with WithAppName before calling Main.
@@ -65,7 +70,21 @@ func WithAppName(name string) {
 //	)
 //
 // Exits with code 1 on error or panic.
+// LocaleSource pairs a filesystem with a directory for loading translations.
+type LocaleSource = i18n.FSSource
+
+// WithLocales returns a locale source for use with MainWithLocales.
+func WithLocales(fsys fs.FS, dir string) LocaleSource {
+	return LocaleSource{FS: fsys, Dir: dir}
+}
+
+// Main initialises and runs the CLI with the framework's built-in translations.
 func Main(commands ...core.Option) {
+	MainWithLocales(nil, commands...)
+}
+
+// MainWithLocales initialises and runs the CLI with additional translation sources.
+func MainWithLocales(locales []LocaleSource, commands ...core.Option) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
@@ -75,9 +94,17 @@ func Main(commands ...core.Option) {
 		}
 	}()
 
+	// Build locale sources: framework built-in + caller's extras
+	extraFS := []i18n.FSSource{
+		{FS: cliLocaleFS, Dir: "locales"},
+	}
+	extraFS = append(extraFS, locales...)
+
 	// Core services load first, then command services
 	services := []core.Option{
-		core.WithName("i18n", i18n.NewCoreService(i18n.ServiceOptions{})),
+		core.WithName("i18n", i18n.NewCoreService(i18n.ServiceOptions{
+			ExtraFS: extraFS,
+		})),
 	}
 	services = append(services, commands...)
 
