@@ -2,7 +2,7 @@ module forge.lthn.ai/core/cli
 
 go 1.26.0
 
-require forge.lthn.ai/core/go v0.3.2
+require forge.lthn.ai/core/go v0.3.3
 
 require (
 	forge.lthn.ai/core/go-i18n v0.1.7
@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	forge.lthn.ai/core/go-inference v0.1.6 // indirect
+	forge.lthn.ai/core/go-inference v0.1.7 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
