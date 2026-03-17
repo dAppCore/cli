@@ -3,6 +3,7 @@ package cli
 
 import (
 	"context"
+	"io/fs"
 	"iter"
 	"sync"
 
@@ -18,15 +19,24 @@ import (
 //	    cli.WithCommands("config", config.AddConfigCommands),
 //	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
 //	)
-func WithCommands(name string, register func(root *Command)) core.Option {
+// WithCommands creates a framework Option that registers a command group.
+// Optionally pass a locale fs.FS as the third argument to provide translations.
+//
+//	cli.WithCommands("dev", dev.AddDevCommands, locales.FS)
+func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) core.Option {
 	return core.WithName("cmd."+name, func(c *core.Core) (any, error) {
-		return &commandService{core: c, register: register}, nil
+		svc := &commandService{core: c, register: register}
+		if len(localeFS) > 0 {
+			svc.localeFS = localeFS[0]
+		}
+		return svc, nil
 	})
 }
 
 type commandService struct {
 	core     *core.Core
 	register func(root *Command)
+	localeFS fs.FS
 }
 
 func (s *commandService) OnStartup(_ context.Context) error {
@@ -36,6 +46,11 @@ func (s *commandService) OnStartup(_ context.Context) error {
 	return nil
 }
 
+// Locales implements core.LocaleProvider.
+func (s *commandService) Locales() fs.FS {
+	return s.localeFS
+}
+
 // CommandRegistration is a function that adds commands to the root.
 type CommandRegistration func(root *cobra.Command)
 
@@ -43,27 +58,36 @@ var (
 	registeredCommands   []CommandRegistration
 	registeredCommandsMu sync.Mutex
 	commandsAttached     bool
+	registeredLocales    []fs.FS
 )
 
 // RegisterCommands registers a function that adds commands to the CLI.
-// Call this in your package's init() to register commands.
+// Optionally pass a locale fs.FS to provide translations for the commands.
 //
 //	func init() {
-//	    cli.RegisterCommands(AddCommands)
+//	    cli.RegisterCommands(AddCommands, locales.FS)
 //	}
-//
-//	func AddCommands(root *cobra.Command) {
-//	    root.AddCommand(myCmd)
-//	}
-func RegisterCommands(fn CommandRegistration) {
+func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
 	defer registeredCommandsMu.Unlock()
 	registeredCommands = append(registeredCommands, fn)
+	for _, lfs := range localeFS {
+		if lfs != nil {
+			registeredLocales = append(registeredLocales, lfs)
+		}
+	}
 
 	// If commands already attached (CLI already running), attach immediately
 	if commandsAttached && instance != nil && instance.root != nil {
 		fn(instance.root)
 	}
+}
+
+// RegisteredLocales returns all locale filesystems registered by command packages.
+func RegisteredLocales() []fs.FS {
+	registeredCommandsMu.Lock()
+	defer registeredCommandsMu.Unlock()
+	return registeredLocales
 }
 
 // RegisteredCommands returns an iterator over the registered command functions.
