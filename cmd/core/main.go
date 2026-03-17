@@ -8,9 +8,10 @@ import (
 	"forge.lthn.ai/core/cli/pkg/cli"
 
 	// Ecosystem commands — self-register via init() + cli.RegisterCommands()
-	_ "forge.lthn.ai/core/go-build/cmd/build"
-	_ "forge.lthn.ai/core/go-build/cmd/ci"
-	_ "forge.lthn.ai/core/go-build/cmd/sdk"
+	// TODO: go-build has SDK dep conflict (kin-openapi vs oasdiff), uncomment when fixed
+	// _ "forge.lthn.ai/core/go-build/cmd/build"
+	// _ "forge.lthn.ai/core/go-build/cmd/ci"
+	// _ "forge.lthn.ai/core/go-build/cmd/sdk"
 	_ "forge.lthn.ai/core/go-crypt/cmd/crypt"
 	_ "forge.lthn.ai/core/go-devops/cmd/deploy"
 	_ "forge.lthn.ai/core/go-devops/cmd/dev"
