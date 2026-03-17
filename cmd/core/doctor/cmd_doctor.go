@@ -21,9 +21,7 @@ var (
 var doctorVerbose bool
 
 var doctorCmd = &cobra.Command{
-	Use:   "doctor",
-	Short: i18n.T("cmd.doctor.short"),
-	Long:  i18n.T("cmd.doctor.long"),
+	Use: "doctor",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDoctor(doctorVerbose)
 	},

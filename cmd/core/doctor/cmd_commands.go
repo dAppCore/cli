@@ -10,9 +10,14 @@
 // Provides platform-specific installation instructions for missing tools.
 package doctor
 
-import "github.com/spf13/cobra"
+import (
+	"forge.lthn.ai/core/go-i18n"
+	"github.com/spf13/cobra"
+)
 
 // AddDoctorCommands registers the 'doctor' command and all subcommands.
 func AddDoctorCommands(root *cobra.Command) {
+	doctorCmd.Short = i18n.T("cmd.doctor.short")
+	doctorCmd.Long = i18n.T("cmd.doctor.long")
 	root.AddCommand(doctorCmd)
 }
