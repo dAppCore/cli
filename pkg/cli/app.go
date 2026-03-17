@@ -94,11 +94,14 @@ func MainWithLocales(locales []LocaleSource, commands ...core.Option) {
 		}
 	}()
 
-	// Build locale sources: framework built-in + caller's extras
+	// Build locale sources: framework built-in + caller's extras + registered packages
 	extraFS := []i18n.FSSource{
 		{FS: cliLocaleFS, Dir: "locales"},
 	}
 	extraFS = append(extraFS, locales...)
+	for _, lfs := range RegisteredLocales() {
+		extraFS = append(extraFS, i18n.FSSource{FS: lfs, Dir: "."})
+	}
 
 	// Core services load first, then command services
 	services := []core.Option{
