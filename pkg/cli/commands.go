@@ -41,7 +41,7 @@ type commandService struct {
 }
 
 func (s *commandService) OnStartup(_ context.Context) error {
-	if root, ok := s.core.App.(*cobra.Command); ok {
+	if root, ok := s.core.App().Runtime.(*cobra.Command); ok {
 		s.register(root)
 		// Auto-set Short/Long from i18n keys derived from command name.
 		// The Conclave's i18n service has already loaded all translations
