@@ -57,10 +57,10 @@ If a command returns an `*ExitError`, the process exits with that code. All othe
 This is the preferred way to register commands. It wraps your registration function in a Core service that participates in the lifecycle:
 
 ```go
-func WithCommands(name string, register func(root *Command)) core.Option
+func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) CommandSetup
 ```
 
-During startup, the Core framework calls your function with the root cobra command. Your function adds subcommands to it:
+During `Main()`, the CLI calls your function with the Core instance. Internally it retrieves the root cobra command and passes it to your register function:
 
 ```go
 func AddScoreCommands(root *cli.Command) {
@@ -98,18 +98,17 @@ func main() {
 }
 ```
 
-Where `Commands()` returns a slice of framework options:
+Where `Commands()` returns a slice of `CommandSetup` functions:
 
 ```go
 package lemcmd
 
 import (
-    "forge.lthn.ai/core/go/pkg/core"
     "forge.lthn.ai/core/cli/pkg/cli"
 )
 
-func Commands() []core.Option {
-    return []core.Option{
+func Commands() []cli.CommandSetup {
+    return []cli.CommandSetup{
         cli.WithCommands("score", addScoreCommands),
         cli.WithCommands("gen", addGenCommands),
         cli.WithCommands("data", addDataCommands),
@@ -141,7 +140,7 @@ If you need more control over the lifecycle:
 cli.Init(cli.Options{
     AppName:  "myapp",
     Version:  "1.0.0",
-    Services: []core.Option{...},
+    Services: []core.Service{...},
     OnReload: func() error { return reloadConfig() },
 })
 defer cli.Shutdown()

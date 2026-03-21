@@ -12,21 +12,16 @@ import (
 // resetGlobals clears the CLI singleton and command registry for test isolation.
 func resetGlobals(t *testing.T) {
 	t.Helper()
-	t.Cleanup(func() {
-		// Restore clean state after each test.
-		registeredCommandsMu.Lock()
-		registeredCommands = nil
-		commandsAttached = false
-		registeredCommandsMu.Unlock()
-		if instance != nil {
-			Shutdown()
-		}
-		instance = nil
-		once = sync.Once{}
-	})
+	doReset()
+	t.Cleanup(doReset)
+}
 
+// doReset clears all package-level state. Only safe from a single goroutine
+// with no concurrent RegisterCommands calls in flight (i.e. test setup/teardown).
+func doReset() {
 	registeredCommandsMu.Lock()
 	registeredCommands = nil
+	registeredLocales = nil
 	commandsAttached = false
 	registeredCommandsMu.Unlock()
 	if instance != nil {

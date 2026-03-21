@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	forge.lthn.ai/core/go v0.3.2 // indirect
 	forge.lthn.ai/core/go-inference v0.1.7 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect

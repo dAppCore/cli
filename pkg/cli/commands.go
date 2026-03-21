@@ -22,12 +22,7 @@ func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) 
 		if root, ok := c.App().Runtime.(*cobra.Command); ok {
 			register(root)
 		}
-		// Register locale FS if provided
-		if len(localeFS) > 0 && localeFS[0] != nil {
-			registeredCommandsMu.Lock()
-			registeredLocales = append(registeredLocales, localeFS[0])
-			registeredCommandsMu.Unlock()
-		}
+		appendLocales(localeFS...)
 	}
 }
 
@@ -49,18 +44,33 @@ var (
 //	}
 func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
-	defer registeredCommandsMu.Unlock()
 	registeredCommands = append(registeredCommands, fn)
-	for _, lfs := range localeFS {
-		if lfs != nil {
-			registeredLocales = append(registeredLocales, lfs)
-		}
-	}
+	attached := commandsAttached && instance != nil && instance.root != nil
+	root := instance
+	registeredCommandsMu.Unlock()
+
+	appendLocales(localeFS...)
 
 	// If commands already attached (CLI already running), attach immediately
-	if commandsAttached && instance != nil && instance.root != nil {
-		fn(instance.root)
+	if attached {
+		fn(root.root)
 	}
+}
+
+// appendLocales appends non-nil locale filesystems to the registry.
+func appendLocales(localeFS ...fs.FS) {
+	var nonempty []fs.FS
+	for _, lfs := range localeFS {
+		if lfs != nil {
+			nonempty = append(nonempty, lfs)
+		}
+	}
+	if len(nonempty) == 0 {
+		return
+	}
+	registeredCommandsMu.Lock()
+	registeredLocales = append(registeredLocales, nonempty...)
+	registeredCommandsMu.Unlock()
 }
 
 // RegisteredLocales returns all locale filesystems registered by command packages.

@@ -1,28 +1,28 @@
-wails3
-.task
-vendor/
-.idea
-node_modules/
+.idea/
+.vscode/
 .DS_Store
 *.log
-.env
-.env.*.local
+.core/
+
+# Build artefacts
+dist/
+bin/
+/core
+/cli
+
+# Go
+vendor/
+go.work.sum
 coverage/
 coverage.out
 coverage.html
-*.cache
-/coverage.txt
-bin/
-dist/
-tasks
-/cli
-/core
-local.test
-/i18n-validate
-.angular/
+coverage.txt
 
-patch_cov.*
-go.work.sum
-.kb
-.core/
-.idea/
+# Environment / secrets
+.env
+.env.*.local
+
+# OS / tooling
+.task
+*.cache
+node_modules/
