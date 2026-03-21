@@ -9,7 +9,7 @@ import (
 
 	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-log"
-	"forge.lthn.ai/core/go/pkg/core"
+	"dappco.re/go/core"
 	"github.com/spf13/cobra"
 )
 
@@ -60,16 +60,6 @@ func WithAppName(name string) {
 	AppName = name
 }
 
-// Main initialises and runs the CLI application.
-// Pass command services via WithCommands to register CLI commands
-// through the Core framework lifecycle.
-//
-//	cli.Main(
-//	    cli.WithCommands("config", config.AddConfigCommands),
-//	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
-//	)
-//
-// Exits with code 1 on error or panic.
 // LocaleSource pairs a filesystem with a directory for loading translations.
 type LocaleSource = i18n.FSSource
 
@@ -78,13 +68,16 @@ func WithLocales(fsys fs.FS, dir string) LocaleSource {
 	return LocaleSource{FS: fsys, Dir: dir}
 }
 
+// CommandSetup is a function that registers commands on the CLI after init.
+type CommandSetup func(c *core.Core)
+
 // Main initialises and runs the CLI with the framework's built-in translations.
-func Main(commands ...core.Option) {
+func Main(commands ...CommandSetup) {
 	MainWithLocales(nil, commands...)
 }
 
 // MainWithLocales initialises and runs the CLI with additional translation sources.
-func MainWithLocales(locales []LocaleSource, commands ...core.Option) {
+func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
@@ -103,24 +96,21 @@ func MainWithLocales(locales []LocaleSource, commands ...core.Option) {
 		extraFS = append(extraFS, i18n.FSSource{FS: lfs, Dir: "."})
 	}
 
-	// Core services load first, then command services
-	services := []core.Option{
-		core.WithName("i18n", i18n.NewCoreService(i18n.ServiceOptions{
-			ExtraFS: extraFS,
-		})),
-	}
-	services = append(services, commands...)
-
-	// Initialise CLI runtime with services
+	// Initialise CLI runtime
 	if err := Init(Options{
-		AppName:  AppName,
-		Version:  SemVer(),
-		Services: services,
+		AppName: AppName,
+		Version: SemVer(),
+		I18nSources: extraFS,
 	}); err != nil {
 		Error(err.Error())
 		os.Exit(1)
 	}
 	defer Shutdown()
+
+	// Run command setup functions
+	for _, setup := range commands {
+		setup(Core())
+	}
 
 	// Add completion command to the CLI's root
 	RootCmd().AddCommand(newCompletionCmd())

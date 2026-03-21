@@ -20,7 +20,7 @@ import (
 	"sync"
 	"syscall"
 
-	"forge.lthn.ai/core/go/pkg/core"
+	"dappco.re/go/core"
 	"github.com/spf13/cobra"
 )
 
@@ -39,9 +39,10 @@ type runtime struct {
 
 // Options configures the CLI runtime.
 type Options struct {
-	AppName  string
-	Version  string
-	Services []core.Option // Additional services to register
+	AppName     string
+	Version     string
+	Services    []core.Service // Additional services to register
+	I18nSources []LocaleSource // Additional i18n translation sources
 
 	// OnReload is called when SIGHUP is received (daemon mode).
 	// Use for configuration reloading. Leave nil to ignore SIGHUP.
@@ -63,25 +64,35 @@ func Init(opts Options) error {
 			SilenceUsage:  true,
 		}
 
-		// Build signal service options
-		var signalOpts []SignalOption
+		// Create Core with app identity
+		c := core.New(core.Options{
+			{Key: "name", Value: opts.AppName},
+		})
+		c.App().Version = opts.Version
+		c.App().Runtime = rootCmd
+
+		// Register signal service
+		signalSvc := &signalService{
+			cancel:  cancel,
+			sigChan: make(chan os.Signal, 1),
+		}
 		if opts.OnReload != nil {
-			signalOpts = append(signalOpts, WithReloadHandler(opts.OnReload))
+			signalSvc.onReload = opts.OnReload
 		}
+		c.Service("signal", core.Service{
+			OnStart: func() core.Result {
+				return signalSvc.start(ctx)
+			},
+			OnStop: func() core.Result {
+				return signalSvc.stop()
+			},
+		})
 
-		// Build options: app, signal service + any additional services
-		coreOpts := []core.Option{
-			core.WithApp(rootCmd),
-			core.WithName("signal", newSignalService(cancel, signalOpts...)),
-		}
-		coreOpts = append(coreOpts, opts.Services...)
-		coreOpts = append(coreOpts, core.WithServiceLock())
-
-		c, err := core.New(coreOpts...)
-		if err != nil {
-			initErr = err
-			cancel()
-			return
+		// Register additional services
+		for _, svc := range opts.Services {
+			if svc.Name != "" {
+				c.Service(svc.Name, svc)
+			}
 		}
 
 		instance = &runtime{
@@ -91,8 +102,11 @@ func Init(opts Options) error {
 			cancel: cancel,
 		}
 
-		if err := c.ServiceStartup(ctx, nil); err != nil {
-			initErr = err
+		r := c.ServiceStartup(ctx, nil)
+		if !r.OK {
+			if err, ok := r.Value.(error); ok {
+				initErr = err
+			}
 			return
 		}
 
@@ -145,7 +159,7 @@ func Shutdown() {
 	_ = instance.core.ServiceShutdown(instance.ctx)
 }
 
-// --- Signal Service (internal) ---
+// --- Signal Srv (internal) ---
 
 type signalService struct {
 	cancel       context.CancelFunc
@@ -154,30 +168,7 @@ type signalService struct {
 	shutdownOnce sync.Once
 }
 
-// SignalOption configures signal handling.
-type SignalOption func(*signalService)
-
-// WithReloadHandler sets a callback for SIGHUP.
-func WithReloadHandler(fn func() error) SignalOption {
-	return func(s *signalService) {
-		s.onReload = fn
-	}
-}
-
-func newSignalService(cancel context.CancelFunc, opts ...SignalOption) func(*core.Core) (any, error) {
-	return func(c *core.Core) (any, error) {
-		svc := &signalService{
-			cancel:  cancel,
-			sigChan: make(chan os.Signal, 1),
-		}
-		for _, opt := range opts {
-			opt(svc)
-		}
-		return svc, nil
-	}
-}
-
-func (s *signalService) OnStartup(ctx context.Context) error {
+func (s *signalService) start(ctx context.Context) core.Result {
 	signals := []os.Signal{syscall.SIGINT, syscall.SIGTERM}
 	if s.onReload != nil {
 		signals = append(signals, syscall.SIGHUP)
@@ -207,13 +198,13 @@ func (s *signalService) OnStartup(ctx context.Context) error {
 		}
 	}()
 
-	return nil
+	return core.Result{OK: true}
 }
 
-func (s *signalService) OnShutdown(ctx context.Context) error {
+func (s *signalService) stop() core.Result {
 	s.shutdownOnce.Do(func() {
 		signal.Stop(s.sigChan)
 		close(s.sigChan)
 	})
-	return nil
+	return core.Result{OK: true}
 }

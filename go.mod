@@ -2,7 +2,7 @@ module forge.lthn.ai/core/cli
 
 go 1.26.0
 
-require forge.lthn.ai/core/go v0.3.3
+require dappco.re/go/core v0.4.7
 
 require (
 	forge.lthn.ai/core/go-i18n v0.1.7

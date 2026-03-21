@@ -7,7 +7,7 @@ import (
 	"forge.lthn.ai/core/go-i18n"
 )
 
-// printInstallInstructions prints OS-specific installation instructions
+// printInstallInstructions prints OperatingSystem-specific installation instructions
 func printInstallInstructions() {
 	switch runtime.GOOS {
 	case "darwin":
