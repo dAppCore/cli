@@ -1,7 +1,5 @@
 package cli
 
-import "fmt"
-
 // CheckBuilder provides fluent API for check results.
 type CheckBuilder struct {
 	name     string
@@ -77,15 +75,15 @@ func (c *CheckBuilder) String() string {
 	}
 
 	if c.duration != "" {
-		return fmt.Sprintf("  %s %-20s %-10s %s", icon, c.name, status, DimStyle.Render(c.duration))
+		return Sprintf("  %s %-20s %-10s %s", icon, c.name, status, DimStyle.Render(c.duration))
 	}
 	if status != "" {
-		return fmt.Sprintf("  %s %s %s", icon, c.name, status)
+		return Sprintf("  %s %s %s", icon, c.name, status)
 	}
-	return fmt.Sprintf("  %s %s", icon, c.name)
+	return Sprintf("  %s %s", icon, c.name)
 }
 
 // Print outputs the check result.
 func (c *CheckBuilder) Print() {
-	fmt.Println(c.String())
+	Println("%s", c.String())
 }
