@@ -34,15 +34,13 @@ func addPkgSearchCommand(parent *cobra.Command) {
 		Use:   "search",
 		Short: i18n.T("cmd.pkg.search.short"),
 		Long:  i18n.T("cmd.pkg.search.long"),
+		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			org := searchOrg
-			pattern := searchPattern
+			pattern := resolvePkgSearchPattern(searchPattern, args)
 			limit := searchLimit
 			if org == "" {
 				org = "host-uk"
-			}
-			if pattern == "" {
-				pattern = "*"
 			}
 			if limit == 0 {
 				limit = 50
@@ -221,6 +219,16 @@ func formatPkgSearchUpdatedAt(raw string) string {
 	}
 
 	return cli.FormatAge(updatedAt)
+}
+
+func resolvePkgSearchPattern(flagPattern string, args []string) string {
+	if flagPattern != "" {
+		return flagPattern
+	}
+	if len(args) > 0 && strings.TrimSpace(args[0]) != "" {
+		return args[0]
+	}
+	return "*"
 }
 
 // matchGlob does simple glob matching with * wildcards
