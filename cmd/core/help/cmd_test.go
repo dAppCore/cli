@@ -59,6 +59,25 @@ func TestAddHelpCommands_Good(t *testing.T) {
 	assert.Contains(t, out, topics[0].ID)
 }
 
+func TestRenderSearchResults_Good(t *testing.T) {
+	out := captureOutput(t, func() {
+		err := renderSearchResults([]*gohelp.SearchResult{
+			{
+				Topic: &gohelp.Topic{
+					ID:    "config",
+					Title: "Configuration",
+				},
+				Snippet: "Core is configured via environment variables.",
+			},
+		}, "config")
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, out, "SEARCH RESULTS")
+	assert.Contains(t, out, "config - Configuration")
+	assert.Contains(t, out, "Core is configured via environment variables.")
+}
+
 func TestAddHelpCommands_Bad(t *testing.T) {
 	t.Run("missing search results", func(t *testing.T) {
 		cmd := newHelpCommand(t)

@@ -48,6 +48,9 @@ func renderSearchResults(results []*gohelp.SearchResult, query string) error {
 	cli.Section("Search Results")
 	for _, res := range results {
 		cli.Println("  %s - %s", res.Topic.ID, res.Topic.Title)
+		if snippet := strings.TrimSpace(res.Snippet); snippet != "" {
+			cli.Println("%s", cli.DimStr("    "+snippet))
+		}
 	}
 	return nil
 }
