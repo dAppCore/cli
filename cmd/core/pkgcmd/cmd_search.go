@@ -213,6 +213,11 @@ func renderPkgSearchResults(repos []ghRepo) {
 	fmt.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(repos)}) + "\n\n")
 
 	for _, r := range repos {
+		displayName := strings.TrimSpace(r.FullName)
+		if displayName == "" {
+			displayName = r.Name
+		}
+
 		visibility := ""
 		if r.Visibility == "private" {
 			visibility = dimStyle.Render(" " + i18n.T("cmd.pkg.search.private_label"))
@@ -226,7 +231,7 @@ func renderPkgSearchResults(repos []ghRepo) {
 			desc = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
 		}
 
-		fmt.Printf("  %s%s\n", repoNameStyle.Render(r.Name), visibility)
+		fmt.Printf("  %s%s\n", repoNameStyle.Render(displayName), visibility)
 		fmt.Printf("    %s\n", desc)
 
 		if meta := formatPkgSearchMetadata(r); meta != "" {

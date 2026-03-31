@@ -231,6 +231,7 @@ func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
 	out := capturePkgOutput(t, func() {
 		renderPkgSearchResults([]ghRepo{
 			{
+				FullName:       "host-uk/core-alpha",
 				Name:           "core-alpha",
 				Description:    "Alpha package",
 				Visibility:     "private",
@@ -243,7 +244,7 @@ func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
 		})
 	})
 
-	assert.Contains(t, out, "core-alpha")
+	assert.Contains(t, out, "host-uk/core-alpha")
 	assert.Contains(t, out, "Alpha package")
 	assert.Contains(t, out, "42 stars")
 	assert.Contains(t, out, "Go")
