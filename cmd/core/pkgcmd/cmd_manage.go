@@ -245,19 +245,43 @@ func runPkgUpdate(packages []string, all bool) error {
 
 // addPkgOutdatedCommand adds the 'pkg outdated' command.
 func addPkgOutdatedCommand(parent *cobra.Command) {
+	var format string
 	outdatedCmd := &cobra.Command{
 		Use:   "outdated",
 		Short: i18n.T("cmd.pkg.outdated.short"),
 		Long:  i18n.T("cmd.pkg.outdated.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPkgOutdated()
+			format, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+			return runPkgOutdated(format)
 		},
 	}
 
+	outdatedCmd.Flags().StringVar(&format, "format", "table", i18n.T("cmd.pkg.outdated.flag.format"))
 	parent.AddCommand(outdatedCmd)
 }
 
-func runPkgOutdated() error {
+type pkgOutdatedEntry struct {
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	Behind    int    `json:"behind"`
+	UpToDate  bool   `json:"upToDate"`
+	Installed bool   `json:"installed"`
+}
+
+type pkgOutdatedReport struct {
+	Format    string             `json:"format"`
+	Total     int                `json:"total"`
+	Installed int                `json:"installed"`
+	Missing   int                `json:"missing"`
+	Outdated  int                `json:"outdated"`
+	UpToDate  int                `json:"upToDate"`
+	Packages  []pkgOutdatedEntry `json:"packages"`
+}
+
+func runPkgOutdated(format string) error {
 	regPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
@@ -276,17 +300,31 @@ func runPkgOutdated() error {
 		basePath = filepath.Join(filepath.Dir(regPath), basePath)
 	}
 
-	fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.outdated.outdated_label")), i18n.T("common.progress.checking_updates"))
+	jsonOutput := strings.EqualFold(format, "json")
+	if !jsonOutput {
+		fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.outdated.outdated_label")), i18n.T("common.progress.checking_updates"))
+	}
 
-	var outdated, upToDate, notInstalled int
+	var installed, outdated, upToDate, notInstalled int
+	var entries []pkgOutdatedEntry
 
 	for _, r := range reg.List() {
 		repoPath := filepath.Join(basePath, r.Name)
 
 		if !coreio.Local.Exists(filepath.Join(repoPath, ".git")) {
 			notInstalled++
+			if jsonOutput {
+				entries = append(entries, pkgOutdatedEntry{
+					Name:      r.Name,
+					Path:      repoPath,
+					Behind:    0,
+					UpToDate:  false,
+					Installed: false,
+				})
+			}
 			continue
 		}
+		installed++
 
 		// Fetch updates
 		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run()
@@ -299,13 +337,50 @@ func runPkgOutdated() error {
 		}
 
 		count := strings.TrimSpace(string(output))
+		behind := 0
+		if count != "" {
+			fmt.Sscanf(count, "%d", &behind)
+		}
 		if count != "0" {
-			fmt.Printf("  %s %s (%s)\n",
-				errorStyle.Render("↓"), repoNameStyle.Render(r.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": count}))
+			if !jsonOutput {
+				fmt.Printf("  %s %s (%s)\n",
+					errorStyle.Render("↓"), repoNameStyle.Render(r.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": count}))
+			}
 			outdated++
+			if jsonOutput {
+				entries = append(entries, pkgOutdatedEntry{
+					Name:      r.Name,
+					Path:      repoPath,
+					Behind:    behind,
+					UpToDate:  false,
+					Installed: true,
+				})
+			}
 		} else {
 			upToDate++
+			if jsonOutput {
+				entries = append(entries, pkgOutdatedEntry{
+					Name:      r.Name,
+					Path:      repoPath,
+					Behind:    0,
+					UpToDate:  true,
+					Installed: true,
+				})
+			}
 		}
+	}
+
+	if jsonOutput {
+		report := pkgOutdatedReport{
+			Format:    "json",
+			Total:     len(reg.List()),
+			Installed: installed,
+			Missing:   notInstalled,
+			Outdated:  outdated,
+			UpToDate:  upToDate,
+			Packages:  entries,
+		}
+		return printPkgOutdatedJSON(report)
 	}
 
 	fmt.Println()
@@ -317,5 +392,15 @@ func runPkgOutdated() error {
 		fmt.Printf("\n%s %s\n", i18n.T("cmd.pkg.outdated.update_with"), dimStyle.Render("core pkg update --all"))
 	}
 
+	return nil
+}
+
+func printPkgOutdatedJSON(report pkgOutdatedReport) error {
+	out, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.format", "outdated results"), err)
+	}
+
+	fmt.Println(string(out))
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -67,6 +68,70 @@ repos:
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "core-alpha", ".git"), 0755))
 }
 
+func gitCommand(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %v failed: %s", args, string(out))
+	return string(out)
+}
+
+func commitGitRepo(t *testing.T, dir, filename, content, message string) {
+	t.Helper()
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644))
+	gitCommand(t, dir, "add", filename)
+	gitCommand(t, dir, "commit", "-m", message)
+}
+
+func setupOutdatedRegistry(t *testing.T) string {
+	t.Helper()
+
+	tmp := t.TempDir()
+
+	remoteDir := filepath.Join(tmp, "remote.git")
+	gitCommand(t, tmp, "init", "--bare", remoteDir)
+
+	seedDir := filepath.Join(tmp, "seed")
+	require.NoError(t, os.MkdirAll(seedDir, 0755))
+	gitCommand(t, seedDir, "init")
+	gitCommand(t, seedDir, "config", "user.email", "test@test.com")
+	gitCommand(t, seedDir, "config", "user.name", "Test")
+	commitGitRepo(t, seedDir, "repo.txt", "v1\n", "initial")
+	gitCommand(t, seedDir, "remote", "add", "origin", remoteDir)
+	gitCommand(t, seedDir, "push", "-u", "origin", "master")
+
+	freshDir := filepath.Join(tmp, "core-fresh")
+	gitCommand(t, tmp, "clone", remoteDir, freshDir)
+
+	staleDir := filepath.Join(tmp, "core-stale")
+	gitCommand(t, tmp, "clone", remoteDir, staleDir)
+
+	commitGitRepo(t, seedDir, "repo.txt", "v2\n", "second")
+	gitCommand(t, seedDir, "push")
+	gitCommand(t, freshDir, "pull", "--ff-only")
+
+	registry := strings.TrimSpace(`
+org: host-uk
+base_path: .
+repos:
+  core-fresh:
+    type: foundation
+    description: Fresh package
+  core-stale:
+    type: module
+    description: Stale package
+  core-missing:
+    type: module
+    description: Missing package
+`) + "\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "repos.yaml"), []byte(registry), 0644))
+	return tmp
+}
+
 func TestRunPkgList_Good(t *testing.T) {
 	tmp := t.TempDir()
 	writeTestRegistry(t, tmp)
@@ -114,6 +179,51 @@ func TestRunPkgList_UnsupportedFormat(t *testing.T) {
 	err := runPkgList("yaml")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported format")
+}
+
+func TestRunPkgOutdated_JSON(t *testing.T) {
+	tmp := setupOutdatedRegistry(t)
+	withWorkingDir(t, tmp)
+
+	out := capturePkgOutput(t, func() {
+		err := runPkgOutdated("json")
+		require.NoError(t, err)
+	})
+
+	var report pkgOutdatedReport
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
+	assert.Equal(t, "json", report.Format)
+	assert.Equal(t, 3, report.Total)
+	assert.Equal(t, 2, report.Installed)
+	assert.Equal(t, 1, report.Missing)
+	assert.Equal(t, 1, report.Outdated)
+	assert.Equal(t, 1, report.UpToDate)
+	require.Len(t, report.Packages, 3)
+
+	var staleFound, freshFound, missingFound bool
+	for _, pkg := range report.Packages {
+		switch pkg.Name {
+		case "core-stale":
+			staleFound = true
+			assert.True(t, pkg.Installed)
+			assert.False(t, pkg.UpToDate)
+			assert.Equal(t, 1, pkg.Behind)
+		case "core-fresh":
+			freshFound = true
+			assert.True(t, pkg.Installed)
+			assert.True(t, pkg.UpToDate)
+			assert.Equal(t, 0, pkg.Behind)
+		case "core-missing":
+			missingFound = true
+			assert.False(t, pkg.Installed)
+			assert.False(t, pkg.UpToDate)
+			assert.Equal(t, 0, pkg.Behind)
+		}
+	}
+
+	assert.True(t, staleFound)
+	assert.True(t, freshFound)
+	assert.True(t, missingFound)
 }
 
 func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {

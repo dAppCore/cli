@@ -108,7 +108,10 @@
 				"all_up_to_date": "All packages are up to date",
 				"commits_behind": "{{.Count}} commits behind",
 				"update_with": "Update with: core pkg update {{.Name}}",
-				"summary": "{{.Outdated}}/{{.Total}} outdated"
+				"summary": "{{.Outdated}}/{{.Total}} outdated",
+				"flag": {
+					"format": "Output format: table or json"
+				}
 			}
 		}
 	},

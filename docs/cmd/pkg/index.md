@@ -146,6 +146,16 @@ core pkg outdated
 
 Fetches from remote and shows packages that are behind.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--format` | Output format (`table` or `json`) |
+
+### JSON Output
+
+When `--format json` is set, `core pkg outdated` emits a structured report with package status, behind counts, and summary totals.
+
 ---
 
 ## See Also
