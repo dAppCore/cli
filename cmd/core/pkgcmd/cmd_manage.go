@@ -1,11 +1,13 @@
 package pkgcmd
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"forge.lthn.ai/core/go-i18n"
@@ -73,6 +75,10 @@ func runPkgList(format string) error {
 		fmt.Println(i18n.T("cmd.pkg.list.no_packages"))
 		return nil
 	}
+
+	slices.SortFunc(allRepos, func(a, b *repos.Repo) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	var entries []pkgListEntry
 	var installed, missing int
