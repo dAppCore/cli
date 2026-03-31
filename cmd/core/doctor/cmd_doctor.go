@@ -2,9 +2,6 @@
 package doctor
 
 import (
-	"errors"
-	"fmt"
-
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
 	"github.com/spf13/cobra"
@@ -32,72 +29,72 @@ func init() {
 }
 
 func runDoctor(verbose bool) error {
-	fmt.Println(i18n.T("common.progress.checking", map[string]any{"Item": "development environment"}))
-	fmt.Println()
+	cli.Println("%s", i18n.T("common.progress.checking", map[string]any{"Item": "development environment"}))
+	cli.Blank()
 
 	var passed, failed, optional int
 
 	// Check required tools
-	fmt.Println(i18n.T("cmd.doctor.required"))
-	for _, c := range requiredChecks() {
-		ok, version := runCheck(c)
+	cli.Println("%s", i18n.T("cmd.doctor.required"))
+	for _, toolCheck := range requiredChecks() {
+		ok, version := runCheck(toolCheck)
 		if ok {
 			if verbose {
-				fmt.Println(formatCheckResult(true, c.name, version))
+				cli.Println("%s", formatCheckResult(true, toolCheck.name, version))
 			} else {
-				fmt.Println(formatCheckResult(true, c.name, ""))
+				cli.Println("%s", formatCheckResult(true, toolCheck.name, ""))
 			}
 			passed++
 		} else {
-			fmt.Printf("  %s %s - %s\n", errorStyle.Render(cli.Glyph(":cross:")), c.name, c.description)
+			cli.Println("  %s %s - %s", errorStyle.Render(cli.Glyph(":cross:")), toolCheck.name, toolCheck.description)
 			failed++
 		}
 	}
 
 	// Check optional tools
-	fmt.Printf("\n%s\n", i18n.T("cmd.doctor.optional"))
-	for _, c := range optionalChecks() {
-		ok, version := runCheck(c)
+	cli.Println("\n%s", i18n.T("cmd.doctor.optional"))
+	for _, toolCheck := range optionalChecks() {
+		ok, version := runCheck(toolCheck)
 		if ok {
 			if verbose {
-				fmt.Println(formatCheckResult(true, c.name, version))
+				cli.Println("%s", formatCheckResult(true, toolCheck.name, version))
 			} else {
-				fmt.Println(formatCheckResult(true, c.name, ""))
+				cli.Println("%s", formatCheckResult(true, toolCheck.name, ""))
 			}
 			passed++
 		} else {
-			fmt.Printf("  %s %s - %s\n", dimStyle.Render(cli.Glyph(":skip:")), c.name, dimStyle.Render(c.description))
+			cli.Println("  %s %s - %s", dimStyle.Render(cli.Glyph(":skip:")), toolCheck.name, dimStyle.Render(toolCheck.description))
 			optional++
 		}
 	}
 
 	// Check GitHub access
-	fmt.Printf("\n%s\n", i18n.T("cmd.doctor.github"))
+	cli.Println("\n%s", i18n.T("cmd.doctor.github"))
 	if checkGitHubSSH() {
-		fmt.Println(formatCheckResult(true, i18n.T("cmd.doctor.ssh_found"), ""))
+		cli.Println("%s", formatCheckResult(true, i18n.T("cmd.doctor.ssh_found"), ""))
 	} else {
-		fmt.Printf("  %s %s\n", errorStyle.Render(cli.Glyph(":cross:")), i18n.T("cmd.doctor.ssh_missing"))
+		cli.Println("  %s %s", errorStyle.Render(cli.Glyph(":cross:")), i18n.T("cmd.doctor.ssh_missing"))
 		failed++
 	}
 
 	if checkGitHubCLI() {
-		fmt.Println(formatCheckResult(true, i18n.T("cmd.doctor.cli_auth"), ""))
+		cli.Println("%s", formatCheckResult(true, i18n.T("cmd.doctor.cli_auth"), ""))
 	} else {
-		fmt.Printf("  %s %s\n", errorStyle.Render(cli.Glyph(":cross:")), i18n.T("cmd.doctor.cli_auth_missing"))
+		cli.Println("  %s %s", errorStyle.Render(cli.Glyph(":cross:")), i18n.T("cmd.doctor.cli_auth_missing"))
 		failed++
 	}
 
 	// Check workspace
-	fmt.Printf("\n%s\n", i18n.T("cmd.doctor.workspace"))
+	cli.Println("\n%s", i18n.T("cmd.doctor.workspace"))
 	checkWorkspace()
 
 	// Summary
-	fmt.Println()
+	cli.Blank()
 	if failed > 0 {
 		cli.Error(i18n.T("cmd.doctor.issues", map[string]any{"Count": failed}))
-		fmt.Printf("\n%s\n", i18n.T("cmd.doctor.install_missing"))
+		cli.Println("\n%s", i18n.T("cmd.doctor.install_missing"))
 		printInstallInstructions()
-		return errors.New(i18n.T("cmd.doctor.issues_error", map[string]any{"Count": failed}))
+		return cli.Err("%s", i18n.T("cmd.doctor.issues_error", map[string]any{"Count": failed}))
 	}
 
 	cli.Success(i18n.T("cmd.doctor.ready"))
@@ -105,16 +102,16 @@ func runDoctor(verbose bool) error {
 }
 
 func formatCheckResult(ok bool, name, detail string) string {
-	check := cli.Check(name)
+	checkBuilder := cli.Check(name)
 	if ok {
-		check.Pass()
+		checkBuilder.Pass()
 	} else {
-		check.Fail()
+		checkBuilder.Fail()
 	}
 	if detail != "" {
-		check.Message(detail)
+		checkBuilder.Message(detail)
 	} else {
-		check.Message("")
+		checkBuilder.Message("")
 	}
-	return check.String()
+	return checkBuilder.String()
 }

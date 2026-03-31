@@ -223,11 +223,55 @@ func TestTable_Bad(t *testing.T) {
 	})
 }
 
+func TestTable_Ugly(t *testing.T) {
+	t.Run("no columns no panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			tbl := NewTable()
+			tbl.AddRow()
+			_ = tbl.String()
+		})
+	})
+
+	t.Run("cell style function returning nil does not panic", func(t *testing.T) {
+		SetColorEnabled(false)
+		defer SetColorEnabled(true)
+
+		tbl := NewTable("A").WithCellStyle(0, func(_ string) *AnsiStyle {
+			return nil
+		})
+		tbl.AddRow("value")
+
+		assert.NotPanics(t, func() {
+			_ = tbl.String()
+		})
+	})
+
+	t.Run("max width of 1 does not panic", func(t *testing.T) {
+		SetColorEnabled(false)
+		defer SetColorEnabled(true)
+
+		tbl := NewTable("HEADER").WithMaxWidth(1)
+		tbl.AddRow("data")
+
+		assert.NotPanics(t, func() {
+			_ = tbl.String()
+		})
+	})
+}
+
 func TestTruncate_Good(t *testing.T) {
 	assert.Equal(t, "hel...", Truncate("hello world", 6))
 	assert.Equal(t, "hi", Truncate("hi", 6))
 	assert.Equal(t, "he", Truncate("hello", 2))
 	assert.Equal(t, "東", Truncate("東京", 3))
+}
+
+func TestTruncate_Ugly(t *testing.T) {
+	t.Run("zero max does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			_ = Truncate("hello", 0)
+		})
+	})
 }
 
 func TestPad_Good(t *testing.T) {
@@ -248,4 +292,12 @@ func TestStyledf_Good_NilStyle(t *testing.T) {
 	UseASCII()
 
 	assert.Equal(t, "value: [WARN]", Styledf(nil, "value: %s", ":warn:"))
+}
+
+func TestPad_Ugly(t *testing.T) {
+	t.Run("zero width does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			_ = Pad("hello", 0)
+		})
+	})
 }

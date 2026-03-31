@@ -118,3 +118,41 @@ func TestRender_NilStyle_Good(t *testing.T) {
 		t.Errorf("Nil style should return plain text, got %q", got)
 	}
 }
+
+func TestAnsiStyle_Bad(t *testing.T) {
+	original := ColorEnabled()
+	defer SetColorEnabled(original)
+
+	// Invalid hex colour falls back to white (255,255,255).
+	SetColorEnabled(true)
+	style := NewStyle().Foreground("notahex")
+	got := style.Render("text")
+	if !strings.Contains(got, "text") {
+		t.Errorf("Invalid hex: expected 'text' in output, got %q", got)
+	}
+
+	// Short hex (less than 6 chars) also falls back.
+	style = NewStyle().Foreground("#abc")
+	got = style.Render("x")
+	if !strings.Contains(got, "x") {
+		t.Errorf("Short hex: expected 'x' in output, got %q", got)
+	}
+}
+
+func TestAnsiStyle_Ugly(t *testing.T) {
+	original := ColorEnabled()
+	defer SetColorEnabled(original)
+
+	// All style modifiers stack without panicking.
+	SetColorEnabled(true)
+	style := NewStyle().Bold().Dim().Italic().Underline().
+		Foreground("#3b82f6").Background("#1f2937")
+	got := style.Render("styled")
+	if !strings.Contains(got, "styled") {
+		t.Errorf("All modifiers: expected 'styled' in output, got %q", got)
+	}
+
+	// Empty string renders without panicking.
+	got = style.Render("")
+	_ = got
+}

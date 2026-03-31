@@ -6,6 +6,8 @@ import (
 )
 
 // AddConfigCommands registers the 'config' command group and all subcommands.
+//
+//	config.AddConfigCommands(rootCmd)
 func AddConfigCommands(root *cli.Command) {
 	configCmd := cli.NewGroup("config", "Manage configuration", "")
 	root.AddCommand(configCmd)
@@ -17,9 +19,9 @@ func AddConfigCommands(root *cli.Command) {
 }
 
 func loadConfig() (*config.Config, error) {
-	cfg, err := config.New()
+	configuration, err := config.New()
 	if err != nil {
 		return nil, cli.Wrap(err, "failed to load config")
 	}
-	return cfg, nil
+	return configuration, nil
 }

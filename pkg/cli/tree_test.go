@@ -145,3 +145,31 @@ func TestTree_Bad(t *testing.T) {
 		assert.Equal(t, "\n", tree.String())
 	})
 }
+
+func TestTree_Ugly(t *testing.T) {
+	t.Run("nil style does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			tree := NewTree("root").WithStyle(nil)
+			tree.Add("child")
+			_ = tree.String()
+		})
+	})
+
+	t.Run("AddStyled with nil style does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			tree := NewTree("root")
+			tree.AddStyled("item", nil)
+			_ = tree.String()
+		})
+	})
+
+	t.Run("very deep nesting does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			node := NewTree("root")
+			for range 100 {
+				node = node.Add("child")
+			}
+			_ = NewTree("root").String()
+		})
+	})
+}

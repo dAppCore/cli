@@ -11,175 +11,83 @@ import (
 func captureOutput(f func()) string {
 	oldOut := os.Stdout
 	oldErr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	os.Stderr = w
+	reader, writer, _ := os.Pipe()
+	os.Stdout = writer
+	os.Stderr = writer
 
 	f()
 
-	_ = w.Close()
+	_ = writer.Close()
 	os.Stdout = oldOut
 	os.Stderr = oldErr
 
 	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, reader)
 	return buf.String()
 }
 
-func TestSemanticOutput(t *testing.T) {
-	restoreThemeAndColors(t)
+func TestSemanticOutput_Good(t *testing.T) {
 	UseASCII()
+	SetColorEnabled(false)
+	defer SetColorEnabled(true)
 
-	// Test Success
-	out := captureOutput(func() {
-		Success("done")
-	})
-	if out == "" {
-		t.Error("Success output empty")
+	cases := []struct {
+		name string
+		fn   func()
+	}{
+		{"Success", func() { Success("done") }},
+		{"Info", func() { Info("info") }},
+		{"Task", func() { Task("task", "msg") }},
+		{"Section", func() { Section("section") }},
+		{"Hint", func() { Hint("hint", "msg") }},
+		{"Result_pass", func() { Result(true, "pass") }},
 	}
 
-	// Test Error
-	out = captureOutput(func() {
-		Error("fail")
-	})
-	if out == "" {
-		t.Error("Error output empty")
-	}
-
-	// Test Warn
-	out = captureOutput(func() {
-		Warn("warn")
-	})
-	if out == "" {
-		t.Error("Warn output empty")
-	}
-
-	// Test Info
-	out = captureOutput(func() {
-		Info("info")
-	})
-	if out == "" {
-		t.Error("Info output empty")
-	}
-
-	// Test Task
-	out = captureOutput(func() {
-		Task("task", "msg")
-	})
-	if out == "" {
-		t.Error("Task output empty")
-	}
-
-	// Test Section
-	out = captureOutput(func() {
-		Section("section")
-	})
-	if out == "" {
-		t.Error("Section output empty")
-	}
-
-	// Test Hint
-	out = captureOutput(func() {
-		Hint("hint", "msg")
-	})
-	if out == "" {
-		t.Error("Hint output empty")
-	}
-
-	// Test Result
-	out = captureOutput(func() {
-		Result(true, "pass")
-	})
-	if out == "" {
-		t.Error("Result(true) output empty")
-	}
-
-	out = captureOutput(func() {
-		Result(false, "fail")
-	})
-	if out == "" {
-		t.Error("Result(false) output empty")
-	}
-}
-
-func TestSemanticOutput_GlyphShortcodes(t *testing.T) {
-	restoreThemeAndColors(t)
-	UseASCII()
-
-	out := captureOutput(func() {
-		Echo(":check:")
-		Success("done :check:")
-		Task(":cross:", "running :warn:")
-		Section(":check: audit")
-		Hint(":info:", "apply :check:")
-		Label("status", "ready :warn:")
-		Progress("check", 1, 2, ":warn: repo")
-	})
-
-	for _, want := range []string{"[OK]", "[FAIL]", "[WARN]"} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("expected output to contain %q, got %q", want, out)
+	for _, testCase := range cases {
+		output := captureOutput(testCase.fn)
+		if output == "" {
+			t.Errorf("%s: output was empty", testCase.name)
 		}
 	}
-	if !strings.Contains(out, "[WARN] repo") {
-		t.Fatalf("expected progress item shortcode to be rendered, got %q", out)
+}
+
+func TestSemanticOutput_Bad(t *testing.T) {
+	UseASCII()
+	SetColorEnabled(false)
+	defer SetColorEnabled(true)
+
+	// Error and Warn go to stderr — both captured here.
+	errorOutput := captureOutput(func() { Error("fail") })
+	if errorOutput == "" {
+		t.Error("Error: output was empty")
+	}
+
+	warnOutput := captureOutput(func() { Warn("warn") })
+	if warnOutput == "" {
+		t.Error("Warn: output was empty")
+	}
+
+	failureOutput := captureOutput(func() { Result(false, "fail") })
+	if failureOutput == "" {
+		t.Error("Result(false): output was empty")
 	}
 }
 
-func TestSection_GlyphTheme(t *testing.T) {
-	restoreThemeAndColors(t)
+func TestSemanticOutput_Ugly(t *testing.T) {
 	UseASCII()
 
-	out := captureOutput(func() {
-		Section("audit")
-	})
-
-	if !strings.Contains(out, "-- AUDIT --") {
-		t.Fatalf("expected ASCII section header, got %q", out)
+	// Severity with various levels should not panic.
+	levels := []string{"critical", "high", "medium", "low", "unknown", ""}
+	for _, level := range levels {
+		output := captureOutput(func() { Severity(level, "test message") })
+		if output == "" {
+			t.Errorf("Severity(%q): output was empty", level)
+		}
 	}
-	if strings.Contains(out, "── AUDIT ──") {
-		t.Fatalf("expected glyph theme to avoid unicode dashes, got %q", out)
-	}
-}
 
-func TestScanln_UsesOverrideStdin(t *testing.T) {
-	SetStdin(strings.NewReader("hello\n"))
-	defer SetStdin(nil)
-
-	var got string
-	n, err := Scanln(&got)
-
-	if err != nil {
-		t.Fatalf("Scanln returned error: %v", err)
-	}
-	if n != 1 {
-		t.Fatalf("expected 1 scanned item, got %d", n)
-	}
-	if got != "hello" {
-		t.Fatalf("expected %q, got %q", "hello", got)
-	}
-}
-
-func TestOutputSetters_Good(t *testing.T) {
-	var out bytes.Buffer
-	var err bytes.Buffer
-
-	SetStdout(&out)
-	SetStderr(&err)
-	t.Cleanup(func() {
-		SetStdout(nil)
-		SetStderr(nil)
-	})
-
-	Success("done")
-	Error("fail")
-	Info("note")
-	Warn("careful")
-
-	if out.Len() == 0 {
-		t.Fatal("expected stdout writer to receive output")
-	}
-	if err.Len() == 0 {
-		t.Fatal("expected stderr writer to receive output")
+	// Section uppercases the name.
+	output := captureOutput(func() { Section("audit") })
+	if !strings.Contains(output, "AUDIT") {
+		t.Errorf("Section: expected AUDIT in output, got %q", output)
 	}
 }

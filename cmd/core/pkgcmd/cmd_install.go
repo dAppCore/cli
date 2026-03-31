@@ -2,20 +2,14 @@ package pkgcmd
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
+	"dappco.re/go/core"
+	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-scm/repos"
 	"github.com/spf13/cobra"
-)
-
-import (
-	"errors"
 )
 
 var (
@@ -23,17 +17,15 @@ var (
 	installAddToReg  bool
 )
 
-var errInvalidPkgInstallSource = errors.New("invalid repo format: use org/repo or org/repo@ref")
-
 // addPkgInstallCommand adds the 'pkg install' command.
 func addPkgInstallCommand(parent *cobra.Command) {
 	installCmd := &cobra.Command{
-		Use:   "install [org/]repo[@ref]",
+		Use:   "install <org/repo>",
 		Short: i18n.T("cmd.pkg.install.short"),
 		Long:  i18n.T("cmd.pkg.install.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				return errors.New(i18n.T("cmd.pkg.error.repo_required"))
+				return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
 			}
 			return runPkgInstall(args[0], installTargetDir, installAddToReg)
 		},
@@ -45,181 +37,119 @@ func addPkgInstallCommand(parent *cobra.Command) {
 	parent.AddCommand(installCmd)
 }
 
-func runPkgInstall(repoArg, targetDir string, addToRegistry bool) error {
+func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
 	ctx := context.Background()
 
-	// Parse repo shorthand:
-	// - repoName -> defaults to host-uk/repoName
-	// - org/repo  -> uses the explicit org
-	org, repoName, ref, err := parsePkgInstallSource(repoArg)
-	if err != nil {
-		return err
+	// Parse org/repo argument.
+	parts := core.Split(repoArg, "/")
+	if len(parts) != 2 {
+		return cli.Err(i18n.T("cmd.pkg.error.invalid_repo_format"))
 	}
+	org, repoName := parts[0], parts[1]
 
-	// Determine target directory
-	if targetDir == "" {
-		if regPath, err := repos.FindRegistry(coreio.Local); err == nil {
-			if reg, err := repos.LoadRegistry(coreio.Local, regPath); err == nil {
-				targetDir = reg.BasePath
-				if targetDir == "" {
-					targetDir = "./packages"
+	// Determine target directory from registry or default.
+	if targetDirectory == "" {
+		if registryPath, err := repos.FindRegistry(coreio.Local); err == nil {
+			if registry, err := repos.LoadRegistry(coreio.Local, registryPath); err == nil {
+				targetDirectory = registry.BasePath
+				if targetDirectory == "" {
+					targetDirectory = "./packages"
 				}
-				if !filepath.IsAbs(targetDir) {
-					targetDir = filepath.Join(filepath.Dir(regPath), targetDir)
+				if !core.PathIsAbs(targetDirectory) {
+					targetDirectory = core.Path(core.PathDir(registryPath), targetDirectory)
 				}
 			}
 		}
-		if targetDir == "" {
-			targetDir = "."
+		if targetDirectory == "" {
+			targetDirectory = "."
 		}
 	}
 
-	if strings.HasPrefix(targetDir, "~/") {
+	if core.HasPrefix(targetDirectory, "~/") {
 		home, _ := os.UserHomeDir()
-		targetDir = filepath.Join(home, targetDir[2:])
+		targetDirectory = core.Path(home, targetDirectory[2:])
 	}
 
-	repoPath := filepath.Join(targetDir, repoName)
+	repoPath := core.Path(targetDirectory, repoName)
 
-	if coreio.Local.Exists(filepath.Join(repoPath, ".git")) {
-		fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("skip")), i18n.T("cmd.pkg.install.already_exists", map[string]string{"Name": repoName, "Path": repoPath}))
+	if coreio.Local.Exists(core.Path(repoPath, ".git")) {
+		cli.Println("%s %s", dimStyle.Render(i18n.Label("skip")), i18n.T("cmd.pkg.install.already_exists", map[string]string{"Name": repoName, "Path": repoPath}))
 		return nil
 	}
 
-	if err := coreio.Local.EnsureDir(targetDir); err != nil {
-		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.create", "directory"), err)
+	if err := coreio.Local.EnsureDir(targetDirectory); err != nil {
+		return cli.Wrap(err, i18n.T("i18n.fail.create", "directory"))
 	}
 
-	fmt.Printf("%s %s/%s\n", dimStyle.Render(i18n.T("cmd.pkg.install.installing_label")), org, repoName)
-	if ref != "" {
-		fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("ref")), ref)
-	}
-	fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("target")), repoPath)
-	fmt.Println()
+	cli.Println("%s %s/%s", dimStyle.Render(i18n.T("cmd.pkg.install.installing_label")), org, repoName)
+	cli.Println("%s %s", dimStyle.Render(i18n.Label("target")), repoPath)
+	cli.Blank()
 
-	fmt.Printf("  %s... ", dimStyle.Render(i18n.T("common.status.cloning")))
-	if ref == "" {
-		err = gitClone(ctx, org, repoName, repoPath)
-	} else {
-		err = gitCloneRef(ctx, org, repoName, repoPath, ref)
-	}
+	cli.Print("  %s... ", dimStyle.Render(i18n.T("common.status.cloning")))
+	err := gitClone(ctx, org, repoName, repoPath)
 	if err != nil {
-		fmt.Printf("%s\n", errorStyle.Render("✗ "+err.Error()))
+		cli.Println("%s", errorStyle.Render("✗ "+err.Error()))
 		return err
 	}
-	fmt.Printf("%s\n", successStyle.Render("✓"))
+	cli.Println("%s", successStyle.Render("✓"))
 
 	if addToRegistry {
 		if err := addToRegistryFile(org, repoName); err != nil {
-			fmt.Printf("  %s %s: %s\n", errorStyle.Render("✗"), i18n.T("cmd.pkg.install.add_to_registry"), err)
+			cli.Println("  %s %s: %s", errorStyle.Render("✗"), i18n.T("cmd.pkg.install.add_to_registry"), err)
 		} else {
-			fmt.Printf("  %s %s\n", successStyle.Render("✓"), i18n.T("cmd.pkg.install.added_to_registry"))
+			cli.Println("  %s %s", successStyle.Render("✓"), i18n.T("cmd.pkg.install.added_to_registry"))
 		}
 	}
 
-	fmt.Println()
-	fmt.Printf("%s %s\n", successStyle.Render(i18n.T("i18n.done.install")), i18n.T("cmd.pkg.install.installed", map[string]string{"Name": repoName}))
+	cli.Blank()
+	cli.Println("%s %s", successStyle.Render(i18n.T("i18n.done.install")), i18n.T("cmd.pkg.install.installed", map[string]string{"Name": repoName}))
 
 	return nil
 }
 
-func parsePkgInstallSource(repoArg string) (org, repoName, ref string, err error) {
-	org = "host-uk"
-	repoName = strings.TrimSpace(repoArg)
-	if repoName == "" {
-		return "", "", "", errors.New("repository argument required")
-	}
-
-	if at := strings.LastIndex(repoName, "@"); at >= 0 {
-		ref = strings.TrimSpace(repoName[at+1:])
-		repoName = strings.TrimSpace(repoName[:at])
-		if ref == "" || repoName == "" {
-			return "", "", "", errInvalidPkgInstallSource
-		}
-	}
-
-	if strings.Contains(repoName, "/") {
-		parts := strings.Split(repoName, "/")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", "", "", errInvalidPkgInstallSource
-		}
-		org, repoName = parts[0], parts[1]
-	}
-
-	if strings.Contains(repoName, "/") {
-		return "", "", "", errInvalidPkgInstallSource
-	}
-
-	return org, repoName, ref, nil
-}
-
 func addToRegistryFile(org, repoName string) error {
-	regPath, err := repos.FindRegistry(coreio.Local)
+	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
-	reg, err := repos.LoadRegistry(coreio.Local, regPath)
+	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
 		return err
 	}
 
-	if _, exists := reg.Get(repoName); exists {
+	if _, exists := registry.Get(repoName); exists {
 		return nil
 	}
 
-	content, err := coreio.Local.Read(regPath)
+	content, err := coreio.Local.Read(registryPath)
 	if err != nil {
 		return err
 	}
 
 	repoType := detectRepoType(repoName)
-	entry := fmt.Sprintf("\n  %s:\n    type: %s\n    description: (installed via core pkg install)\n",
+	entry := cli.Sprintf("\n  %s:\n    type: %s\n    description: (installed via core pkg install)\n",
 		repoName, repoType)
 
 	content += entry
-	return coreio.Local.Write(regPath, content)
-}
-
-func clonePackageAtRef(ctx context.Context, org, repo, path, ref string) error {
-	if ghAuthenticated() {
-		httpsURL := fmt.Sprintf("https://github.com/%s/%s.git", org, repo)
-		args := []string{"repo", "clone", httpsURL, path, "--", "--branch", ref, "--single-branch"}
-		cmd := exec.CommandContext(ctx, "gh", args...)
-		output, err := cmd.CombinedOutput()
-		if err == nil {
-			return nil
-		}
-		errStr := strings.TrimSpace(string(output))
-		if strings.Contains(errStr, "already exists") {
-			return errors.New(errStr)
-		}
-	}
-
-	args := []string{"clone", "--branch", ref, "--single-branch", fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path}
-	cmd := exec.CommandContext(ctx, "git", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return errors.New(strings.TrimSpace(string(output)))
-	}
-	return nil
+	return coreio.Local.Write(registryPath, content)
 }
 
 func detectRepoType(name string) string {
-	lower := strings.ToLower(name)
-	if strings.Contains(lower, "-mod-") || strings.HasSuffix(lower, "-mod") {
+	lowerName := core.Lower(name)
+	if core.Contains(lowerName, "-mod-") || core.HasSuffix(lowerName, "-mod") {
 		return "module"
 	}
-	if strings.Contains(lower, "-plug-") || strings.HasSuffix(lower, "-plug") {
+	if core.Contains(lowerName, "-plug-") || core.HasSuffix(lowerName, "-plug") {
 		return "plugin"
 	}
-	if strings.Contains(lower, "-services-") || strings.HasSuffix(lower, "-services") {
+	if core.Contains(lowerName, "-services-") || core.HasSuffix(lowerName, "-services") {
 		return "service"
 	}
-	if strings.Contains(lower, "-website-") || strings.HasSuffix(lower, "-website") {
+	if core.Contains(lowerName, "-website-") || core.HasSuffix(lowerName, "-website") {
 		return "website"
 	}
-	if strings.HasPrefix(lower, "core-") {
+	if core.HasPrefix(lowerName, "core-") {
 		return "package"
 	}
 	return "package"

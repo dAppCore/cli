@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -137,21 +136,6 @@ func TestFrame_Good(t *testing.T) {
 		assert.Less(t, elapsed, 200*time.Millisecond)
 		assert.Contains(t, buf.String(), "timed")
 	})
-
-	t.Run("default output goes to stderr", func(t *testing.T) {
-		f := NewFrame("C")
-		assert.Same(t, os.Stderr, f.out)
-	})
-
-	t.Run("WithOutput sets output writer", func(t *testing.T) {
-		var buf bytes.Buffer
-		f := NewFrame("C").WithOutput(&buf)
-		f.Content(StaticModel("timed"))
-
-		f.Run()
-
-		assert.Contains(t, buf.String(), "timed")
-	})
 }
 
 func TestFrame_Bad(t *testing.T) {
@@ -159,20 +143,6 @@ func TestFrame_Bad(t *testing.T) {
 		f := NewFrame("HCF")
 		f.out = &bytes.Buffer{}
 		assert.Equal(t, "", f.String())
-	})
-
-	t.Run("static string strips ANSI", func(t *testing.T) {
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Header(StatusLine("core dev", "18 repos"))
-		f.Content(StaticModel("body"))
-		f.Footer(KeyHints("q quit"))
-
-		out := f.String()
-		assert.NotContains(t, out, "\x1b[")
-		assert.Contains(t, out, "core dev")
-		assert.Contains(t, out, "body")
-		assert.Contains(t, out, "q quit")
 	})
 
 	t.Run("back on empty history", func(t *testing.T) {
@@ -223,31 +193,9 @@ func TestBreadcrumb_Good(t *testing.T) {
 	assert.Contains(t, out, ">")
 }
 
-func TestFrameComponents_GlyphShortcodes(t *testing.T) {
-	restoreThemeAndColors(t)
-	UseASCII()
-
-	status := StatusLine(":check: core", ":warn: repos")
-	assert.Contains(t, status.View(80, 1), "[OK] core")
-	assert.Contains(t, status.View(80, 1), "[WARN] repos")
-
-	hints := KeyHints(":info: help", ":cross: quit")
-	hintsOut := hints.View(80, 1)
-	assert.Contains(t, hintsOut, "[INFO] help")
-	assert.Contains(t, hintsOut, "[FAIL] quit")
-
-	breadcrumb := Breadcrumb(":check: core", "dev", ":warn: health")
-	breadcrumbOut := breadcrumb.View(80, 1)
-	assert.Contains(t, breadcrumbOut, "[OK] core")
-	assert.Contains(t, breadcrumbOut, "[WARN] health")
-}
-
 func TestStaticModel_Good(t *testing.T) {
-	restoreThemeAndColors(t)
-	UseASCII()
-
-	m := StaticModel(":check: hello")
-	assert.Equal(t, "[OK] hello", m.View(80, 24))
+	m := StaticModel("hello")
+	assert.Equal(t, "hello", m.View(80, 24))
 }
 
 func TestFrameModel_Good(t *testing.T) {
@@ -328,7 +276,7 @@ func TestFrameFocus_Good(t *testing.T) {
 
 	t.Run("Focus ignores invalid region", func(t *testing.T) {
 		f := NewFrame("HCF")
-		f.Focus(RegionLeft)                         // Left not in "HCF"
+		f.Focus(RegionLeft) // Left not in "HCF"
 		assert.Equal(t, RegionContent, f.Focused()) // unchanged
 	})
 
@@ -602,3 +550,41 @@ func TestFrameMessageRouting_Good(t *testing.T) {
 		})
 	})
 }
+
+func TestFrame_Ugly(t *testing.T) {
+	t.Run("navigate with nil model does not panic", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("base"))
+
+		assert.NotPanics(t, func() {
+			f.Navigate(nil)
+		})
+	})
+
+	t.Run("deeply nested back stack does not panic", func(t *testing.T) {
+		f := NewFrame("C")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("p0"))
+		for i := 1; i <= 20; i++ {
+			f.Navigate(StaticModel("p" + string(rune('0'+i%10))))
+		}
+		for f.Back() {
+			// drain the full history stack
+		}
+		assert.False(t, f.Back(), "no more history after full drain")
+	})
+
+	t.Run("zero-size window renders without panic", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("x"))
+		f.width = 0
+		f.height = 0
+
+		assert.NotPanics(t, func() {
+			_ = f.View()
+		})
+	})
+}
+

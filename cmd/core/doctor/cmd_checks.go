@@ -2,8 +2,8 @@ package doctor
 
 import (
 	"os/exec"
-	"strings"
 
+	"dappco.re/go/core"
 	"forge.lthn.ai/core/go-i18n"
 )
 
@@ -91,18 +91,20 @@ func optionalChecks() []check {
 	}
 }
 
-// runCheck executes a tool check and returns success status and version info
-func runCheck(c check) (bool, string) {
-	cmd := exec.Command(c.command, c.args...)
-	output, err := cmd.CombinedOutput()
+// runCheck executes a tool check and returns success status and version info.
+//
+//	ok, version := runCheck(check{command: "git", args: []string{"--version"}})
+func runCheck(toolCheck check) (bool, string) {
+	proc := exec.Command(toolCheck.command, toolCheck.args...)
+	output, err := proc.CombinedOutput()
 	if err != nil {
 		return false, ""
 	}
 
-	// Extract first line as version
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	// Extract first line as version info.
+	lines := core.Split(core.Trim(string(output)), "\n")
 	if len(lines) > 0 {
-		return true, strings.TrimSpace(lines[0])
+		return true, core.Trim(lines[0])
 	}
 	return true, ""
 }

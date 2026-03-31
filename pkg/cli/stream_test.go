@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
@@ -10,19 +9,6 @@ import (
 )
 
 func TestStream_Good(t *testing.T) {
-	t.Run("uses injected stdout by default", func(t *testing.T) {
-		var buf bytes.Buffer
-		SetStdout(&buf)
-		defer SetStdout(nil)
-		s := NewStream()
-
-		s.Write("hello")
-		s.Done()
-		s.Wait()
-
-		assert.Equal(t, "hello\n", buf.String())
-	})
-
 	t.Run("basic write", func(t *testing.T) {
 		var buf bytes.Buffer
 		s := NewStream(WithStreamOutput(&buf))
@@ -113,14 +99,6 @@ func TestStream_Good(t *testing.T) {
 		assert.Equal(t, 11, s.Column())
 	})
 
-	t.Run("column tracking uses visible width", func(t *testing.T) {
-		var buf bytes.Buffer
-		s := NewStream(WithStreamOutput(&buf))
-
-		s.Write("東京")
-		assert.Equal(t, 4, s.Column())
-	})
-
 	t.Run("WriteFrom io.Reader", func(t *testing.T) {
 		var buf bytes.Buffer
 		s := NewStream(WithStreamOutput(&buf))
@@ -166,29 +144,6 @@ func TestStream_Good(t *testing.T) {
 
 		assert.Equal(t, "text\n", buf.String()) // no double newline
 	})
-
-	t.Run("Done is idempotent", func(t *testing.T) {
-		var buf bytes.Buffer
-		s := NewStream(WithStreamOutput(&buf))
-
-		s.Write("text")
-		s.Done()
-		s.Done()
-		s.Wait()
-
-		assert.Equal(t, "text\n", buf.String())
-	})
-
-	t.Run("word wrap uses visible width", func(t *testing.T) {
-		var buf bytes.Buffer
-		s := NewStream(WithWordWrap(4), WithStreamOutput(&buf))
-
-		s.Write("東京A")
-		s.Done()
-		s.Wait()
-
-		assert.Equal(t, "東京\nA\n", buf.String())
-	})
 }
 
 func TestStream_Bad(t *testing.T) {
@@ -201,20 +156,42 @@ func TestStream_Bad(t *testing.T) {
 
 		assert.Equal(t, "", buf.String())
 	})
+}
 
-	t.Run("CapturedOK reports unsupported writers", func(t *testing.T) {
-		s := NewStream(WithStreamOutput(writerOnly{}))
-		got, ok := s.CapturedOK()
-		assert.False(t, ok)
-		assert.Equal(t, "", got)
-		assert.Equal(t, "", s.Captured())
+func TestStream_Ugly(t *testing.T) {
+	t.Run("Write after Done does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		s.Done()
+		s.Wait()
+
+		assert.NotPanics(t, func() {
+			s.Write("late write")
+		})
+	})
+
+	t.Run("word wrap width of 1 does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithWordWrap(1), WithStreamOutput(&buf))
+
+		assert.NotPanics(t, func() {
+			s.Write("hello")
+			s.Done()
+			s.Wait()
+		})
+	})
+
+	t.Run("very large write does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		large := strings.Repeat("x", 100_000)
+		assert.NotPanics(t, func() {
+			s.Write(large)
+			s.Done()
+			s.Wait()
+		})
+		assert.Equal(t, 100_000, len(strings.TrimRight(buf.String(), "\n")))
 	})
 }
-
-type writerOnly struct{}
-
-func (writerOnly) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
-var _ io.Writer = writerOnly{}

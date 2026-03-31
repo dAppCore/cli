@@ -280,3 +280,46 @@ func TestTrackedTask_Good(t *testing.T) {
 		require.Equal(t, "running", status)
 	})
 }
+
+func TestTaskTracker_Ugly(t *testing.T) {
+	t.Run("empty task name does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		assert.NotPanics(t, func() {
+			task := tr.Add("")
+			task.Done("ok")
+		})
+	})
+
+	t.Run("Done called twice does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+		task := tr.Add("double-done")
+
+		assert.NotPanics(t, func() {
+			task.Done("first")
+			task.Done("second")
+		})
+	})
+
+	t.Run("Fail after Done does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+		task := tr.Add("already-done")
+
+		assert.NotPanics(t, func() {
+			task.Done("completed")
+			task.Fail("too late")
+		})
+	})
+
+	t.Run("String on empty tracker does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		assert.NotPanics(t, func() {
+			_ = tr.String()
+		})
+	})
+}

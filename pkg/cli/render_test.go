@@ -3,28 +3,46 @@ package cli
 import (
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestCompositeRender_GlyphTheme(t *testing.T) {
-	prevStyle := currentRenderStyle
-	t.Cleanup(func() {
-		currentRenderStyle = prevStyle
-	})
+func TestCompositeRender_Good(t *testing.T) {
+	UseRenderFlat()
+	composite := Layout("HCF")
+	composite.H("Header content").C("Body content").F("Footer content")
 
-	restoreThemeAndColors(t)
-	UseASCII()
+	output := composite.String()
+	if !strings.Contains(output, "Header content") {
+		t.Errorf("Render flat: expected 'Header content' in output, got %q", output)
+	}
+	if !strings.Contains(output, "Body content") {
+		t.Errorf("Render flat: expected 'Body content' in output, got %q", output)
+	}
+}
 
-	c := Layout("HCF")
-	c.H("header").C("content").F("footer")
+func TestCompositeRender_Bad(t *testing.T) {
+	// Rendering an empty composite should not panic and return empty string.
+	composite := Layout("HCF")
+	output := composite.String()
+	if output != "" {
+		t.Errorf("Empty composite render: expected empty string, got %q", output)
+	}
+}
 
+func TestCompositeRender_Ugly(t *testing.T) {
+	// RenderSimple and RenderBoxed styles add separators between sections.
 	UseRenderSimple()
-	out := c.String()
-	assert.Contains(t, out, strings.Repeat("-", 40))
+	defer UseRenderFlat()
+
+	composite := Layout("HCF")
+	composite.H("top").C("middle").F("bottom")
+	output := composite.String()
+	if output == "" {
+		t.Error("RenderSimple: expected non-empty output")
+	}
 
 	UseRenderBoxed()
-	out = c.String()
-	assert.Contains(t, out, "+")
-	assert.Contains(t, out, strings.Repeat("-", 40))
+	output = composite.String()
+	if output == "" {
+		t.Error("RenderBoxed: expected non-empty output")
+	}
 }

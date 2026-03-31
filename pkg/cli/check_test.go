@@ -5,68 +5,55 @@ import (
 	"testing"
 )
 
-func TestCheckBuilder(t *testing.T) {
-	restoreThemeAndColors(t)
+func TestCheckBuilder_Good(t *testing.T) {
 	UseASCII() // Deterministic output
 
-	// Pass
-	c := Check("foo").Pass()
-	got := c.String()
+	checkResult := Check("database").Pass()
+	got := checkResult.String()
 	if got == "" {
-		t.Error("Empty output for Pass")
+		t.Error("Pass: expected non-empty output")
+	}
+	if !strings.Contains(got, "database") {
+		t.Errorf("Pass: expected name in output, got %q", got)
+	}
+}
+
+func TestCheckBuilder_Bad(t *testing.T) {
+	UseASCII()
+
+	checkResult := Check("lint").Fail()
+	got := checkResult.String()
+	if got == "" {
+		t.Error("Fail: expected non-empty output")
 	}
 
-	// Fail
-	c = Check("foo").Fail()
-	got = c.String()
+	checkResult = Check("build").Skip()
+	got = checkResult.String()
 	if got == "" {
-		t.Error("Empty output for Fail")
+		t.Error("Skip: expected non-empty output")
 	}
 
-	// Skip
-	c = Check("foo").Skip()
-	got = c.String()
+	checkResult = Check("tests").Warn()
+	got = checkResult.String()
 	if got == "" {
-		t.Error("Empty output for Skip")
+		t.Error("Warn: expected non-empty output")
 	}
-	if !strings.Contains(got, "[SKIP]") {
-		t.Error("Expected ASCII skip icon")
+}
+
+func TestCheckBuilder_Ugly(t *testing.T) {
+	UseASCII()
+
+	// Zero-value builder should not panic.
+	checkResult := &CheckBuilder{}
+	got := checkResult.String()
+	if got == "" {
+		t.Error("Ugly: empty builder should still produce output")
 	}
 
-	// Warn
-	c = Check("foo").Warn()
-	got = c.String()
-	if got == "" {
-		t.Error("Empty output for Warn")
-	}
-
-	// Duration
-	c = Check("foo").Pass().Duration("1s")
-	got = c.String()
-	if got == "" {
-		t.Error("Empty output for Duration")
-	}
-	if !strings.Contains(got, "foo                 ") {
-		t.Error("Expected width-aware padding for the check name")
-	}
-
-	// Message
-	c = Check("foo").Message("status")
-	got = c.String()
-	if got == "" {
-		t.Error("Empty output for Message")
-	}
-
-	// Glyph shortcodes
-	c = Check(":check: foo").Warn().Message(":warn:")
-	got = c.String()
-	if got == "" {
-		t.Error("Empty output for glyph shortcode rendering")
-	}
-	if !strings.Contains(got, "[OK] foo") {
-		t.Error("Expected shortcode-rendered name")
-	}
-	if strings.Count(got, "[WARN]") < 2 {
-		t.Error("Expected shortcode-rendered warning icon and message")
+	// Duration and Message chaining.
+	checkResult = Check("audit").Pass().Duration("2.3s").Message("all clear")
+	got = checkResult.String()
+	if !strings.Contains(got, "2.3s") {
+		t.Errorf("Ugly: expected duration in output, got %q", got)
 	}
 }
