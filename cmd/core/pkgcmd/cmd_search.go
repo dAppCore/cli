@@ -188,6 +188,10 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool, format
 		return cmp.Compare(a.Name, b.Name)
 	})
 
+	if limit > 0 && len(filtered) > limit {
+		filtered = filtered[:limit]
+	}
+
 	if strings.EqualFold(format, "json") {
 		report := buildPkgSearchReport(org, pattern, repoType, limit, fromCache, filtered)
 		return printPkgSearchJSON(report)

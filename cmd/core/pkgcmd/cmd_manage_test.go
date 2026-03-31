@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"forge.lthn.ai/core/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -247,4 +248,45 @@ func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
 	assert.Contains(t, out, "42 stars")
 	assert.Contains(t, out, "Go")
 	assert.Contains(t, out, "updated 2h ago")
+}
+
+func TestRunPkgSearch_RespectsLimitWithCachedResults(t *testing.T) {
+	tmp := t.TempDir()
+	writeTestRegistry(t, tmp)
+	withWorkingDir(t, tmp)
+
+	c, err := cache.New(nil, filepath.Join(tmp, ".core", "cache"), 0)
+	require.NoError(t, err)
+	require.NoError(t, c.Set(cache.GitHubReposKey("host-uk"), []ghRepo{
+		{
+			FullName:       "host-uk/core-alpha",
+			Name:           "core-alpha",
+			Description:    "Alpha package",
+			Visibility:     "public",
+			UpdatedAt:      time.Now().Add(-time.Hour).Format(time.RFC3339),
+			StargazerCount: 1,
+			PrimaryLanguage: ghLanguage{
+				Name: "Go",
+			},
+		},
+		{
+			FullName:       "host-uk/core-beta",
+			Name:           "core-beta",
+			Description:    "Beta package",
+			Visibility:     "public",
+			UpdatedAt:      time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+			StargazerCount: 2,
+			PrimaryLanguage: ghLanguage{
+				Name: "Go",
+			},
+		},
+	}))
+
+	out := capturePkgOutput(t, func() {
+		err := runPkgSearch("host-uk", "*", "", 1, false, "table")
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, out, "core-alpha")
+	assert.NotContains(t, out, "core-beta")
 }
