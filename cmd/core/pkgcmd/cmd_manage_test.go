@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,4 +114,27 @@ func TestRunPkgList_UnsupportedFormat(t *testing.T) {
 	err := runPkgList("yaml")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported format")
+}
+
+func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
+	out := capturePkgOutput(t, func() {
+		renderPkgSearchResults([]ghRepo{
+			{
+				Name:           "core-alpha",
+				Description:    "Alpha package",
+				Visibility:     "private",
+				StargazerCount: 42,
+				PrimaryLanguage: ghLanguage{
+					Name: "Go",
+				},
+				UpdatedAt: time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+			},
+		})
+	})
+
+	assert.Contains(t, out, "core-alpha")
+	assert.Contains(t, out, "Alpha package")
+	assert.Contains(t, out, "42 stars")
+	assert.Contains(t, out, "Go")
+	assert.Contains(t, out, "updated 2h ago")
 }

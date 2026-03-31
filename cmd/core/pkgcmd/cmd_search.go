@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-cache"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
@@ -60,12 +61,17 @@ func addPkgSearchCommand(parent *cobra.Command) {
 }
 
 type ghRepo struct {
-	Name        string `json:"name"`
-	FullName    string `json:"full_name"`
-	Description string `json:"description"`
-	Visibility  string `json:"visibility"`
-	UpdatedAt   string `json:"updated_at"`
-	Language    string `json:"language"`
+	Name            string     `json:"name"`
+	FullName        string     `json:"fullName"`
+	Description     string     `json:"description"`
+	Visibility      string     `json:"visibility"`
+	UpdatedAt       string     `json:"updatedAt"`
+	StargazerCount  int        `json:"stargazerCount"`
+	PrimaryLanguage ghLanguage `json:"primaryLanguage"`
+}
+
+type ghLanguage struct {
+	Name string `json:"name"`
 }
 
 func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error {
@@ -107,7 +113,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		fmt.Printf("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
 
 		cmd := exec.Command("gh", "repo", "list", org,
-			"--json", "name,description,visibility,updatedAt,primaryLanguage",
+			"--json", "name,description,visibility,updatedAt,stargazerCount,primaryLanguage",
 			"--limit", fmt.Sprintf("%d", limit))
 		output, err := cmd.CombinedOutput()
 
@@ -152,9 +158,18 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	fmt.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
+	renderPkgSearchResults(filtered)
 
-	for _, r := range filtered {
+	fmt.Println()
+	fmt.Printf("%s %s\n", i18n.T("common.hint.install_with"), dimStyle.Render(fmt.Sprintf("core pkg install %s/<repo-name>", org)))
+
+	return nil
+}
+
+func renderPkgSearchResults(repos []ghRepo) {
+	fmt.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(repos)}) + "\n\n")
+
+	for _, r := range repos {
 		visibility := ""
 		if r.Visibility == "private" {
 			visibility = dimStyle.Render(" " + i18n.T("cmd.pkg.search.private_label"))
@@ -170,12 +185,42 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 		fmt.Printf("  %s%s\n", repoNameStyle.Render(r.Name), visibility)
 		fmt.Printf("    %s\n", desc)
+
+		if meta := formatPkgSearchMetadata(r); meta != "" {
+			fmt.Printf("    %s\n", dimStyle.Render(meta))
+		}
+	}
+}
+
+func formatPkgSearchMetadata(r ghRepo) string {
+	var parts []string
+
+	if r.StargazerCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d stars", r.StargazerCount))
 	}
 
-	fmt.Println()
-	fmt.Printf("%s %s\n", i18n.T("common.hint.install_with"), dimStyle.Render(fmt.Sprintf("core pkg install %s/<repo-name>", org)))
+	if lang := strings.TrimSpace(r.PrimaryLanguage.Name); lang != "" {
+		parts = append(parts, lang)
+	}
 
-	return nil
+	if updated := formatPkgSearchUpdatedAt(r.UpdatedAt); updated != "" {
+		parts = append(parts, "updated "+updated)
+	}
+
+	return strings.Join(parts, "  ")
+}
+
+func formatPkgSearchUpdatedAt(raw string) string {
+	if raw == "" {
+		return ""
+	}
+
+	updatedAt, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return raw
+	}
+
+	return cli.FormatAge(updatedAt)
 }
 
 // matchGlob does simple glob matching with * wildcards
