@@ -1,6 +1,7 @@
 package pkgcmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -15,19 +16,40 @@ import (
 
 // addPkgListCommand adds the 'pkg list' command.
 func addPkgListCommand(parent *cobra.Command) {
+	var format string
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: i18n.T("cmd.pkg.list.short"),
 		Long:  i18n.T("cmd.pkg.list.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPkgList()
+			format, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+			return runPkgList(format)
 		},
 	}
 
+	listCmd.Flags().StringVar(&format, "format", "table", "Output format: table or json")
 	parent.AddCommand(listCmd)
 }
 
-func runPkgList() error {
+type pkgListEntry struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Installed   bool   `json:"installed"`
+	Path        string `json:"path"`
+}
+
+type pkgListReport struct {
+	Format    string         `json:"format"`
+	Total     int            `json:"total"`
+	Installed int            `json:"installed"`
+	Missing   int            `json:"missing"`
+	Packages  []pkgListEntry `json:"packages"`
+}
+
+func runPkgList(format string) error {
 	regPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml_workspace"))
@@ -52,8 +74,7 @@ func runPkgList() error {
 		return nil
 	}
 
-	fmt.Printf("%s\n\n", repoNameStyle.Render(i18n.T("cmd.pkg.list.title")))
-
+	var entries []pkgListEntry
 	var installed, missing int
 	for _, r := range allRepos {
 		repoPath := filepath.Join(basePath, r.Name)
@@ -64,20 +85,58 @@ func runPkgList() error {
 			missing++
 		}
 
-		status := successStyle.Render("✓")
-		if !exists {
-			status = dimStyle.Render("○")
-		}
-
 		desc := r.Description
 		if len(desc) > 40 {
 			desc = desc[:37] + "..."
 		}
 		if desc == "" {
-			desc = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
+			desc = i18n.T("cmd.pkg.no_description")
 		}
 
-		fmt.Printf("  %s %s\n", status, repoNameStyle.Render(r.Name))
+		entries = append(entries, pkgListEntry{
+			Name:        r.Name,
+			Description: desc,
+			Installed:   exists,
+			Path:        repoPath,
+		})
+	}
+
+	if format == "json" {
+		report := pkgListReport{
+			Format:    "json",
+			Total:     len(entries),
+			Installed: installed,
+			Missing:   missing,
+			Packages:  entries,
+		}
+
+		out, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to format package list: %w", err)
+		}
+
+		fmt.Println(string(out))
+		return nil
+	}
+
+	if format != "table" {
+		return fmt.Errorf("unsupported format %q: expected table or json", format)
+	}
+
+	fmt.Printf("%s\n\n", repoNameStyle.Render(i18n.T("cmd.pkg.list.title")))
+
+	for _, entry := range entries {
+		status := successStyle.Render("✓")
+		if !entry.Installed {
+			status = dimStyle.Render("○")
+		}
+
+		desc := entry.Description
+		if !entry.Installed {
+			desc = dimStyle.Render(desc)
+		}
+
+		fmt.Printf("  %s %s\n", status, repoNameStyle.Render(entry.Name))
 		fmt.Printf("      %s\n", desc)
 	}
 

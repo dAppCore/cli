@@ -98,6 +98,16 @@ core pkg list
 
 Shows installed status (✓) and description for each package.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--format` | Output format (`table` or `json`) |
+
+### JSON Output
+
+When `--format json` is set, `core pkg list` emits a structured report with package entries, installed state, and summary counts.
+
 ---
 
 ## pkg update
