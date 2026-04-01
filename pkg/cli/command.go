@@ -195,6 +195,51 @@ func PersistentBoolFlag(cmd *Command, ptr *bool, name, short string, def bool, u
 	}
 }
 
+// PersistentIntFlag adds a persistent integer flag (inherited by subcommands).
+func PersistentIntFlag(cmd *Command, ptr *int, name, short string, def int, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().IntVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().IntVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentInt64Flag adds a persistent int64 flag (inherited by subcommands).
+func PersistentInt64Flag(cmd *Command, ptr *int64, name, short string, def int64, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().Int64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().Int64Var(ptr, name, def, usage)
+	}
+}
+
+// PersistentFloat64Flag adds a persistent float64 flag (inherited by subcommands).
+func PersistentFloat64Flag(cmd *Command, ptr *float64, name, short string, def float64, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().Float64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().Float64Var(ptr, name, def, usage)
+	}
+}
+
+// PersistentDurationFlag adds a persistent time.Duration flag (inherited by subcommands).
+func PersistentDurationFlag(cmd *Command, ptr *time.Duration, name, short string, def time.Duration, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().DurationVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().DurationVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringSliceFlag adds a persistent string slice flag (inherited by subcommands).
+func PersistentStringSliceFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringSliceVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringSliceVar(ptr, name, def, usage)
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Command Configuration
 // ─────────────────────────────────────────────────────────────────────────────
