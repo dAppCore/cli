@@ -503,12 +503,15 @@ func looksLikeMultiSelectionInput(input string) bool {
 	return hasDigit
 }
 
-// parseMultiSelection parses a multi-selection string like "1 3 5" or "1-3 5".
+// parseMultiSelection parses a multi-selection string like "1 3 5", "1,3,5",
+// or "1-3 5".
 // Returns 0-based indices.
 func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	selected := make(map[int]bool)
 
-	for part := range strings.FieldsSeq(input) {
+	normalized := strings.NewReplacer(",", " ").Replace(input)
+
+	for part := range strings.FieldsSeq(normalized) {
 		// Check for range (e.g., "1-3")
 		if strings.Contains(part, "-") {
 			var rangeParts []string

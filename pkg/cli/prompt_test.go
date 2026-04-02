@@ -91,6 +91,22 @@ func TestChooseMulti_Good_Filter(t *testing.T) {
 	assert.Equal(t, []string{"apple", "apricot"}, vals)
 }
 
+func TestChooseMulti_Good_Commas(t *testing.T) {
+	SetStdin(strings.NewReader("1,3\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"a", "b", "c"})
+	assert.Equal(t, []string{"a", "c"}, vals)
+}
+
+func TestChooseMulti_Good_CommasAndRanges(t *testing.T) {
+	SetStdin(strings.NewReader("1-2,4\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"a", "b", "c", "d"})
+	assert.Equal(t, []string{"a", "b", "d"}, vals)
+}
+
 func TestSetStdin_Good_ResetNil(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })
