@@ -1,6 +1,7 @@
 package help
 
 import (
+	"bufio"
 	"strings"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -63,8 +64,32 @@ func renderTopicList(topics []*gohelp.Topic) error {
 	cli.Section("Available Help Topics")
 	for _, topic := range topics {
 		cli.Println("  %s - %s", topic.ID, topic.Title)
+		if summary := topicSummary(topic); summary != "" {
+			cli.Println("%s", cli.DimStr("    "+summary))
+		}
 	}
 	return nil
+}
+
+func topicSummary(topic *gohelp.Topic) string {
+	if topic == nil {
+		return ""
+	}
+
+	content := strings.TrimSpace(topic.Content)
+	if content == "" {
+		return ""
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		return line
+	}
+	return ""
 }
 
 func renderTopic(t *gohelp.Topic) {
