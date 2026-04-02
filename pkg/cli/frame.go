@@ -70,6 +70,15 @@ func NewFrame(variant string) *Frame {
 	}
 }
 
+// WithOutput sets the destination writer for rendered output.
+// Pass nil to keep the current writer unchanged.
+func (f *Frame) WithOutput(out io.Writer) *Frame {
+	if out != nil {
+		f.out = out
+	}
+	return f
+}
+
 // Header sets the Header region model.
 func (f *Frame) Header(m Model) *Frame { f.setModel(RegionHeader, m); return f }
 

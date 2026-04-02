@@ -142,6 +142,16 @@ func TestFrame_Good(t *testing.T) {
 		f := NewFrame("C")
 		assert.Same(t, os.Stderr, f.out)
 	})
+
+	t.Run("WithOutput sets output writer", func(t *testing.T) {
+		var buf bytes.Buffer
+		f := NewFrame("C").WithOutput(&buf)
+		f.Content(StaticModel("timed"))
+
+		f.Run()
+
+		assert.Contains(t, buf.String(), "timed")
+	})
 }
 
 func TestFrame_Bad(t *testing.T) {

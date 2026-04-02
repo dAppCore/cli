@@ -123,6 +123,15 @@ func NewTaskTracker() *TaskTracker {
 	return &TaskTracker{out: os.Stderr}
 }
 
+// WithOutput sets the destination writer for tracker output.
+// Pass nil to keep the current writer unchanged.
+func (tr *TaskTracker) WithOutput(out io.Writer) *TaskTracker {
+	if out != nil {
+		tr.out = out
+	}
+	return tr
+}
+
 // Add registers a task and returns it for goroutine use.
 func (tr *TaskTracker) Add(name string) *TrackedTask {
 	t := &TrackedTask{
