@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -135,6 +136,11 @@ func TestFrame_Good(t *testing.T) {
 
 		assert.Less(t, elapsed, 200*time.Millisecond)
 		assert.Contains(t, buf.String(), "timed")
+	})
+
+	t.Run("default output goes to stderr", func(t *testing.T) {
+		f := NewFrame("C")
+		assert.Same(t, os.Stderr, f.out)
 	})
 }
 

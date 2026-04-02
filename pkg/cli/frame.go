@@ -61,7 +61,7 @@ func NewFrame(variant string) *Frame {
 		variant: variant,
 		layout:  Layout(variant),
 		models:  make(map[Region]Model),
-		out:     os.Stdout,
+		out:     os.Stderr,
 		done:    make(chan struct{}),
 		focused: RegionContent,
 		keyMap:  DefaultKeyMap(),
