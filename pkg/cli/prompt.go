@@ -13,7 +13,14 @@ import (
 var stdin io.Reader = os.Stdin
 
 // SetStdin overrides the default stdin reader for testing.
-func SetStdin(r io.Reader) { stdin = r }
+// Pass nil to restore the real os.Stdin reader.
+func SetStdin(r io.Reader) {
+	if r == nil {
+		stdin = os.Stdin
+		return
+	}
+	stdin = r
+}
 
 // newReader wraps stdin in a bufio.Reader if it isn't one already.
 func newReader() *bufio.Reader {

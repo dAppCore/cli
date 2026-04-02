@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -49,4 +50,15 @@ func TestMultiSelect_Good(t *testing.T) {
 	vals, err := MultiSelect("Pick", []string{"a", "b", "c"})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "c"}, vals)
+}
+
+func TestSetStdin_Good_ResetNil(t *testing.T) {
+	original := stdin
+	t.Cleanup(func() { stdin = original })
+
+	SetStdin(strings.NewReader("hello\n"))
+	assert.NotSame(t, os.Stdin, stdin)
+
+	SetStdin(nil)
+	assert.Same(t, os.Stdin, stdin)
 }
