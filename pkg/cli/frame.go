@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/term"
 )
 
@@ -428,6 +429,7 @@ func (f *Frame) String() string {
 	if view == "" {
 		return ""
 	}
+	view = ansi.Strip(view)
 	// Ensure trailing newline for non-TTY consistency
 	if !strings.HasSuffix(view, "\n") {
 		view += "\n"
@@ -451,7 +453,6 @@ func (f *Frame) termSize() (int, int) {
 	}
 	return 80, 24 // sensible default
 }
-
 
 func (f *Frame) runLive() {
 	opts := []tea.ProgramOption{
