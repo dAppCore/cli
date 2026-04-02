@@ -189,6 +189,35 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.NotContains(t, out, "✓")
 		assert.NotContains(t, out, "✗")
 	})
+
+	t.Run("iterators tolerate mutation during iteration", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("first")
+		tr.Add("second")
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			for task := range tr.Tasks() {
+				task.Update("visited")
+			}
+		}()
+
+		require.Eventually(t, func() bool {
+			select {
+			case <-done:
+				return true
+			default:
+				return false
+			}
+		}, time.Second, 10*time.Millisecond)
+
+		for name, status := range tr.Snapshots() {
+			assert.Equal(t, "visited", status, name)
+		}
+	})
 }
 
 func TestTaskTracker_Bad(t *testing.T) {

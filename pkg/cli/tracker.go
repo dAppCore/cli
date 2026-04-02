@@ -89,8 +89,11 @@ type TaskTracker struct {
 func (tr *TaskTracker) Tasks() iter.Seq[*TrackedTask] {
 	return func(yield func(*TrackedTask) bool) {
 		tr.mu.Lock()
-		defer tr.mu.Unlock()
-		for _, t := range tr.tasks {
+		tasks := make([]*TrackedTask, len(tr.tasks))
+		copy(tasks, tr.tasks)
+		tr.mu.Unlock()
+
+		for _, t := range tasks {
 			if !yield(t) {
 				return
 			}
@@ -102,8 +105,11 @@ func (tr *TaskTracker) Tasks() iter.Seq[*TrackedTask] {
 func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
 	return func(yield func(string, string) bool) {
 		tr.mu.Lock()
-		defer tr.mu.Unlock()
-		for _, t := range tr.tasks {
+		tasks := make([]*TrackedTask, len(tr.tasks))
+		copy(tasks, tr.tasks)
+		tr.mu.Unlock()
+
+		for _, t := range tasks {
 			name, status, _ := t.snapshot()
 			if !yield(name, status) {
 				return
