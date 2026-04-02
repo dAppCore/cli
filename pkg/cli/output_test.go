@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -97,5 +98,23 @@ func TestSemanticOutput(t *testing.T) {
 	})
 	if out == "" {
 		t.Error("Result(false) output empty")
+	}
+}
+
+func TestSemanticOutput_GlyphShortcodes(t *testing.T) {
+	UseASCII()
+
+	out := captureOutput(func() {
+		Success("done :check:")
+		Task(":cross:", "running :warn:")
+		Section(":check: audit")
+		Hint(":info:", "apply :check:")
+		Label("status", "ready :warn:")
+	})
+
+	for _, want := range []string{"[OK]", "[FAIL]", "[WARN]"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected output to contain %q, got %q", want, out)
+		}
 	}
 }
