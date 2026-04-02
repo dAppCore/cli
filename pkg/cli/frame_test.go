@@ -207,6 +207,25 @@ func TestBreadcrumb_Good(t *testing.T) {
 	assert.Contains(t, out, ">")
 }
 
+func TestFrameComponents_GlyphShortcodes(t *testing.T) {
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	status := StatusLine(":check: core", ":warn: repos")
+	assert.Contains(t, status.View(80, 1), "[OK] core")
+	assert.Contains(t, status.View(80, 1), "[WARN] repos")
+
+	hints := KeyHints(":info: help", ":cross: quit")
+	hintsOut := hints.View(80, 1)
+	assert.Contains(t, hintsOut, "[INFO] help")
+	assert.Contains(t, hintsOut, "[FAIL] quit")
+
+	breadcrumb := Breadcrumb(":check: core", "dev", ":warn: health")
+	breadcrumbOut := breadcrumb.View(80, 1)
+	assert.Contains(t, breadcrumbOut, "[OK] core")
+	assert.Contains(t, breadcrumbOut, "[WARN] health")
+}
+
 func TestStaticModel_Good(t *testing.T) {
 	m := StaticModel("hello")
 	assert.Equal(t, "hello", m.View(80, 24))

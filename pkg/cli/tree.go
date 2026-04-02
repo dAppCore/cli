@@ -83,10 +83,11 @@ func (n *TreeNode) Render() {
 }
 
 func (n *TreeNode) renderLabel() string {
+	label := compileGlyphs(n.label)
 	if n.style != nil {
-		return n.style.Render(n.label)
+		return n.style.Render(label)
 	}
-	return n.label
+	return label
 }
 
 func (n *TreeNode) writeChildren(sb *strings.Builder, prefix string) {

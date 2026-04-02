@@ -64,23 +64,24 @@ func (c *CheckBuilder) Message(msg string) *CheckBuilder {
 
 // String returns the formatted check line.
 func (c *CheckBuilder) String() string {
-	icon := c.icon
+	icon := compileGlyphs(c.icon)
 	if c.style != nil {
-		icon = c.style.Render(c.icon)
+		icon = c.style.Render(icon)
 	}
 
-	status := c.status
+	status := compileGlyphs(c.status)
 	if c.style != nil && c.status != "" {
-		status = c.style.Render(c.status)
+		status = c.style.Render(status)
 	}
+	name := compileGlyphs(c.name)
 
 	if c.duration != "" {
-		return Sprintf("  %s %-20s %-10s %s", icon, c.name, status, DimStyle.Render(c.duration))
+		return Sprintf("  %s %-20s %-10s %s", icon, name, status, DimStyle.Render(compileGlyphs(c.duration)))
 	}
 	if status != "" {
-		return Sprintf("  %s %s %s", icon, c.name, status)
+		return Sprintf("  %s %s %s", icon, name, status)
 	}
-	return Sprintf("  %s %s", icon, c.name)
+	return Sprintf("  %s %s", icon, name)
 }
 
 // Print outputs the check result.

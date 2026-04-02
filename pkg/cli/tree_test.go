@@ -125,6 +125,18 @@ func TestTree_Good(t *testing.T) {
 			"`-- core-api\n"
 		assert.Equal(t, expected, tree.String())
 	})
+
+	t.Run("glyph shortcodes render in labels", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tree := NewTree(":check: root")
+		tree.Add(":warn: child")
+
+		out := tree.String()
+		assert.Contains(t, out, "[OK] root")
+		assert.Contains(t, out, "[WARN] child")
+	})
 }
 
 func TestTree_Bad(t *testing.T) {
