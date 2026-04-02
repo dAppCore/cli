@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -187,4 +188,19 @@ func TestStream_Bad(t *testing.T) {
 
 		assert.Equal(t, "", buf.String())
 	})
+
+	t.Run("Captured panics when output is not stringable", func(t *testing.T) {
+		s := NewStream(WithStreamOutput(writerOnly{}))
+		assert.Panics(t, func() {
+			_ = s.Captured()
+		})
+	})
 }
+
+type writerOnly struct{}
+
+func (writerOnly) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+var _ io.Writer = writerOnly{}
