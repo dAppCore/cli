@@ -41,10 +41,11 @@ var buf strings.Builder
 stream := cli.NewStream(cli.WithStreamOutput(&buf))
 // ... write tokens ...
 stream.Done()
-result := stream.Captured() // or buf.String()
+result, ok := stream.CapturedOK() // or buf.String()
 ```
 
 `Captured()` returns the output as a string when using a `*strings.Builder` or any `fmt.Stringer`.
+`CapturedOK()` reports whether capture is supported by the configured writer.
 
 ## Reading from `io.Reader`
 
@@ -68,7 +69,8 @@ stream.Done()
 | `Done()` | Signal completion (adds trailing newline if needed) |
 | `Wait()` | Block until `Done` is called |
 | `Column()` | Current column position |
-| `Captured()` | Get output as string (requires `*strings.Builder` or `fmt.Stringer` writer) |
+| `Captured()` | Get output as string (returns `""` if capture is unsupported) |
+| `CapturedOK()` | Get output and support status |
 
 ## Options
 

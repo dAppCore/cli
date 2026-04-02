@@ -132,16 +132,24 @@ func (s *Stream) Column() int {
 	return s.col
 }
 
-// Captured returns the stream output as a string when using a stringable writer.
-// Panics if the output writer is not a *strings.Builder or fmt.Stringer.
+// Captured returns the stream output as a string when the output writer is
+// capture-capable. If the writer cannot be captured, it returns an empty string.
+// Use CapturedOK when you need to distinguish that case.
 func (s *Stream) Captured() string {
+	out, _ := s.CapturedOK()
+	return out
+}
+
+// CapturedOK returns the stream output and whether the configured writer
+// supports capture.
+func (s *Stream) CapturedOK() (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if sb, ok := s.out.(*strings.Builder); ok {
-		return sb.String()
+		return sb.String(), true
 	}
 	if st, ok := s.out.(fmt.Stringer); ok {
-		return st.String()
+		return st.String(), true
 	}
-	panic("stream output writer does not support Capture")
+	return "", false
 }
