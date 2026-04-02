@@ -99,6 +99,14 @@ func TestStream_Good(t *testing.T) {
 		assert.Equal(t, 11, s.Column())
 	})
 
+	t.Run("column tracking uses visible width", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		s.Write("東京")
+		assert.Equal(t, 4, s.Column())
+	})
+
 	t.Run("WriteFrom io.Reader", func(t *testing.T) {
 		var buf bytes.Buffer
 		s := NewStream(WithStreamOutput(&buf))
@@ -143,6 +151,17 @@ func TestStream_Good(t *testing.T) {
 		s.Wait()
 
 		assert.Equal(t, "text\n", buf.String()) // no double newline
+	})
+
+	t.Run("word wrap uses visible width", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithWordWrap(4), WithStreamOutput(&buf))
+
+		s.Write("東京A")
+		s.Done()
+		s.Wait()
+
+		assert.Equal(t, "東京\nA\n", buf.String())
 	})
 }
 

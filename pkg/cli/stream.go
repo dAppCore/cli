@@ -6,7 +6,8 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"unicode/utf8"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // StreamOption configures a Stream.
@@ -60,11 +61,11 @@ func (s *Stream) Write(text string) {
 
 	if s.wrap <= 0 {
 		fmt.Fprint(s.out, text)
-		// Track column across newlines for Done() trailing-newline logic.
+		// Track visible width across newlines for Done() trailing-newline logic.
 		if idx := strings.LastIndex(text, "\n"); idx >= 0 {
-			s.col = utf8.RuneCountInString(text[idx+1:])
+			s.col = runewidth.StringWidth(text[idx+1:])
 		} else {
-			s.col += utf8.RuneCountInString(text)
+			s.col += runewidth.StringWidth(text)
 		}
 		return
 	}
@@ -76,13 +77,14 @@ func (s *Stream) Write(text string) {
 			continue
 		}
 
-		if s.col >= s.wrap {
+		rw := runewidth.RuneWidth(r)
+		if rw > 0 && s.col > 0 && s.col+rw > s.wrap {
 			fmt.Fprintln(s.out)
 			s.col = 0
 		}
 
 		fmt.Fprint(s.out, string(r))
-		s.col++
+		s.col += rw
 	}
 }
 
