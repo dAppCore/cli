@@ -105,6 +105,8 @@ func renderSearchResults(results []*gohelp.SearchResult, query string) error {
 			cli.Println("%s", cli.DimStr("    "+snippet))
 		}
 	}
+	cli.Blank()
+	renderHelpHint(query)
 	return nil
 }
 
@@ -112,7 +114,9 @@ func renderHelpHint(query string) {
 	cli.Hint("browse", "core help")
 	if trimmed := strings.TrimSpace(query); trimmed != "" {
 		cli.Hint("search", fmt.Sprintf("core help search %q", trimmed))
+		return
 	}
+	cli.Hint("search", "core help search <topic>")
 }
 
 func renderTopicList(topics []*gohelp.Topic) error {
@@ -127,6 +131,8 @@ func renderTopicList(topics []*gohelp.Topic) error {
 			cli.Println("%s", cli.DimStr("    "+summary))
 		}
 	}
+	cli.Blank()
+	renderHelpHint("")
 	return nil
 }
 
@@ -157,5 +163,7 @@ func renderTopic(t *gohelp.Topic) {
 	cli.Println("%s", strings.Repeat("-", len(t.Title)))
 	cli.Blank()
 	cli.Println("%s", t.Content)
+	cli.Blank()
+	renderHelpHint(t.ID)
 	cli.Blank()
 }
