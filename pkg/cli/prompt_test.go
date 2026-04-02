@@ -205,12 +205,28 @@ func TestChoose_Good_Filter(t *testing.T) {
 	assert.Equal(t, "apricot", val)
 }
 
+func TestChoose_Bad_FilteredDefaultDoesNotFallBackToFirstVisible(t *testing.T) {
+	SetStdin(strings.NewReader("ap\n\n2\n"))
+	defer SetStdin(nil)
+
+	val := Choose("Pick", []string{"apple", "banana", "apricot"}, WithDefaultIndex[string](1), Filter[string]())
+	assert.Equal(t, "apricot", val)
+}
+
 func TestChooseMulti_Good_Filter(t *testing.T) {
 	SetStdin(strings.NewReader("ap\n1 2\n"))
 	defer SetStdin(nil)
 
 	vals := ChooseMulti("Pick", []string{"apple", "apricot", "banana"}, Filter[string]())
 	assert.Equal(t, []string{"apple", "apricot"}, vals)
+}
+
+func TestChooseMulti_Bad_FilteredDefaultDoesNotFallBackToFirstVisible(t *testing.T) {
+	SetStdin(strings.NewReader("ap\n\n2\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"apple", "banana", "apricot"}, WithDefaultIndex[string](1), Filter[string]())
+	assert.Equal(t, []string{"apricot"}, vals)
 }
 
 func TestChooseMulti_Good_Commas(t *testing.T) {
