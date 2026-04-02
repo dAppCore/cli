@@ -42,11 +42,18 @@ func Prompt(label, defaultVal string) (string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	if err != nil && !errors.Is(err, io.EOF) {
-		return "", err
-	}
-
 	input = strings.TrimSpace(input)
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			return "", err
+		}
+		if input == "" {
+			if defaultVal != "" {
+				return defaultVal, nil
+			}
+			return "", err
+		}
+	}
 	if input == "" {
 		return defaultVal, nil
 	}
@@ -68,7 +75,7 @@ func Select(label string, options []string) (string, error) {
 	r := newReader()
 	input, err := r.ReadString('\n')
 	if err != nil && strings.TrimSpace(input) == "" {
-		return "", err
+		return "", fmt.Errorf("selection cancelled: %w", err)
 	}
 
 	trimmed := strings.TrimSpace(input)
