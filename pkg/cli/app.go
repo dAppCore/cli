@@ -34,9 +34,16 @@ var (
 )
 
 // SemVer returns the full SemVer 2.0.0 version string.
-//   - Release:  1.2.0
-//   - Pre-release: 1.2.0-dev.8
-//   - Full:     1.2.0-dev.8+df94c24.20260206
+//
+// Examples:
+//   // Release only:
+//   // AppVersion=1.2.0 -> 1.2.0
+//   cli.AppVersion = "1.2.0"
+//   fmt.Println(cli.SemVer())
+//
+//   // Pre-release + commit + date:
+//   // AppVersion=1.2.0, BuildPreRelease=dev.8, BuildCommit=df94c24, BuildDate=20260206
+//   // -> 1.2.0-dev.8+df94c24.20260206
 func SemVer() string {
 	v := AppVersion
 	if BuildPreRelease != "" {
@@ -64,19 +71,37 @@ func WithAppName(name string) {
 type LocaleSource = i18n.FSSource
 
 // WithLocales returns a locale source for use with MainWithLocales.
+//
+// Example:
+//   fs := embed.FS{}
+//   locales := cli.WithLocales(fs, "locales")
+//   cli.MainWithLocales([]cli.LocaleSource{locales})
 func WithLocales(fsys fs.FS, dir string) LocaleSource {
 	return LocaleSource{FS: fsys, Dir: dir}
 }
 
 // CommandSetup is a function that registers commands on the CLI after init.
+//
+// Example:
+//   cli.Main(
+//     cli.WithCommands("doctor", doctor.AddDoctorCommands),
+//   )
 type CommandSetup func(c *core.Core)
 
 // Main initialises and runs the CLI with the framework's built-in translations.
+//
+// Example:
+//   cli.WithAppName("core")
+//   cli.Main(config.AddConfigCommands)
 func Main(commands ...CommandSetup) {
 	MainWithLocales(nil, commands...)
 }
 
 // MainWithLocales initialises and runs the CLI with additional translation sources.
+//
+// Example:
+//   locales := []cli.LocaleSource{cli.WithLocales(embeddedLocales, "locales")}
+//   cli.MainWithLocales(locales, doctor.AddDoctorCommands)
 func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	// Recovery from panics
 	defer func() {

@@ -39,6 +39,12 @@ type runtime struct {
 }
 
 // Options configures the CLI runtime.
+//
+// Example:
+//   opts := cli.Options{
+//   	AppName: "core",
+//   	Version: "1.0.0",
+//   }
 type Options struct {
 	AppName     string
 	Version     string
@@ -52,6 +58,11 @@ type Options struct {
 
 // Init initialises the global CLI runtime.
 // Call this once at startup (typically in main.go or cmd.Execute).
+//
+// Example:
+//   err := cli.Init(cli.Options{AppName: "core"})
+//   if err != nil { panic(err) }
+//   defer cli.Shutdown()
 func Init(opts Options) error {
 	var initErr error
 	once.Do(func() {
@@ -141,6 +152,11 @@ func RootCmd() *cobra.Command {
 
 // Execute runs the CLI root command.
 // Returns an error if the command fails.
+//
+// Example:
+//   if err := cli.Execute(); err != nil {
+//   	cli.Warn("command failed:", "err", err)
+//   }
 func Execute() error {
 	mustInit()
 	return instance.root.Execute()
@@ -149,6 +165,13 @@ func Execute() error {
 // Run executes the CLI and watches an external context for cancellation.
 // If the context is cancelled first, the runtime is shut down and the
 // command error is returned if execution failed during shutdown.
+//
+// Example:
+//   ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+//   defer cancel()
+//   if err := cli.Run(ctx); err != nil {
+//   	cli.Error(err.Error())
+//   }
 func Run(ctx context.Context) error {
 	mustInit()
 	if ctx == nil {
@@ -174,6 +197,10 @@ func Run(ctx context.Context) error {
 
 // RunWithTimeout returns a shutdown helper that waits for the runtime to stop
 // for up to timeout before giving up. It is intended for deferred cleanup.
+//
+// Example:
+//   stop := cli.RunWithTimeout(5 * time.Second)
+//   defer stop()
 func RunWithTimeout(timeout time.Duration) func() {
 	return func() {
 		if timeout <= 0 {
@@ -197,12 +224,20 @@ func RunWithTimeout(timeout time.Duration) func() {
 
 // Context returns the CLI's root context.
 // Cancelled on SIGINT/SIGTERM.
+//
+// Example:
+//   if ctx := cli.Context(); ctx != nil {
+//   	_ = ctx
+//   }
 func Context() context.Context {
 	mustInit()
 	return instance.ctx
 }
 
 // Shutdown gracefully shuts down the CLI.
+//
+// Example:
+//   cli.Shutdown()
 func Shutdown() {
 	if instance == nil {
 		return

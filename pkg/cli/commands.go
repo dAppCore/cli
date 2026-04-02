@@ -29,6 +29,13 @@ func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) 
 }
 
 // CommandRegistration is a function that adds commands to the CLI root.
+//
+// Example:
+//   func addCommands(root *cobra.Command) {
+//   	root.AddCommand(cli.NewRun("ping", "Ping API", "", func(cmd *cli.Command, args []string) {
+//   		cli.Println("pong")
+//   	}))
+//   }
 type CommandRegistration func(root *cobra.Command)
 
 var (
@@ -44,6 +51,13 @@ var (
 //	func init() {
 //	    cli.RegisterCommands(AddCommands, locales.FS)
 //	}
+//
+// Example:
+//   cli.RegisterCommands(func(root *cobra.Command) {
+//   	root.AddCommand(cli.NewRun("version", "Show version", "", func(cmd *cli.Command, args []string) {
+//   		cli.Println(cli.SemVer())
+//   	}))
+//   })
 func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
 	registeredCommands = append(registeredCommands, fn)
@@ -102,6 +116,11 @@ func loadLocaleSources(sources ...LocaleSource) {
 }
 
 // RegisteredLocales returns all locale filesystems registered by command packages.
+//
+// Example:
+//   for _, fs := range cli.RegisteredLocales() {
+//   	_ = fs
+//   }
 func RegisteredLocales() []fs.FS {
 	registeredCommandsMu.Lock()
 	defer registeredCommandsMu.Unlock()
@@ -114,6 +133,11 @@ func RegisteredLocales() []fs.FS {
 }
 
 // RegisteredCommands returns an iterator over the registered command functions.
+//
+// Example:
+//   for attach := range cli.RegisteredCommands() {
+//   	_ = attach
+//   }
 func RegisteredCommands() iter.Seq[CommandRegistration] {
 	return func(yield func(CommandRegistration) bool) {
 		registeredCommandsMu.Lock()
