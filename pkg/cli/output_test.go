@@ -107,16 +107,21 @@ func TestSemanticOutput_GlyphShortcodes(t *testing.T) {
 	UseASCII()
 
 	out := captureOutput(func() {
+		Echo(":check:")
 		Success("done :check:")
 		Task(":cross:", "running :warn:")
 		Section(":check: audit")
 		Hint(":info:", "apply :check:")
 		Label("status", "ready :warn:")
+		Progress("check", 1, 2, ":warn: repo")
 	})
 
 	for _, want := range []string{"[OK]", "[FAIL]", "[WARN]"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("expected output to contain %q, got %q", want, out)
 		}
+	}
+	if !strings.Contains(out, "[WARN] repo") {
+		t.Fatalf("expected progress item shortcode to be rendered, got %q", out)
 	}
 }

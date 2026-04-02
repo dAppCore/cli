@@ -16,7 +16,7 @@ func Blank() {
 // Echo translates a key via i18n.T and prints with newline.
 // No automatic styling - use Success/Error/Warn/Info for styled output.
 func Echo(key string, args ...any) {
-	fmt.Println(i18n.T(key, args...))
+	fmt.Println(compileGlyphs(i18n.T(key, args...)))
 }
 
 // Print outputs formatted text (no newline).
@@ -112,9 +112,9 @@ func Dim(msg string) {
 // Progress prints a progress indicator that overwrites the current line.
 // Uses i18n.Progress for gerund form ("Checking...").
 func Progress(verb string, current, total int, item ...string) {
-	msg := i18n.Progress(verb)
+	msg := compileGlyphs(i18n.Progress(verb))
 	if len(item) > 0 && item[0] != "" {
-		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, item[0])
+		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0]))
 	} else {
 		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
 	}
@@ -127,7 +127,7 @@ func ProgressDone() {
 
 // Label prints a "Label: value" line.
 func Label(word, value string) {
-	fmt.Printf("%s %s\n", KeyStyle.Render(i18n.Label(word)), compileGlyphs(value))
+	fmt.Printf("%s %s\n", KeyStyle.Render(compileGlyphs(i18n.Label(word))), compileGlyphs(value))
 }
 
 // Scanln reads from stdin.
