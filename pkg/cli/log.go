@@ -26,3 +26,8 @@ func LogWarn(msg string, keyvals ...any) { log.Warn(msg, keyvals...) }
 
 // LogError logs an error message.
 func LogError(msg string, keyvals ...any) { log.Error(msg, keyvals...) }
+
+// LogSecurity logs a security-sensitive message.
+//
+//	cli.LogSecurity("login attempt", "user", "admin")
+func LogSecurity(msg string, keyvals ...any) { log.Security(msg, keyvals...) }
