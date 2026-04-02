@@ -69,14 +69,14 @@ func (c *CheckBuilder) String() string {
 		icon = c.style.Render(icon)
 	}
 
-	status := compileGlyphs(c.status)
+	name := Pad(compileGlyphs(c.name), 20)
+	status := Pad(compileGlyphs(c.status), 10)
 	if c.style != nil && c.status != "" {
 		status = c.style.Render(status)
 	}
-	name := compileGlyphs(c.name)
 
 	if c.duration != "" {
-		return Sprintf("  %s %-20s %-10s %s", icon, name, status, DimStyle.Render(compileGlyphs(c.duration)))
+		return Sprintf("  %s %s %s %s", icon, name, status, DimStyle.Render(compileGlyphs(c.duration)))
 	}
 	if status != "" {
 		return Sprintf("  %s %s %s", icon, name, status)

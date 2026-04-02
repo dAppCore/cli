@@ -46,6 +46,9 @@ func TestCheckBuilder(t *testing.T) {
 	if got == "" {
 		t.Error("Empty output for Duration")
 	}
+	if !strings.Contains(got, "foo                 ") {
+		t.Error("Expected width-aware padding for the check name")
+	}
 
 	// Message
 	c = Check("foo").Message("status")
