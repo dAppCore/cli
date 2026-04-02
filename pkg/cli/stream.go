@@ -39,6 +39,7 @@ type Stream struct {
 	wrap int
 	col  int // current column position (visible characters)
 	done chan struct{}
+	once sync.Once
 	mu   sync.Mutex
 }
 
@@ -107,12 +108,14 @@ func (s *Stream) WriteFrom(r io.Reader) error {
 
 // Done signals that no more text will arrive.
 func (s *Stream) Done() {
-	s.mu.Lock()
-	if s.col > 0 {
-		fmt.Fprintln(s.out) // ensure trailing newline
-	}
-	s.mu.Unlock()
-	close(s.done)
+	s.once.Do(func() {
+		s.mu.Lock()
+		if s.col > 0 {
+			fmt.Fprintln(s.out) // ensure trailing newline
+		}
+		s.mu.Unlock()
+		close(s.done)
+	})
 }
 
 // Wait blocks until Done is called.

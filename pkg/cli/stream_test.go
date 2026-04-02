@@ -153,6 +153,18 @@ func TestStream_Good(t *testing.T) {
 		assert.Equal(t, "text\n", buf.String()) // no double newline
 	})
 
+	t.Run("Done is idempotent", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		s.Write("text")
+		s.Done()
+		s.Done()
+		s.Wait()
+
+		assert.Equal(t, "text\n", buf.String())
+	})
+
 	t.Run("word wrap uses visible width", func(t *testing.T) {
 		var buf bytes.Buffer
 		s := NewStream(WithWordWrap(4), WithStreamOutput(&buf))
