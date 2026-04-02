@@ -198,9 +198,11 @@ func TestTruncate_Good(t *testing.T) {
 	assert.Equal(t, "hel...", Truncate("hello world", 6))
 	assert.Equal(t, "hi", Truncate("hi", 6))
 	assert.Equal(t, "he", Truncate("hello", 2))
+	assert.Equal(t, "東", Truncate("東京", 3))
 }
 
 func TestPad_Good(t *testing.T) {
 	assert.Equal(t, "hi   ", Pad("hi", 5))
 	assert.Equal(t, "hello", Pad("hello", 3))
+	assert.Equal(t, "東京  ", Pad("東京", 6))
 }

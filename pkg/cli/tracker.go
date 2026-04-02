@@ -244,7 +244,7 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 		styledStatus = DimStyle.Render(status)
 	}
 
-	fmt.Fprintf(tr.out, "\033[2K%s %-*s %s\n", icon, nameW, name, styledStatus)
+	fmt.Fprintf(tr.out, "\033[2K%s %s %s\n", icon, Pad(name, nameW), styledStatus)
 }
 
 func (tr *TaskTracker) nameWidth() int {
@@ -252,8 +252,8 @@ func (tr *TaskTracker) nameWidth() int {
 	defer tr.mu.Unlock()
 	w := 0
 	for _, t := range tr.tasks {
-		if len(t.name) > w {
-			w = len(t.name)
+		if nameW := displayWidth(t.name); nameW > w {
+			w = nameW
 		}
 	}
 	return w
@@ -313,7 +313,7 @@ func (tr *TaskTracker) String() string {
 		case taskRunning:
 			icon = "⠋"
 		}
-		fmt.Fprintf(&sb, "%s %-*s %s\n", icon, nameW, name, status)
+		fmt.Fprintf(&sb, "%s %s %s\n", icon, Pad(name, nameW), status)
 	}
 	return sb.String()
 }

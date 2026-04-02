@@ -135,6 +135,17 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.Equal(t, 19, w)
 	})
 
+	t.Run("name width counts visible width", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("東京")
+		tr.Add("repo")
+
+		w := tr.nameWidth()
+		assert.Equal(t, 4, w)
+	})
+
 	t.Run("String output format", func(t *testing.T) {
 		tr := NewTaskTracker()
 		tr.out = &bytes.Buffer{}

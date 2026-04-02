@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/mattn/go-runewidth"
 )
 
 // Tailwind colour palette (hex strings)
@@ -69,21 +72,53 @@ var (
 
 // Truncate shortens a string to max length with ellipsis.
 func Truncate(s string, max int) string {
-	if len(s) <= max {
+	if max <= 0 || s == "" {
+		return ""
+	}
+	if displayWidth(s) <= max {
 		return s
 	}
 	if max <= 3 {
-		return s[:max]
+		return truncateByWidth(s, max)
 	}
-	return s[:max-3] + "..."
+	return truncateByWidth(s, max-3) + "..."
 }
 
 // Pad right-pads a string to width.
 func Pad(s string, width int) string {
-	if len(s) >= width {
+	if displayWidth(s) >= width {
 		return s
 	}
-	return s + strings.Repeat(" ", width-len(s))
+	return s + strings.Repeat(" ", width-displayWidth(s))
+}
+
+func displayWidth(s string) int {
+	return runewidth.StringWidth(ansi.Strip(s))
+}
+
+func truncateByWidth(s string, max int) string {
+	if max <= 0 || s == "" {
+		return ""
+	}
+
+	plain := ansi.Strip(s)
+	if displayWidth(plain) <= max {
+		return plain
+	}
+
+	var (
+		width int
+		out   strings.Builder
+	)
+	for _, r := range plain {
+		rw := runewidth.RuneWidth(r)
+		if width+rw > max {
+			break
+		}
+		out.WriteRune(r)
+		width += rw
+	}
+	return out.String()
 }
 
 // FormatAge formats a time as human-readable age (e.g., "2h ago", "3d ago").
@@ -249,14 +284,16 @@ func (t *Table) columnWidths() []int {
 	widths := make([]int, cols)
 
 	for i, h := range t.Headers {
-		if len(h) > widths[i] {
-			widths[i] = len(h)
+		if w := displayWidth(h); w > widths[i] {
+			widths[i] = w
 		}
 	}
 	for _, row := range t.Rows {
 		for i, cell := range row {
-			if i < cols && len(cell) > widths[i] {
-				widths[i] = len(cell)
+			if i < cols {
+				if w := displayWidth(cell); w > widths[i] {
+					widths[i] = w
+				}
 			}
 		}
 	}
