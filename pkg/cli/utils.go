@@ -137,7 +137,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		// Handle empty response
 		if response == "" {
 			if readErr == nil && cfg.required {
-				fmt.Println("Please enter 'y' or 'n'")
+				fmt.Println("Please enter y or n, then press Enter.")
 				continue
 			}
 			if cfg.required {
@@ -156,7 +156,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 
 		// Invalid response
 		if cfg.required {
-			fmt.Println("Please enter 'y' or 'n'")
+			fmt.Println("Please enter y or n, then press Enter.")
 			continue
 		}
 
@@ -250,7 +250,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				fmt.Println("Please enter a value")
+				fmt.Println("Please enter a value, then press Enter.")
 				continue
 			}
 			response = cfg.defaultValue
@@ -375,10 +375,10 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 				return items[idx]
 			}
 			if cfg.defaultN >= 0 {
-				fmt.Printf("Default selection is not available in the current list\n")
+				fmt.Printf("Default selection is not available in the current list. Narrow the list or choose another number.\n")
 				continue
 			}
-			fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
+			fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
 			continue
 		}
 
@@ -387,21 +387,21 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
-			fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
+			fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
 			continue
 		}
 
 		if cfg.filter {
 			nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 			if len(nextVisible) == 0 {
-				fmt.Printf("No matches for %q\n", response)
+				fmt.Printf("No matches for %q. Try a shorter search term or clear the filter.\n", response)
 				continue
 			}
 			visible = nextVisible
 			continue
 		}
 
-		fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
+		fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
 	}
 }
 
@@ -462,7 +462,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 				return []T{items[idx]}
 			}
 			if cfg.defaultN >= 0 {
-				fmt.Printf("Default selection is not available in the current list\n")
+				fmt.Printf("Default selection is not available in the current list. Narrow the list or choose another number.\n")
 				continue
 			}
 			return nil
@@ -474,13 +474,13 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 			if cfg.filter && !looksLikeMultiSelectionInput(response) {
 				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 				if len(nextVisible) == 0 {
-					fmt.Printf("No matches for %q\n", response)
+					fmt.Printf("No matches for %q. Try a shorter search term or clear the filter.\n", response)
 					continue
 				}
 				visible = nextVisible
 				continue
 			}
-			fmt.Printf("Invalid selection: %v\n", err)
+			fmt.Printf("Invalid selection %q: enter numbers like 1 3 or 1-3.\n", response)
 			continue
 		}
 
