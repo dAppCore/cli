@@ -208,6 +208,9 @@ func (tr *TaskTracker) waitLive() {
 	for i := range n {
 		tr.renderLine(i, frame)
 	}
+	if n == 0 || tr.allDone() {
+		return
+	}
 
 	ticker := time.NewTicker(80 * time.Millisecond)
 	defer ticker.Stop()
