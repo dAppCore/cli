@@ -42,6 +42,34 @@ func runDaemon(cmd *cli.Command, args []string) error {
 }
 ```
 
+## Daemon Helper
+
+Use `cli.NewDaemon()` when you want a helper that writes a PID file and serves
+basic `/health` and `/ready` probes:
+
+```go
+daemon := cli.NewDaemon(cli.DaemonOptions{
+    PIDFile:    "/tmp/core.pid",
+    HealthAddr: "127.0.0.1:8080",
+    HealthCheck: func() bool {
+        return true
+    },
+    ReadyCheck: func() bool {
+        return true
+    },
+})
+
+if err := daemon.Start(context.Background()); err != nil {
+    return err
+}
+defer func() {
+    _ = daemon.Stop(context.Background())
+}()
+```
+
+`Start()` writes the current process ID to the configured file, and `Stop()`
+removes it after shutting the probe server down.
+
 ## Shutdown with Timeout
 
 The daemon stop logic sends SIGTERM and waits up to 30 seconds. If the process has not exited by then, it sends SIGKILL and removes the PID file.
