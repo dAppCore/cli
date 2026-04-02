@@ -20,15 +20,24 @@ const (
 var currentTheme = ThemeUnicode
 
 // UseUnicode switches the glyph theme to Unicode.
-func UseUnicode() { currentTheme = ThemeUnicode }
+func UseUnicode() {
+	currentTheme = ThemeUnicode
+	restoreColorIfASCII()
+}
 
 // UseEmoji switches the glyph theme to Emoji.
-func UseEmoji() { currentTheme = ThemeEmoji }
+func UseEmoji() {
+	currentTheme = ThemeEmoji
+	restoreColorIfASCII()
+}
 
 // UseASCII switches the glyph theme to ASCII and disables colors.
 func UseASCII() {
 	currentTheme = ThemeASCII
 	SetColorEnabled(false)
+	colorEnabledMu.Lock()
+	asciiDisabledColors = true
+	colorEnabledMu.Unlock()
 }
 
 func glyphMap() map[string]string {

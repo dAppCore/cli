@@ -86,6 +86,31 @@ func TestUseASCII_Good(t *testing.T) {
 	}
 }
 
+func TestUseUnicodeAndEmojiRestoreColorsAfterASCII(t *testing.T) {
+	restoreThemeAndColors(t)
+
+	SetColorEnabled(true)
+	UseASCII()
+	if ColorEnabled() {
+		t.Fatal("UseASCII should disable colors")
+	}
+
+	UseUnicode()
+	if !ColorEnabled() {
+		t.Fatal("UseUnicode should restore colors after ASCII mode")
+	}
+
+	UseASCII()
+	if ColorEnabled() {
+		t.Fatal("UseASCII should disable colors again")
+	}
+
+	UseEmoji()
+	if !ColorEnabled() {
+		t.Fatal("UseEmoji should restore colors after ASCII mode")
+	}
+}
+
 func TestRender_NilStyle_Good(t *testing.T) {
 	var s *AnsiStyle
 	got := s.Render("test")
