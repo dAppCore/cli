@@ -103,6 +103,28 @@ func TestTree_Good(t *testing.T) {
 			"└── child\n"
 		assert.Equal(t, expected, tree.String())
 	})
+
+	t.Run("ASCII theme uses ASCII connectors", func(t *testing.T) {
+		prevTheme := currentTheme
+		prevColor := ColorEnabled()
+		UseASCII()
+		t.Cleanup(func() {
+			currentTheme = prevTheme
+			SetColorEnabled(prevColor)
+		})
+
+		tree := NewTree("core-php")
+		tree.Add("core-tenant").Add("core-bio")
+		tree.Add("core-admin")
+		tree.Add("core-api")
+
+		expected := "core-php\n" +
+			"+-- core-tenant\n" +
+			"|   `-- core-bio\n" +
+			"+-- core-admin\n" +
+			"`-- core-api\n"
+		assert.Equal(t, expected, tree.String())
+	})
 }
 
 func TestTree_Bad(t *testing.T) {

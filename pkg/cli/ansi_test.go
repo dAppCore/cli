@@ -76,9 +76,7 @@ func TestRender_ColorEnabled_Good(t *testing.T) {
 }
 
 func TestUseASCII_Good(t *testing.T) {
-	// Save original state
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
+	restoreThemeAndColors(t)
 
 	// Enable first, then UseASCII should disable colors
 	SetColorEnabled(true)

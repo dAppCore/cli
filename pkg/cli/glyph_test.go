@@ -3,6 +3,7 @@ package cli
 import "testing"
 
 func TestGlyph(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseUnicode()
 	if Glyph(":check:") != "✓" {
 		t.Errorf("Expected ✓, got %s", Glyph(":check:"))
@@ -15,6 +16,7 @@ func TestGlyph(t *testing.T) {
 }
 
 func TestCompileGlyphs(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseUnicode()
 	got := compileGlyphs("Status: :check:")
 	if got != "Status: ✓" {

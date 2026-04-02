@@ -90,13 +90,17 @@ func (n *TreeNode) renderLabel() string {
 }
 
 func (n *TreeNode) writeChildren(sb *strings.Builder, prefix string) {
+	tee := Glyph(":tee:") + Glyph(":dash:") + Glyph(":dash:") + " "
+	corner := Glyph(":corner:") + Glyph(":dash:") + Glyph(":dash:") + " "
+	pipe := Glyph(":pipe:") + "   "
+
 	for i, child := range n.children {
 		last := i == len(n.children)-1
 
-		connector := "├── "
-		next := "│   "
+		connector := tee
+		next := pipe
 		if last {
-			connector = "└── "
+			connector = corner
 			next = "    "
 		}
 

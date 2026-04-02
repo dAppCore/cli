@@ -10,6 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func restoreThemeAndColors(t *testing.T) {
+	t.Helper()
+
+	prevTheme := currentTheme
+	prevColor := ColorEnabled()
+	t.Cleanup(func() {
+		currentTheme = prevTheme
+		SetColorEnabled(prevColor)
+	})
+}
+
 func TestTaskTracker_Good(t *testing.T) {
 	t.Run("add and complete tasks", func(t *testing.T) {
 		tr := NewTaskTracker()
@@ -158,6 +169,25 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.Contains(t, out, "✓")
 		assert.Contains(t, out, "✗")
 		assert.Contains(t, out, "⠋")
+	})
+
+	t.Run("ASCII theme uses ASCII symbols", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("repo-a").Done("clean")
+		tr.Add("repo-b").Fail("dirty")
+		tr.Add("repo-c").Update("pulling")
+
+		out := tr.String()
+		assert.Contains(t, out, "[OK]")
+		assert.Contains(t, out, "[FAIL]")
+		assert.Contains(t, out, "-")
+		assert.NotContains(t, out, "✓")
+		assert.NotContains(t, out, "✗")
 	})
 }
 

@@ -27,6 +27,7 @@ func captureOutput(f func()) string {
 }
 
 func TestSemanticOutput(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 
 	// Test Success
@@ -102,6 +103,7 @@ func TestSemanticOutput(t *testing.T) {
 }
 
 func TestSemanticOutput_GlyphShortcodes(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 
 	out := captureOutput(func() {

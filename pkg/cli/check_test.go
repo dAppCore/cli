@@ -3,6 +3,7 @@ package cli
 import "testing"
 
 func TestCheckBuilder(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII() // Deterministic output
 
 	// Pass

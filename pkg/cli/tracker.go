@@ -12,8 +12,9 @@ import (
 	"golang.org/x/term"
 )
 
-// Spinner frames (braille pattern).
-var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+// Spinner frames for the live tracker.
+var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+var spinnerFramesASCII = []string{"-", "\\", "|", "/"}
 
 // taskState tracks the lifecycle of a tracked task.
 type taskState int
@@ -227,7 +228,7 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 	case taskPending:
 		icon = DimStyle.Render(Glyph(":pending:"))
 	case taskRunning:
-		icon = InfoStyle.Render(spinnerFrames[frame%len(spinnerFrames)])
+		icon = InfoStyle.Render(trackerSpinnerFrame(frame))
 	case taskDone:
 		icon = SuccessStyle.Render(Glyph(":check:"))
 	case taskFailed:
@@ -304,16 +305,24 @@ func (tr *TaskTracker) String() string {
 	var sb strings.Builder
 	for _, t := range tasks {
 		name, status, state := t.snapshot()
-		icon := "…"
+		icon := Glyph(":pending:")
 		switch state {
 		case taskDone:
-			icon = "✓"
+			icon = Glyph(":check:")
 		case taskFailed:
-			icon = "✗"
+			icon = Glyph(":cross:")
 		case taskRunning:
-			icon = "⠋"
+			icon = Glyph(":spinner:")
 		}
 		fmt.Fprintf(&sb, "%s %s %s\n", icon, Pad(name, nameW), status)
 	}
 	return sb.String()
+}
+
+func trackerSpinnerFrame(frame int) string {
+	frames := spinnerFramesUnicode
+	if currentTheme == ThemeASCII {
+		frames = spinnerFramesASCII
+	}
+	return frames[frame%len(frames)]
 }
