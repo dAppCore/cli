@@ -75,12 +75,14 @@ func Select(label string, options []string) (string, error) {
 	r := newReader()
 	input, err := r.ReadString('\n')
 	if err != nil && strings.TrimSpace(input) == "" {
+		promptHint("No input received. Selection cancelled.")
 		return "", fmt.Errorf("selection cancelled: %w", err)
 	}
 
 	trimmed := strings.TrimSpace(input)
 	n, err := strconv.Atoi(trimmed)
 	if err != nil || n < 1 || n > len(options) {
+		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(options)))
 		return "", fmt.Errorf("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
 	}
 	return options[n-1], nil

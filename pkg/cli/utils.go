@@ -396,7 +396,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
-			fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
+			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
 
