@@ -52,6 +52,29 @@ func TestMultiSelect_Good(t *testing.T) {
 	assert.Equal(t, []string{"a", "c"}, vals)
 }
 
+func TestConfirm_Good(t *testing.T) {
+	SetStdin(strings.NewReader("y\n"))
+	defer SetStdin(nil)
+
+	assert.True(t, Confirm("Proceed?"))
+}
+
+func TestQuestion_Good(t *testing.T) {
+	SetStdin(strings.NewReader("alice\n"))
+	defer SetStdin(nil)
+
+	val := Question("Name:")
+	assert.Equal(t, "alice", val)
+}
+
+func TestChoose_Good_DefaultIndex(t *testing.T) {
+	SetStdin(strings.NewReader("\n"))
+	defer SetStdin(nil)
+
+	val := Choose("Pick", []string{"a", "b", "c"}, WithDefaultIndex[string](1))
+	assert.Equal(t, "b", val)
+}
+
 func TestSetStdin_Good_ResetNil(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })

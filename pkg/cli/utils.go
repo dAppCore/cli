@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -97,7 +95,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		suffix = fmt.Sprintf("%s(auto in %s) ", suffix, cfg.timeout.Round(time.Second))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
 
 	for {
 		fmt.Printf("%s %s", prompt, suffix)
@@ -215,7 +213,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 		opt(cfg)
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
 
 	for {
 		// Build prompt with default
@@ -335,7 +333,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		fmt.Printf("  %s%d. %s\n", marker, i+1, cfg.displayFn(item))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
 
 	for {
 		fmt.Printf("Enter number [1-%d]: ", len(items))
@@ -396,7 +394,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		fmt.Printf("  %d. %s\n", i+1, cfg.displayFn(item))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
 
 	for {
 		fmt.Printf("Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
