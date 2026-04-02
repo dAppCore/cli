@@ -166,6 +166,8 @@ func (tr *TaskTracker) waitStatic() {
 		allDone := true
 		for i, t := range tasks {
 			name, status, state := t.snapshot()
+			name = compileGlyphs(name)
+			status = compileGlyphs(status)
 			if state != taskDone && state != taskFailed {
 				allDone = false
 				continue
@@ -227,6 +229,8 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 	tr.mu.Unlock()
 
 	name, status, state := t.snapshot()
+	name = compileGlyphs(name)
+	status = compileGlyphs(status)
 	nameW := tr.nameWidth()
 
 	var icon string
@@ -259,7 +263,7 @@ func (tr *TaskTracker) nameWidth() int {
 	defer tr.mu.Unlock()
 	w := 0
 	for _, t := range tr.tasks {
-		if nameW := displayWidth(t.name); nameW > w {
+		if nameW := displayWidth(compileGlyphs(t.name)); nameW > w {
 			w = nameW
 		}
 	}
@@ -311,6 +315,8 @@ func (tr *TaskTracker) String() string {
 	var sb strings.Builder
 	for _, t := range tasks {
 		name, status, state := t.snapshot()
+		name = compileGlyphs(name)
+		status = compileGlyphs(status)
 		icon := Glyph(":pending:")
 		switch state {
 		case taskDone:

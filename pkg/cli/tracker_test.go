@@ -171,6 +171,20 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.Contains(t, out, "⠋")
 	})
 
+	t.Run("glyph shortcodes render in names and statuses", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add(":check: repo").Done("done :warn:")
+
+		out := tr.String()
+		assert.Contains(t, out, "[OK] repo")
+		assert.Contains(t, out, "[WARN]")
+	})
+
 	t.Run("ASCII theme uses ASCII symbols", func(t *testing.T) {
 		restoreThemeAndColors(t)
 		UseASCII()
