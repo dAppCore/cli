@@ -291,6 +291,14 @@ func TestChooseMulti_Good_EmptyWithoutDefaultReturnsNone(t *testing.T) {
 	assert.Empty(t, vals)
 }
 
+func TestChooseMulti_Good_EmptyIgnoresDefaultIndex(t *testing.T) {
+	SetStdin(strings.NewReader("\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"a", "b", "c"}, WithDefaultIndex[string](1))
+	assert.Empty(t, vals)
+}
+
 func TestChoose_Good_Filter(t *testing.T) {
 	SetStdin(strings.NewReader("ap\n2\n"))
 	defer SetStdin(nil)
@@ -368,12 +376,12 @@ func TestChooseMulti_Good_CommasAndRanges(t *testing.T) {
 	assert.Equal(t, []string{"a", "b", "d"}, vals)
 }
 
-func TestChooseMulti_Good_DefaultIndex(t *testing.T) {
+func TestChooseMulti_Good_DefaultIndexIgnored(t *testing.T) {
 	SetStdin(strings.NewReader("\n"))
 	defer SetStdin(nil)
 
 	vals := ChooseMulti("Pick", []string{"a", "b", "c"}, WithDefaultIndex[string](1))
-	assert.Equal(t, []string{"b"}, vals)
+	assert.Empty(t, vals)
 }
 
 func TestSetStdin_Good_ResetNil(t *testing.T) {

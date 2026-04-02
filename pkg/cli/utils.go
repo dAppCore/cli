@@ -479,13 +479,6 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 				promptHint("Filter cleared.")
 				continue
 			}
-			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
-				return []T{items[idx]}
-			}
-			if cfg.defaultN >= 0 {
-				promptHint("Default selection is not available in the current list. Narrow the list or choose another number.")
-				continue
-			}
 			return nil
 		}
 
