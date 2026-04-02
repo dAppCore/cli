@@ -52,6 +52,15 @@ func TestMultiSelect_Good(t *testing.T) {
 	assert.Equal(t, []string{"a", "c"}, vals)
 }
 
+func TestMultiSelect_Good_CommasAndRanges(t *testing.T) {
+	SetStdin(strings.NewReader("1-2,4\n"))
+	defer SetStdin(nil)
+
+	vals, err := MultiSelect("Pick", []string{"a", "b", "c", "d"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "d"}, vals)
+}
+
 func TestConfirm_Good(t *testing.T) {
 	SetStdin(strings.NewReader("y\n"))
 	defer SetStdin(nil)

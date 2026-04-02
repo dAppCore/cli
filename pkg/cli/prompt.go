@@ -87,9 +87,26 @@ func MultiSelect(label string, options []string) ([]string, error) {
 	}
 
 	var selected []string
-	for _, s := range strings.Fields(input) {
-		n, err := strconv.Atoi(s)
-		if err != nil || n < 1 || n > len(options) {
+	normalized := strings.NewReplacer(",", " ").Replace(input)
+	for _, s := range strings.Fields(normalized) {
+		if strings.Contains(s, "-") {
+			parts := strings.SplitN(s, "-", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			start, startErr := strconv.Atoi(parts[0])
+			end, endErr := strconv.Atoi(parts[1])
+			if startErr != nil || endErr != nil || start < 1 || end > len(options) || start > end {
+				continue
+			}
+			for n := start; n <= end; n++ {
+				selected = append(selected, options[n-1])
+			}
+			continue
+		}
+
+		n, convErr := strconv.Atoi(s)
+		if convErr != nil || n < 1 || n > len(options) {
 			continue
 		}
 		selected = append(selected, options[n-1])
