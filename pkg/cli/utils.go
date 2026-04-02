@@ -337,6 +337,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 
 	cfg := &chooseConfig[T]{
 		displayFn: func(item T) string { return fmt.Sprint(item) },
+		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -358,12 +359,23 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		} else {
 			fmt.Printf("Enter number [1-%d]: ", len(visible))
 		}
-		response, _ := reader.ReadString('\n')
+		response, err := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
 
-		// Empty response uses default.
+		if err != nil && response == "" {
+			if cfg.defaultN >= 0 {
+				return items[defaultVisibleIndex(visible, cfg.defaultN)]
+			}
+			var zero T
+			return zero
+		}
+
 		if response == "" {
-			return items[defaultVisibleIndex(visible, cfg.defaultN)]
+			if cfg.defaultN >= 0 {
+				return items[defaultVisibleIndex(visible, cfg.defaultN)]
+			}
+			fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
+			continue
 		}
 
 		var n int
@@ -415,6 +427,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 
 	cfg := &chooseConfig[T]{
 		displayFn: func(item T) string { return fmt.Sprint(item) },
+		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
