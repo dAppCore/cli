@@ -102,14 +102,14 @@ func MultiSelect(label string, options []string) ([]string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	if err != nil && strings.TrimSpace(input) == "" {
+	trimmed := strings.TrimSpace(input)
+	if err != nil && trimmed == "" {
 		return []string{}, nil
 	}
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
 	}
 
-	trimmed := strings.TrimSpace(input)
 	selected, parseErr := parseMultiSelection(trimmed, len(options))
 	if parseErr != nil {
 		return nil, fmt.Errorf("invalid selection %q: %w", trimmed, parseErr)

@@ -137,6 +137,15 @@ func TestMultiSelect_Bad_EOFReturnsEmptySelection(t *testing.T) {
 	assert.Empty(t, vals)
 }
 
+func TestMultiSelect_Good_EOFWithInput(t *testing.T) {
+	SetStdin(strings.NewReader("1 3"))
+	defer SetStdin(nil)
+
+	vals, err := MultiSelect("Pick", []string{"a", "b", "c"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "c"}, vals)
+}
+
 func TestMultiSelect_Good_DedupesSelections(t *testing.T) {
 	SetStdin(strings.NewReader("1 1 2-3 2\n"))
 	defer SetStdin(nil)
