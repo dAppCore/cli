@@ -51,6 +51,7 @@ func TestSelect_Bad_Invalid(t *testing.T) {
 
 	_, err := Select("Pick", []string{"a", "b"})
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "choose a number between 1 and 2")
 }
 
 func TestSelect_Bad_EOF(t *testing.T) {
@@ -101,6 +102,15 @@ func TestMultiSelect_Good_DedupesSelections(t *testing.T) {
 	vals, err := MultiSelect("Pick", []string{"a", "b", "c"})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "b", "c"}, vals)
+}
+
+func TestMultiSelect_Bad_InvalidInput(t *testing.T) {
+	SetStdin(strings.NewReader("1 foo\n"))
+	defer SetStdin(nil)
+
+	_, err := MultiSelect("Pick", []string{"a", "b", "c"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid selection")
 }
 
 func TestMultiSelect_Good_EmptyOptions(t *testing.T) {

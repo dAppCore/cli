@@ -73,7 +73,7 @@ func Select(label string, options []string) (string, error) {
 
 	n, err := strconv.Atoi(strings.TrimSpace(input))
 	if err != nil || n < 1 || n > len(options) {
-		return "", errors.New("invalid selection")
+		return "", fmt.Errorf("invalid selection: choose a number between 1 and %d", len(options))
 	}
 	return options[n-1], nil
 }
@@ -99,39 +99,14 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		return nil, err
 	}
 
-	var (
-		selected []string
-		seen     = make(map[int]bool, len(options))
-	)
-	normalized := strings.NewReplacer(",", " ").Replace(input)
-	for _, s := range strings.Fields(normalized) {
-		if strings.Contains(s, "-") {
-			parts := strings.SplitN(s, "-", 2)
-			if len(parts) != 2 {
-				continue
-			}
-			start, startErr := strconv.Atoi(parts[0])
-			end, endErr := strconv.Atoi(parts[1])
-			if startErr != nil || endErr != nil || start < 1 || end > len(options) || start > end {
-				continue
-			}
-			for n := start; n <= end; n++ {
-				if !seen[n-1] {
-					seen[n-1] = true
-					selected = append(selected, options[n-1])
-				}
-			}
-			continue
-		}
-
-		n, convErr := strconv.Atoi(s)
-		if convErr != nil || n < 1 || n > len(options) {
-			continue
-		}
-		if !seen[n-1] {
-			seen[n-1] = true
-			selected = append(selected, options[n-1])
-		}
+	selected, parseErr := parseMultiSelection(strings.TrimSpace(input), len(options))
+	if parseErr != nil {
+		return nil, fmt.Errorf("invalid selection: %w", parseErr)
 	}
-	return selected, nil
+
+	selectedOptions := make([]string, 0, len(selected))
+	for _, idx := range selected {
+		selectedOptions = append(selectedOptions, options[idx])
+	}
+	return selectedOptions, nil
 }
