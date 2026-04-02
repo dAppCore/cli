@@ -132,7 +132,7 @@ func Label(word, value string) {
 
 // Scanln reads from stdin.
 func Scanln(a ...any) (int, error) {
-	return fmt.Scanln(a...)
+	return fmt.Fscanln(newReader(), a...)
 }
 
 // Task prints a task header: "[label] message"
