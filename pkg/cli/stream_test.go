@@ -10,6 +10,19 @@ import (
 )
 
 func TestStream_Good(t *testing.T) {
+	t.Run("uses injected stdout by default", func(t *testing.T) {
+		var buf bytes.Buffer
+		SetStdout(&buf)
+		defer SetStdout(nil)
+		s := NewStream()
+
+		s.Write("hello")
+		s.Done()
+		s.Wait()
+
+		assert.Equal(t, "hello\n", buf.String())
+	})
+
 	t.Run("basic write", func(t *testing.T) {
 		var buf bytes.Buffer
 		s := NewStream(WithStreamOutput(&buf))

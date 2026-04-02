@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
@@ -12,7 +11,8 @@ import (
 
 // StreamOption configures a Stream.
 //
-//	stream := cli.NewStream(cli.WithWordWrap(80), cli.WithStreamOutput(os.Stdout))
+//	stream := cli.NewStream(cli.WithWordWrap(80))
+//	stream.Wait()
 type StreamOption func(*Stream)
 
 // WithWordWrap sets the word-wrap column width.
@@ -20,7 +20,7 @@ func WithWordWrap(cols int) StreamOption {
 	return func(s *Stream) { s.wrap = cols }
 }
 
-// WithStreamOutput sets the output writer (default: os.Stdout).
+// WithStreamOutput sets the output writer (default: stdoutWriter()).
 func WithStreamOutput(w io.Writer) StreamOption {
 	return func(s *Stream) { s.out = w }
 }
@@ -48,7 +48,7 @@ type Stream struct {
 // NewStream creates a streaming text renderer.
 func NewStream(opts ...StreamOption) *Stream {
 	s := &Stream{
-		out:  os.Stdout,
+		out:  stdoutWriter(),
 		done: make(chan struct{}),
 	}
 	for _, opt := range opts {

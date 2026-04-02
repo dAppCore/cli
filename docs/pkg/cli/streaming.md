@@ -34,7 +34,8 @@ When word-wrap is enabled, the stream tracks the current column position and ins
 
 ## Custom Output Writer
 
-By default, streams write to `os.Stdout`. Redirect to any `io.Writer`:
+By default, streams write to the CLI stdout writer (`stdoutWriter()`), so tests can
+redirect output via `cli.SetStdout` and other callers can provide any `io.Writer`:
 
 ```go
 var buf strings.Builder
@@ -77,7 +78,7 @@ stream.Done()
 | Option | Description |
 |--------|-------------|
 | `WithWordWrap(cols)` | Set the word-wrap column width |
-| `WithStreamOutput(w)` | Set the output writer (default: `os.Stdout`) |
+| `WithStreamOutput(w)` | Set the output writer (default: `stdoutWriter()`) |
 
 ## Example: LLM Token Streaming
 
