@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"forge.lthn.ai/core/go-log"
 )
 
@@ -31,3 +33,10 @@ func LogError(msg string, keyvals ...any) { log.Error(msg, keyvals...) }
 //
 //	cli.LogSecurity("login attempt", "user", "admin")
 func LogSecurity(msg string, keyvals ...any) { log.Security(msg, keyvals...) }
+
+// LogSecurityf logs a formatted security-sensitive message.
+//
+//	cli.LogSecurityf("login attempt from %s", username)
+func LogSecurityf(format string, args ...any) {
+	log.Security(fmt.Sprintf(format, args...))
+}

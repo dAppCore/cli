@@ -28,3 +28,21 @@ func TestLogSecurity_Good(t *testing.T) {
 		t.Fatalf("expected structured key/value output, got %q", out)
 	}
 }
+
+func TestLogSecurityf_Good(t *testing.T) {
+	var buf bytes.Buffer
+	original := log.Default()
+	t.Cleanup(func() {
+		log.SetDefault(original)
+	})
+
+	logger := log.New(log.Options{Level: log.LevelDebug, Output: &buf})
+	log.SetDefault(logger)
+
+	LogSecurityf("login attempt from %s", "admin")
+
+	out := buf.String()
+	if !strings.Contains(out, "login attempt from admin") {
+		t.Fatalf("expected formatted security log message, got %q", out)
+	}
+}
