@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -39,11 +40,11 @@ type confirmConfig struct {
 }
 
 func promptHint(msg string) {
-	fmt.Println(DimStyle.Render(compileGlyphs(msg)))
+	fmt.Fprintln(os.Stderr, DimStyle.Render(compileGlyphs(msg)))
 }
 
 func promptWarning(msg string) {
-	fmt.Println(WarningStyle.Render(compileGlyphs(msg)))
+	fmt.Fprintln(os.Stderr, WarningStyle.Render(compileGlyphs(msg)))
 }
 
 // DefaultYes sets the default response to "yes" (pressing Enter confirms).
