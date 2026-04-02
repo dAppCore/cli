@@ -27,6 +27,13 @@ func requiredChecks() []check {
 			versionFlag: "--version",
 		},
 		{
+			name:        i18n.T("cmd.doctor.check.go.name"),
+			description: i18n.T("cmd.doctor.check.go.description"),
+			command:     "go",
+			args:        []string{"version"},
+			versionFlag: "version",
+		},
+		{
 			name:        i18n.T("cmd.doctor.check.gh.name"),
 			description: i18n.T("cmd.doctor.check.gh.description"),
 			command:     "gh",

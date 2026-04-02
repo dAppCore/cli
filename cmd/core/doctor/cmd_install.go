@@ -11,10 +11,12 @@ import (
 func printInstallInstructions() {
 	switch runtime.GOOS {
 	case "darwin":
+		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_macos_go"))
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_macos"))
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_macos_cask"))
 	case "linux":
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_linux_header"))
+		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_linux_go"))
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_linux_git"))
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_linux_gh"))
 		fmt.Printf("  %s\n", i18n.T("cmd.doctor.install_linux_php"))

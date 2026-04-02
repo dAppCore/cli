@@ -12,7 +12,9 @@
 			"install_missing": "Install missing tools:",
 			"install_macos": "brew install",
 			"install_macos_cask": "brew install --cask",
+			"install_macos_go": "brew install go",
 			"install_linux_header": "Install on Linux:",
+			"install_linux_go": "sudo apt install golang-go",
 			"install_linux_git": "sudo apt install git",
 			"install_linux_node": "curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs",
 			"install_linux_php": "sudo apt install php php-cli php-mbstring php-xml php-curl",
@@ -30,6 +32,7 @@
 			"no_repos_yaml": "No repos.yaml found (run from workspace root)",
 			"check": {
 				"git": { "name": "Git", "description": "Version control" },
+				"go": { "name": "Go", "description": "Go compiler" },
 				"docker": { "name": "Docker", "description": "Container runtime" },
 				"node": { "name": "Node.js", "description": "JavaScript runtime" },
 				"php": { "name": "PHP", "description": "PHP interpreter" },
