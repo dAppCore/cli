@@ -291,3 +291,17 @@ func TestRunPkgSearch_RespectsLimitWithCachedResults(t *testing.T) {
 	assert.Contains(t, out, "core-alpha")
 	assert.NotContains(t, out, "core-beta")
 }
+
+func TestRunPkgUpdate_NoArgs_UpdatesAll(t *testing.T) {
+	tmp := setupOutdatedRegistry(t)
+	withWorkingDir(t, tmp)
+
+	out := capturePkgOutput(t, func() {
+		err := runPkgUpdate(nil, false)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, out, "updating")
+	assert.Contains(t, out, "core-fresh")
+	assert.Contains(t, out, "core-stale")
+}

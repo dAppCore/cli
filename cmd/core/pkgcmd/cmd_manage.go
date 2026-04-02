@@ -165,9 +165,6 @@ func addPkgUpdateCommand(parent *cobra.Command) {
 		Short: i18n.T("cmd.pkg.update.short"),
 		Long:  i18n.T("cmd.pkg.update.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !updateAll && len(args) == 0 {
-				return errors.New(i18n.T("cmd.pkg.error.specify_package"))
-			}
 			return runPkgUpdate(args, updateAll)
 		},
 	}
@@ -197,7 +194,7 @@ func runPkgUpdate(packages []string, all bool) error {
 	}
 
 	var toUpdate []string
-	if all {
+	if all || len(packages) == 0 {
 		for _, r := range reg.List() {
 			toUpdate = append(toUpdate, r.Name)
 		}
