@@ -36,6 +36,15 @@ func TestPrompt_Bad_EOFUsesDefault(t *testing.T) {
 	assert.Equal(t, "world", val)
 }
 
+func TestPrompt_Bad_EOFWithoutDefaultReturnsError(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	val, err := Prompt("Name", "")
+	assert.ErrorIs(t, err, io.EOF)
+	assert.Empty(t, val)
+}
+
 func TestSelect_Good(t *testing.T) {
 	SetStdin(strings.NewReader("2\n"))
 	defer SetStdin(nil)
