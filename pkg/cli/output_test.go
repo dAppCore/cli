@@ -125,3 +125,19 @@ func TestSemanticOutput_GlyphShortcodes(t *testing.T) {
 		t.Fatalf("expected progress item shortcode to be rendered, got %q", out)
 	}
 }
+
+func TestSection_GlyphTheme(t *testing.T) {
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	out := captureOutput(func() {
+		Section("audit")
+	})
+
+	if !strings.Contains(out, "-- AUDIT --") {
+		t.Fatalf("expected ASCII section header, got %q", out)
+	}
+	if strings.Contains(out, "── AUDIT ──") {
+		t.Fatalf("expected glyph theme to avoid unicode dashes, got %q", out)
+	}
+}

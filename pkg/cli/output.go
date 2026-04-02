@@ -147,7 +147,8 @@ func Task(label, message string) {
 //
 //	cli.Section("audit")  // ── AUDIT ──
 func Section(name string) {
-	header := "── " + strings.ToUpper(compileGlyphs(name)) + " ──"
+	dash := Glyph(":dash:")
+	header := dash + dash + " " + strings.ToUpper(compileGlyphs(name)) + " " + dash + dash
 	fmt.Println(AccentStyle.Render(header))
 }
 
