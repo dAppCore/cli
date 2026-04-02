@@ -33,6 +33,12 @@ func AddHelpCommands(root *cli.Command) {
 
 			topic, err := catalog.Get(args[0])
 			if err != nil {
+				if suggestions := catalog.Search(args[0]); len(suggestions) > 0 {
+					if suggestErr := renderSearchResults(suggestions, args[0]); suggestErr != nil {
+						return suggestErr
+					}
+					cli.Blank()
+				}
 				return cli.Err("help topic %q not found", args[0])
 			}
 

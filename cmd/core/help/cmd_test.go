@@ -135,4 +135,30 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "help topic")
 	})
+
+	t.Run("missing topic shows suggestions when available", func(t *testing.T) {
+		catalog := gohelp.DefaultCatalog()
+		query := ""
+		for _, candidate := range []string{"configuration", "docs", "search", "topic", "help"} {
+			if _, err := catalog.Get(candidate); err == nil {
+				continue
+			}
+			if len(catalog.Search(candidate)) > 0 {
+				query = candidate
+				break
+			}
+		}
+		if query == "" {
+			t.Skip("no suitable query found with suggestions")
+		}
+
+		cmd := newHelpCommand(t)
+		out := captureOutput(t, func() {
+			err := cmd.RunE(cmd, []string{query})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "help topic")
+		})
+
+		assert.Contains(t, out, "SEARCH RESULTS")
+	})
 }
