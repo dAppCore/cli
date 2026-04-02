@@ -159,3 +159,27 @@ func TestScanln_UsesOverrideStdin(t *testing.T) {
 		t.Fatalf("expected %q, got %q", "hello", got)
 	}
 }
+
+func TestOutputSetters_Good(t *testing.T) {
+	var out bytes.Buffer
+	var err bytes.Buffer
+
+	SetStdout(&out)
+	SetStderr(&err)
+	t.Cleanup(func() {
+		SetStdout(nil)
+		SetStderr(nil)
+	})
+
+	Success("done")
+	Error("fail")
+	Info("note")
+	Warn("careful")
+
+	if out.Len() == 0 {
+		t.Fatal("expected stdout writer to receive output")
+	}
+	if err.Len() == 0 {
+		t.Fatal("expected stderr writer to receive output")
+	}
+}

@@ -7,9 +7,9 @@ import (
 	"os"
 	"runtime/debug"
 
+	"dappco.re/go/core"
 	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-log"
-	"dappco.re/go/core"
 	"github.com/spf13/cobra"
 )
 
@@ -98,8 +98,8 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 
 	// Initialise CLI runtime
 	if err := Init(Options{
-		AppName: AppName,
-		Version: SemVer(),
+		AppName:     AppName,
+		Version:     SemVer(),
 		I18nSources: extraFS,
 	}); err != nil {
 		Error(err.Error())
@@ -175,13 +175,13 @@ PowerShell:
 		Run: func(cmd *cobra.Command, args []string) {
 			switch args[0] {
 			case "bash":
-				_ = cmd.Root().GenBashCompletion(os.Stdout)
+				_ = cmd.Root().GenBashCompletion(stdoutWriter())
 			case "zsh":
-				_ = cmd.Root().GenZshCompletion(os.Stdout)
+				_ = cmd.Root().GenZshCompletion(stdoutWriter())
 			case "fish":
-				_ = cmd.Root().GenFishCompletion(os.Stdout, true)
+				_ = cmd.Root().GenFishCompletion(stdoutWriter(), true)
 			case "powershell":
-				_ = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+				_ = cmd.Root().GenPowerShellCompletionWithDesc(stdoutWriter())
 			}
 		},
 	}

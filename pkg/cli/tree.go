@@ -79,7 +79,7 @@ func (n *TreeNode) String() string {
 
 // Render prints the tree to stdout.
 func (n *TreeNode) Render() {
-	fmt.Print(n.String())
+	fmt.Fprint(stdoutWriter(), n.String())
 }
 
 func (n *TreeNode) renderLabel() string {

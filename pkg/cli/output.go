@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"forge.lthn.ai/core/go-i18n"
@@ -10,35 +9,35 @@ import (
 
 // Blank prints an empty line.
 func Blank() {
-	fmt.Println()
+	fmt.Fprintln(stdoutWriter())
 }
 
 // Echo translates a key via i18n.T and prints with newline.
 // No automatic styling - use Success/Error/Warn/Info for styled output.
 func Echo(key string, args ...any) {
-	fmt.Println(compileGlyphs(i18n.T(key, args...)))
+	fmt.Fprintln(stdoutWriter(), compileGlyphs(i18n.T(key, args...)))
 }
 
 // Print outputs formatted text (no newline).
 // Glyph shortcodes like :check: are converted.
 func Print(format string, args ...any) {
-	fmt.Print(compileGlyphs(fmt.Sprintf(format, args...)))
+	fmt.Fprint(stdoutWriter(), compileGlyphs(fmt.Sprintf(format, args...)))
 }
 
 // Println outputs formatted text with newline.
 // Glyph shortcodes like :check: are converted.
 func Println(format string, args ...any) {
-	fmt.Println(compileGlyphs(fmt.Sprintf(format, args...)))
+	fmt.Fprintln(stdoutWriter(), compileGlyphs(fmt.Sprintf(format, args...)))
 }
 
 // Text prints arguments like fmt.Println, but handling glyphs.
 func Text(args ...any) {
-	fmt.Println(compileGlyphs(fmt.Sprint(args...)))
+	fmt.Fprintln(stdoutWriter(), compileGlyphs(fmt.Sprint(args...)))
 }
 
 // Success prints a success message with checkmark (green).
 func Success(msg string) {
-	fmt.Println(SuccessStyle.Render(Glyph(":check:") + " " + compileGlyphs(msg)))
+	fmt.Fprintln(stdoutWriter(), SuccessStyle.Render(Glyph(":check:")+" "+compileGlyphs(msg)))
 }
 
 // Successf prints a formatted success message.
@@ -49,7 +48,7 @@ func Successf(format string, args ...any) {
 // Error prints an error message with cross (red) to stderr and logs it.
 func Error(msg string) {
 	LogError(msg)
-	fmt.Fprintln(os.Stderr, ErrorStyle.Render(Glyph(":cross:")+" "+compileGlyphs(msg)))
+	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+compileGlyphs(msg)))
 }
 
 // Errorf prints a formatted error message to stderr and logs it.
@@ -86,7 +85,7 @@ func ErrorWrapAction(err error, verb string) {
 // Warn prints a warning message with warning symbol (amber) to stderr and logs it.
 func Warn(msg string) {
 	LogWarn(msg)
-	fmt.Fprintln(os.Stderr, WarningStyle.Render(Glyph(":warn:")+" "+compileGlyphs(msg)))
+	fmt.Fprintln(stderrWriter(), WarningStyle.Render(Glyph(":warn:")+" "+compileGlyphs(msg)))
 }
 
 // Warnf prints a formatted warning message to stderr and logs it.
@@ -96,7 +95,7 @@ func Warnf(format string, args ...any) {
 
 // Info prints an info message with info symbol (blue).
 func Info(msg string) {
-	fmt.Println(InfoStyle.Render(Glyph(":info:") + " " + compileGlyphs(msg)))
+	fmt.Fprintln(stdoutWriter(), InfoStyle.Render(Glyph(":info:")+" "+compileGlyphs(msg)))
 }
 
 // Infof prints a formatted info message.
@@ -106,7 +105,7 @@ func Infof(format string, args ...any) {
 
 // Dim prints dimmed text.
 func Dim(msg string) {
-	fmt.Println(DimStyle.Render(compileGlyphs(msg)))
+	fmt.Fprintln(stdoutWriter(), DimStyle.Render(compileGlyphs(msg)))
 }
 
 // Progress prints a progress indicator that overwrites the current line.
@@ -114,20 +113,20 @@ func Dim(msg string) {
 func Progress(verb string, current, total int, item ...string) {
 	msg := compileGlyphs(i18n.Progress(verb))
 	if len(item) > 0 && item[0] != "" {
-		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0]))
+		fmt.Fprintf(stderrWriter(), "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0]))
 	} else {
-		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
+		fmt.Fprintf(stderrWriter(), "\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
 	}
 }
 
 // ProgressDone clears the progress line.
 func ProgressDone() {
-	fmt.Fprint(os.Stderr, "\033[2K\r")
+	fmt.Fprint(stderrWriter(), "\033[2K\r")
 }
 
 // Label prints a "Label: value" line.
 func Label(word, value string) {
-	fmt.Printf("%s %s\n", KeyStyle.Render(compileGlyphs(i18n.Label(word))), compileGlyphs(value))
+	fmt.Fprintf(stdoutWriter(), "%s %s\n", KeyStyle.Render(compileGlyphs(i18n.Label(word))), compileGlyphs(value))
 }
 
 // Scanln reads from stdin.
@@ -140,7 +139,7 @@ func Scanln(a ...any) (int, error) {
 //	cli.Task("php", "Running tests...")  // [php] Running tests...
 //	cli.Task("go", i18n.Progress("build"))  // [go] Building...
 func Task(label, message string) {
-	fmt.Printf("%s %s\n\n", DimStyle.Render("["+compileGlyphs(label)+"]"), compileGlyphs(message))
+	fmt.Fprintf(stdoutWriter(), "%s %s\n\n", DimStyle.Render("["+compileGlyphs(label)+"]"), compileGlyphs(message))
 }
 
 // Section prints a section header: "── SECTION ──"
@@ -149,7 +148,7 @@ func Task(label, message string) {
 func Section(name string) {
 	dash := Glyph(":dash:")
 	header := dash + dash + " " + strings.ToUpper(compileGlyphs(name)) + " " + dash + dash
-	fmt.Println(AccentStyle.Render(header))
+	fmt.Fprintln(stdoutWriter(), AccentStyle.Render(header))
 }
 
 // Hint prints a labelled hint: "label: message"
@@ -157,7 +156,7 @@ func Section(name string) {
 //	cli.Hint("install", "composer require vimeo/psalm")
 //	cli.Hint("fix", "core php fmt --fix")
 func Hint(label, message string) {
-	fmt.Printf("  %s %s\n", DimStyle.Render(compileGlyphs(label)+":"), compileGlyphs(message))
+	fmt.Fprintf(stdoutWriter(), "  %s %s\n", DimStyle.Render(compileGlyphs(label)+":"), compileGlyphs(message))
 }
 
 // Severity prints a severity-styled message.
@@ -180,7 +179,7 @@ func Severity(level, message string) {
 	default:
 		style = DimStyle
 	}
-	fmt.Printf("  %s %s\n", style.Render("["+compileGlyphs(level)+"]"), compileGlyphs(message))
+	fmt.Fprintf(stdoutWriter(), "  %s %s\n", style.Render("["+compileGlyphs(level)+"]"), compileGlyphs(message))
 }
 
 // Result prints a result line: "✓ message" or "✗ message"

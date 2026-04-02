@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -44,11 +43,11 @@ type confirmConfig struct {
 }
 
 func promptHint(msg string) {
-	fmt.Fprintln(os.Stderr, DimStyle.Render(compileGlyphs(msg)))
+	fmt.Fprintln(stderrWriter(), DimStyle.Render(compileGlyphs(msg)))
 }
 
 func promptWarning(msg string) {
-	fmt.Fprintln(os.Stderr, WarningStyle.Render(compileGlyphs(msg)))
+	fmt.Fprintln(stderrWriter(), WarningStyle.Render(compileGlyphs(msg)))
 }
 
 // DefaultYes sets the default response to "yes" (pressing Enter confirms).
@@ -114,7 +113,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 	reader := newReader()
 
 	for {
-		fmt.Fprintf(os.Stderr, "%s %s", prompt, suffix)
+		fmt.Fprintf(stderrWriter(), "%s %s", prompt, suffix)
 
 		var response string
 		var readErr error
@@ -134,7 +133,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 				readErr = <-errChan
 				response = strings.ToLower(strings.TrimSpace(response))
 			case <-time.After(cfg.timeout):
-				fmt.Fprintln(os.Stderr) // New line after timeout
+				fmt.Fprintln(stderrWriter()) // New line after timeout
 				return cfg.defaultYes
 			}
 		} else {
@@ -251,9 +250,9 @@ func Question(prompt string, opts ...QuestionOption) string {
 	for {
 		// Build prompt with default
 		if cfg.defaultValue != "" {
-			fmt.Fprintf(os.Stderr, "%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
+			fmt.Fprintf(stderrWriter(), "%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
 		} else {
-			fmt.Fprintf(os.Stderr, "%s ", prompt)
+			fmt.Fprintf(stderrWriter(), "%s ", prompt)
 		}
 
 		response, err := reader.ReadString('\n')
@@ -375,9 +374,9 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
 
 		if cfg.filter {
-			fmt.Fprintf(os.Stderr, "Enter number [1-%d] or filter: ", len(visible))
+			fmt.Fprintf(stderrWriter(), "Enter number [1-%d] or filter: ", len(visible))
 		} else {
-			fmt.Fprintf(os.Stderr, "Enter number [1-%d]: ", len(visible))
+			fmt.Fprintf(stderrWriter(), "Enter number [1-%d]: ", len(visible))
 		}
 		response, err := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
@@ -474,9 +473,9 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
 
 		if cfg.filter {
-			fmt.Fprint(os.Stderr, "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
+			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
 		} else {
-			fmt.Fprint(os.Stderr, "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
 		}
 		response, _ := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
@@ -512,16 +511,16 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 }
 
 func renderChoices[T any](prompt string, items []T, visible []int, displayFn func(T) string, defaultN int, filter bool) {
-	fmt.Fprintln(os.Stderr, prompt)
+	fmt.Fprintln(stderrWriter(), prompt)
 	for i, idx := range visible {
 		marker := " "
 		if defaultN >= 0 && idx == defaultN {
 			marker = "*"
 		}
-		fmt.Fprintf(os.Stderr, "  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
+		fmt.Fprintf(stderrWriter(), "  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
 	}
 	if filter {
-		fmt.Fprintln(os.Stderr, "  (type to filter the list)")
+		fmt.Fprintln(stderrWriter(), "  (type to filter the list)")
 	}
 }
 

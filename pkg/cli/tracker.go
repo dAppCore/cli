@@ -120,7 +120,7 @@ func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
 
 // NewTaskTracker creates a new parallel task tracker.
 func NewTaskTracker() *TaskTracker {
-	return &TaskTracker{out: os.Stderr}
+	return &TaskTracker{out: stderrWriter()}
 }
 
 // WithOutput sets the destination writer for tracker output.

@@ -5,29 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 )
 
-var stdin io.Reader = os.Stdin
-
-// SetStdin overrides the default stdin reader for testing.
-// Pass nil to restore the real os.Stdin reader.
-func SetStdin(r io.Reader) {
-	if r == nil {
-		stdin = os.Stdin
-		return
-	}
-	stdin = r
-}
-
 // newReader wraps stdin in a bufio.Reader if it isn't one already.
 func newReader() *bufio.Reader {
-	if br, ok := stdin.(*bufio.Reader); ok {
+	if br, ok := stdinReader().(*bufio.Reader); ok {
 		return br
 	}
-	return bufio.NewReader(stdin)
+	return bufio.NewReader(stdinReader())
 }
 
 // Prompt asks for text input with a default value.
@@ -35,9 +22,9 @@ func Prompt(label, defaultVal string) (string, error) {
 	label = compileGlyphs(label)
 	defaultVal = compileGlyphs(defaultVal)
 	if defaultVal != "" {
-		fmt.Fprintf(os.Stderr, "%s [%s]: ", label, defaultVal)
+		fmt.Fprintf(stderrWriter(), "%s [%s]: ", label, defaultVal)
 	} else {
-		fmt.Fprintf(os.Stderr, "%s: ", label)
+		fmt.Fprintf(stderrWriter(), "%s: ", label)
 	}
 
 	r := newReader()
@@ -66,11 +53,11 @@ func Select(label string, options []string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Fprintln(os.Stderr, compileGlyphs(label))
+	fmt.Fprintln(stderrWriter(), compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Fprintf(os.Stderr, "  %d. %s\n", i+1, compileGlyphs(opt))
+		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
-	fmt.Fprintf(os.Stderr, "Choose [1-%d]: ", len(options))
+	fmt.Fprintf(stderrWriter(), "Choose [1-%d]: ", len(options))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
@@ -94,11 +81,11 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	fmt.Fprintln(os.Stderr, compileGlyphs(label))
+	fmt.Fprintln(stderrWriter(), compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Fprintf(os.Stderr, "  %d. %s\n", i+1, compileGlyphs(opt))
+		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
-	fmt.Fprintf(os.Stderr, "Choose (space-separated) [1-%d]: ", len(options))
+	fmt.Fprintf(stderrWriter(), "Choose (space-separated) [1-%d]: ", len(options))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
