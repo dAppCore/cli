@@ -173,6 +173,19 @@ func StringSliceFlag(cmd *Command, ptr *[]string, name, short string, def []stri
 	}
 }
 
+// StringArrayFlag adds a string array flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var tags []string
+//	cli.StringArrayFlag(cmd, &tags, "tag", "t", nil, "Tags to apply")
+func StringArrayFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.Flags().StringArrayVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().StringArrayVar(ptr, name, def, usage)
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Persistent Flag Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -237,6 +250,15 @@ func PersistentStringSliceFlag(cmd *Command, ptr *[]string, name, short string, 
 		cmd.PersistentFlags().StringSliceVarP(ptr, name, short, def, usage)
 	} else {
 		cmd.PersistentFlags().StringSliceVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringArrayFlag adds a persistent string array flag (inherited by subcommands).
+func PersistentStringArrayFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringArrayVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringArrayVar(ptr, name, def, usage)
 	}
 }
 

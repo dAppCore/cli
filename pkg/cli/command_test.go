@@ -58,6 +58,22 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 		require.NoError(t, parent.Execute())
 	})
 
+	t.Run("persistent string array flags inherit through subcommands", func(t *testing.T) {
+		parent := NewGroup("parent", "Parent", "")
+
+		var tags []string
+		PersistentStringArrayFlag(parent, &tags, "tag", "t", nil, "Tags")
+
+		child := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
+			assert.Equal(t, []string{"alpha", "beta"}, tags)
+			return nil
+		})
+		parent.AddCommand(child)
+		parent.SetArgs([]string{"child", "--tag", "alpha", "-t", "beta"})
+
+		require.NoError(t, parent.Execute())
+	})
+
 	t.Run("persistent helpers use short flags when provided", func(t *testing.T) {
 		parent := NewGroup("parent", "Parent", "")
 		var value int
@@ -77,5 +93,33 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 
 		require.NoError(t, parent.Execute())
 		assert.True(t, seen)
+	})
+}
+
+func TestFlagHelpers_Good(t *testing.T) {
+	t.Run("string array flags collect repeated values", func(t *testing.T) {
+		cmd := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
+			return nil
+		})
+
+		var tags []string
+		StringArrayFlag(cmd, &tags, "tag", "t", nil, "Tags")
+		cmd.SetArgs([]string{"--tag", "alpha", "-t", "beta"})
+
+		require.NoError(t, cmd.Execute())
+		assert.Equal(t, []string{"alpha", "beta"}, tags)
+	})
+
+	t.Run("string array flags use short flags when provided", func(t *testing.T) {
+		cmd := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
+			return nil
+		})
+
+		var tags []string
+		StringArrayFlag(cmd, &tags, "tag", "t", nil, "Tags")
+		cmd.SetArgs([]string{"-t", "alpha"})
+
+		require.NoError(t, cmd.Execute())
+		assert.Equal(t, []string{"alpha"}, tags)
 	})
 }
