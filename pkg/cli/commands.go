@@ -105,15 +105,23 @@ func loadLocaleSources(sources ...LocaleSource) {
 func RegisteredLocales() []fs.FS {
 	registeredCommandsMu.Lock()
 	defer registeredCommandsMu.Unlock()
-	return registeredLocales
+	if len(registeredLocales) == 0 {
+		return nil
+	}
+	out := make([]fs.FS, len(registeredLocales))
+	copy(out, registeredLocales)
+	return out
 }
 
 // RegisteredCommands returns an iterator over the registered command functions.
 func RegisteredCommands() iter.Seq[CommandRegistration] {
 	return func(yield func(CommandRegistration) bool) {
 		registeredCommandsMu.Lock()
-		defer registeredCommandsMu.Unlock()
-		for _, fn := range registeredCommands {
+		snapshot := make([]CommandRegistration, len(registeredCommands))
+		copy(snapshot, registeredCommands)
+		registeredCommandsMu.Unlock()
+
+		for _, fn := range snapshot {
 			if !yield(fn) {
 				return
 			}
@@ -125,10 +133,12 @@ func RegisteredCommands() iter.Seq[CommandRegistration] {
 // Called by Init() after creating the root command.
 func attachRegisteredCommands(root *cobra.Command) {
 	registeredCommandsMu.Lock()
-	defer registeredCommandsMu.Unlock()
+	snapshot := make([]CommandRegistration, len(registeredCommands))
+	copy(snapshot, registeredCommands)
+	commandsAttached = true
+	registeredCommandsMu.Unlock()
 
-	for _, fn := range registeredCommands {
+	for _, fn := range snapshot {
 		fn(root)
 	}
-	commandsAttached = true
 }
