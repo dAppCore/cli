@@ -141,3 +141,21 @@ func TestSection_GlyphTheme(t *testing.T) {
 		t.Fatalf("expected glyph theme to avoid unicode dashes, got %q", out)
 	}
 }
+
+func TestScanln_UsesOverrideStdin(t *testing.T) {
+	SetStdin(strings.NewReader("hello\n"))
+	defer SetStdin(nil)
+
+	var got string
+	n, err := Scanln(&got)
+
+	if err != nil {
+		t.Fatalf("Scanln returned error: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("expected 1 scanned item, got %d", n)
+	}
+	if got != "hello" {
+		t.Fatalf("expected %q, got %q", "hello", got)
+	}
+}
