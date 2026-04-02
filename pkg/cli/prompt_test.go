@@ -94,6 +94,13 @@ func TestConfirm_Bad_EOFUsesDefault(t *testing.T) {
 	assert.True(t, Confirm("Proceed?", DefaultYes(), Required()))
 }
 
+func TestConfirm_Good_RequiredReprompts(t *testing.T) {
+	SetStdin(strings.NewReader("\ny\n"))
+	defer SetStdin(nil)
+
+	assert.True(t, Confirm("Proceed?", Required()))
+}
+
 func TestQuestion_Good(t *testing.T) {
 	SetStdin(strings.NewReader("alice\n"))
 	defer SetStdin(nil)
@@ -108,6 +115,14 @@ func TestQuestion_Bad_EOFReturnsDefault(t *testing.T) {
 
 	assert.Equal(t, "anonymous", Question("Name:", WithDefault("anonymous")))
 	assert.Equal(t, "", Question("Name:", RequiredInput()))
+}
+
+func TestQuestion_Good_RequiredReprompts(t *testing.T) {
+	SetStdin(strings.NewReader("\nalice\n"))
+	defer SetStdin(nil)
+
+	val := Question("Name:", RequiredInput())
+	assert.Equal(t, "alice", val)
 }
 
 func TestChoose_Good_DefaultIndex(t *testing.T) {

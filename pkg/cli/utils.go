@@ -104,17 +104,21 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		fmt.Printf("%s %s", prompt, suffix)
 
 		var response string
+		var readErr error
 
 		if cfg.timeout > 0 {
 			// Use timeout-based reading
 			resultChan := make(chan string, 1)
+			errChan := make(chan error, 1)
 			go func() {
-				line, _ := reader.ReadString('\n')
+				line, err := reader.ReadString('\n')
 				resultChan <- line
+				errChan <- err
 			}()
 
 			select {
 			case response = <-resultChan:
+				readErr = <-errChan
 				response = strings.ToLower(strings.TrimSpace(response))
 			case <-time.After(cfg.timeout):
 				fmt.Println() // New line after timeout
@@ -122,6 +126,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 			}
 		} else {
 			line, err := reader.ReadString('\n')
+			readErr = err
 			if err != nil && line == "" {
 				return cfg.defaultYes
 			}
@@ -131,6 +136,10 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 
 		// Handle empty response
 		if response == "" {
+			if readErr == nil && cfg.required {
+				fmt.Println("Please enter 'y' or 'n'")
+				continue
+			}
 			if cfg.required {
 				return cfg.defaultYes
 			}
@@ -241,7 +250,8 @@ func Question(prompt string, opts ...QuestionOption) string {
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				return cfg.defaultValue
+				fmt.Println("Please enter a value")
+				continue
 			}
 			response = cfg.defaultValue
 		}
