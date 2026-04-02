@@ -189,11 +189,12 @@ func TestStream_Bad(t *testing.T) {
 		assert.Equal(t, "", buf.String())
 	})
 
-	t.Run("Captured panics when output is not stringable", func(t *testing.T) {
+	t.Run("CapturedOK reports unsupported writers", func(t *testing.T) {
 		s := NewStream(WithStreamOutput(writerOnly{}))
-		assert.Panics(t, func() {
-			_ = s.Captured()
-		})
+		got, ok := s.CapturedOK()
+		assert.False(t, ok)
+		assert.Equal(t, "", got)
+		assert.Equal(t, "", s.Captured())
 	})
 }
 
