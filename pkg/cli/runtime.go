@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"dappco.re/go/core"
 	"github.com/spf13/cobra"
@@ -145,6 +146,55 @@ func Execute() error {
 	return instance.root.Execute()
 }
 
+// Run executes the CLI and watches an external context for cancellation.
+// If the context is cancelled first, the runtime is shut down and the
+// command error is returned if execution failed during shutdown.
+func Run(ctx context.Context) error {
+	mustInit()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- Execute()
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		Shutdown()
+		if err := <-errCh; err != nil {
+			return err
+		}
+		return ctx.Err()
+	}
+}
+
+// RunWithTimeout returns a shutdown helper that waits for the runtime to stop
+// for up to timeout before giving up. It is intended for deferred cleanup.
+func RunWithTimeout(timeout time.Duration) func() {
+	return func() {
+		if timeout <= 0 {
+			Shutdown()
+			return
+		}
+
+		done := make(chan struct{})
+		go func() {
+			Shutdown()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(timeout):
+			// Give up waiting, but let the shutdown goroutine finish in the background.
+		}
+	}
+}
+
 // Context returns the CLI's root context.
 // Cancelled on SIGINT/SIGTERM.
 func Context() context.Context {
@@ -158,7 +208,7 @@ func Shutdown() {
 		return
 	}
 	instance.cancel()
-	_ = instance.core.ServiceShutdown(instance.ctx)
+	_ = instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx))
 }
 
 // --- Signal Srv (internal) ---
