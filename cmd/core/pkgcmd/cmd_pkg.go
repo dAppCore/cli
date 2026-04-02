@@ -15,6 +15,7 @@ var (
 	dimStyle        = cli.DimStyle
 	ghAuthenticated = cli.GhAuthenticated
 	gitClone        = cli.GitClone
+	gitCloneRef     = clonePackageAtRef
 )
 
 // AddPkgCommands adds the 'pkg' command and subcommands for package management.

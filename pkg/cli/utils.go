@@ -486,9 +486,19 @@ func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOpt
 // GitClone clones a GitHub repository to the specified path.
 // Prefers 'gh repo clone' if authenticated, falls back to SSH.
 func GitClone(ctx context.Context, org, repo, path string) error {
+	return GitCloneRef(ctx, org, repo, path, "")
+}
+
+// GitCloneRef clones a GitHub repository at a specific ref to the specified path.
+// Prefers 'gh repo clone' if authenticated, falls back to SSH.
+func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 	if GhAuthenticated() {
 		httpsURL := fmt.Sprintf("https://github.com/%s/%s.git", org, repo)
-		cmd := exec.CommandContext(ctx, "gh", "repo", "clone", httpsURL, path)
+		args := []string{"repo", "clone", httpsURL, path}
+		if ref != "" {
+			args = append(args, "--", "--branch", ref, "--single-branch")
+		}
+		cmd := exec.CommandContext(ctx, "gh", args...)
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			return nil
@@ -499,7 +509,12 @@ func GitClone(ctx context.Context, org, repo, path string) error {
 		}
 	}
 	// Fall back to SSH clone
-	cmd := exec.CommandContext(ctx, "git", "clone", fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
+	args := []string{"clone"}
+	if ref != "" {
+		args = append(args, "--branch", ref, "--single-branch")
+	}
+	args = append(args, fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
+	cmd := exec.CommandContext(ctx, "git", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New(strings.TrimSpace(string(output)))

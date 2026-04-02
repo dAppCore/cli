@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -22,10 +23,12 @@ var (
 	installAddToReg  bool
 )
 
+var errInvalidPkgInstallSource = errors.New("invalid repo format: use org/repo or org/repo@ref")
+
 // addPkgInstallCommand adds the 'pkg install' command.
 func addPkgInstallCommand(parent *cobra.Command) {
 	installCmd := &cobra.Command{
-		Use:   "install [org/]repo",
+		Use:   "install [org/]repo[@ref]",
 		Short: i18n.T("cmd.pkg.install.short"),
 		Long:  i18n.T("cmd.pkg.install.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,14 +51,9 @@ func runPkgInstall(repoArg, targetDir string, addToRegistry bool) error {
 	// Parse repo shorthand:
 	// - repoName -> defaults to host-uk/repoName
 	// - org/repo  -> uses the explicit org
-	org := "host-uk"
-	repoName := repoArg
-	if strings.Contains(repoArg, "/") {
-		parts := strings.Split(repoArg, "/")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return errors.New(i18n.T("cmd.pkg.error.invalid_repo_format"))
-		}
-		org, repoName = parts[0], parts[1]
+	org, repoName, ref, err := parsePkgInstallSource(repoArg)
+	if err != nil {
+		return err
 	}
 
 	// Determine target directory
@@ -93,11 +91,18 @@ func runPkgInstall(repoArg, targetDir string, addToRegistry bool) error {
 	}
 
 	fmt.Printf("%s %s/%s\n", dimStyle.Render(i18n.T("cmd.pkg.install.installing_label")), org, repoName)
+	if ref != "" {
+		fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("ref")), ref)
+	}
 	fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("target")), repoPath)
 	fmt.Println()
 
 	fmt.Printf("  %s... ", dimStyle.Render(i18n.T("common.status.cloning")))
-	err := gitClone(ctx, org, repoName, repoPath)
+	if ref == "" {
+		err = gitClone(ctx, org, repoName, repoPath)
+	} else {
+		err = gitCloneRef(ctx, org, repoName, repoPath, ref)
+	}
 	if err != nil {
 		fmt.Printf("%s\n", errorStyle.Render("✗ "+err.Error()))
 		return err
@@ -116,6 +121,36 @@ func runPkgInstall(repoArg, targetDir string, addToRegistry bool) error {
 	fmt.Printf("%s %s\n", successStyle.Render(i18n.T("i18n.done.install")), i18n.T("cmd.pkg.install.installed", map[string]string{"Name": repoName}))
 
 	return nil
+}
+
+func parsePkgInstallSource(repoArg string) (org, repoName, ref string, err error) {
+	org = "host-uk"
+	repoName = strings.TrimSpace(repoArg)
+	if repoName == "" {
+		return "", "", "", errors.New("repository argument required")
+	}
+
+	if at := strings.LastIndex(repoName, "@"); at >= 0 {
+		ref = strings.TrimSpace(repoName[at+1:])
+		repoName = strings.TrimSpace(repoName[:at])
+		if ref == "" || repoName == "" {
+			return "", "", "", errInvalidPkgInstallSource
+		}
+	}
+
+	if strings.Contains(repoName, "/") {
+		parts := strings.Split(repoName, "/")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return "", "", "", errInvalidPkgInstallSource
+		}
+		org, repoName = parts[0], parts[1]
+	}
+
+	if strings.Contains(repoName, "/") {
+		return "", "", "", errInvalidPkgInstallSource
+	}
+
+	return org, repoName, ref, nil
 }
 
 func addToRegistryFile(org, repoName string) error {
@@ -144,6 +179,30 @@ func addToRegistryFile(org, repoName string) error {
 
 	content += entry
 	return coreio.Local.Write(regPath, content)
+}
+
+func clonePackageAtRef(ctx context.Context, org, repo, path, ref string) error {
+	if ghAuthenticated() {
+		httpsURL := fmt.Sprintf("https://github.com/%s/%s.git", org, repo)
+		args := []string{"repo", "clone", httpsURL, path, "--", "--branch", ref, "--single-branch"}
+		cmd := exec.CommandContext(ctx, "gh", args...)
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			return nil
+		}
+		errStr := strings.TrimSpace(string(output))
+		if strings.Contains(errStr, "already exists") {
+			return errors.New(errStr)
+		}
+	}
+
+	args := []string{"clone", "--branch", ref, "--single-branch", fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path}
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(strings.TrimSpace(string(output)))
+	}
+	return nil
 }
 
 func detectRepoType(name string) string {
