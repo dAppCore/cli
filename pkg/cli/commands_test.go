@@ -3,7 +3,9 @@ package cli
 import (
 	"sync"
 	"testing"
+	"testing/fstest"
 
+	"forge.lthn.ai/core/go-i18n"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +16,19 @@ func resetGlobals(t *testing.T) {
 	t.Helper()
 	doReset()
 	t.Cleanup(doReset)
+}
+
+func resetI18nDefault(t *testing.T) {
+	t.Helper()
+
+	prev := i18n.Default()
+	svc, err := i18n.New()
+	require.NoError(t, err)
+	i18n.SetDefault(svc)
+
+	t.Cleanup(func() {
+		i18n.SetDefault(prev)
+	})
 }
 
 // doReset clears all package-level state. Only safe from a single goroutine
@@ -135,6 +150,53 @@ func TestRegisterCommands_Bad(t *testing.T) {
 	})
 }
 
+// TestLocaleLoading_Good verifies locale files become available to the active i18n service.
+func TestLocaleLoading_Good(t *testing.T) {
+	t.Run("Init loads I18nSources", func(t *testing.T) {
+		resetGlobals(t)
+		resetI18nDefault(t)
+
+		localeFS := fstest.MapFS{
+			"en.json": {
+				Data: []byte(`{"custom":{"hello":"Hello from locale"}}`),
+			},
+		}
+
+		err := Init(Options{
+			AppName:     "test",
+			I18nSources: []LocaleSource{WithLocales(localeFS, ".")},
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, "Hello from locale", i18n.T("custom.hello"))
+	})
+
+	t.Run("WithCommands loads localeFS before registration", func(t *testing.T) {
+		resetGlobals(t)
+		resetI18nDefault(t)
+
+		err := Init(Options{AppName: "test"})
+		require.NoError(t, err)
+
+		localeFS := fstest.MapFS{
+			"en.json": {
+				Data: []byte(`{"custom":{"immediate":"Loaded eagerly"}}`),
+			},
+		}
+
+		var observed string
+		setup := WithCommands("test", func(root *cobra.Command) {
+			_ = root
+			observed = i18n.T("custom.immediate")
+		}, localeFS)
+
+		setup(Core())
+
+		assert.Equal(t, "Loaded eagerly", observed)
+		assert.Equal(t, "Loaded eagerly", i18n.T("custom.immediate"))
+	})
+}
+
 // TestWithAppName_Good tests the app name override.
 func TestWithAppName_Good(t *testing.T) {
 	t.Run("overrides root command use", func(t *testing.T) {
@@ -158,4 +220,3 @@ func TestWithAppName_Good(t *testing.T) {
 		assert.Equal(t, "core", RootCmd().Use)
 	})
 }
-

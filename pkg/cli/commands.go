@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"dappco.re/go/core"
+	"forge.lthn.ai/core/go-i18n"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,7 @@ import (
 //	)
 func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) CommandSetup {
 	return func(c *core.Core) {
+		loadLocaleSources(localeSourcesFromFS(localeFS...)...)
 		if root, ok := c.App().Runtime.(*cobra.Command); ok {
 			register(root)
 		}
@@ -49,6 +51,7 @@ func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	root := instance
 	registeredCommandsMu.Unlock()
 
+	loadLocaleSources(localeSourcesFromFS(localeFS...)...)
 	appendLocales(localeFS...)
 
 	// If commands already attached (CLI already running), attach immediately
@@ -71,6 +74,31 @@ func appendLocales(localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
 	registeredLocales = append(registeredLocales, nonempty...)
 	registeredCommandsMu.Unlock()
+}
+
+func localeSourcesFromFS(localeFS ...fs.FS) []LocaleSource {
+	sources := make([]LocaleSource, 0, len(localeFS))
+	for _, lfs := range localeFS {
+		if lfs != nil {
+			sources = append(sources, LocaleSource{FS: lfs, Dir: "."})
+		}
+	}
+	return sources
+}
+
+func loadLocaleSources(sources ...LocaleSource) {
+	svc := i18n.Default()
+	if svc == nil {
+		return
+	}
+	for _, src := range sources {
+		if src.FS == nil {
+			continue
+		}
+		if err := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); err != nil {
+			LogDebug("failed to load locale source", "dir", src.Dir, "err", err)
+		}
+	}
 }
 
 // RegisteredLocales returns all locale filesystems registered by command packages.
