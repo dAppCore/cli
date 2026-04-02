@@ -359,6 +359,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 	for i := range items {
 		visible[i] = i
 	}
+	allVisible := append([]int(nil), visible...)
 
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
@@ -380,6 +381,11 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		}
 
 		if response == "" {
+			if cfg.filter && len(visible) != len(allVisible) {
+				visible = append([]int(nil), allVisible...)
+				promptHint("Filter cleared.")
+				continue
+			}
 			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
 				return items[idx]
 			}
@@ -453,6 +459,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 	for i := range items {
 		visible[i] = i
 	}
+	allVisible := append([]int(nil), visible...)
 
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
@@ -467,6 +474,11 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 
 		// Empty response returns no selections
 		if response == "" {
+			if cfg.filter && len(visible) != len(allVisible) {
+				visible = append([]int(nil), allVisible...)
+				promptHint("Filter cleared.")
+				continue
+			}
 			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
 				return []T{items[idx]}
 			}
