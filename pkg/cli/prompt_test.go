@@ -165,6 +165,14 @@ func TestChooseMulti_Good_CommasAndRanges(t *testing.T) {
 	assert.Equal(t, []string{"a", "b", "d"}, vals)
 }
 
+func TestChooseMulti_Good_DefaultIndex(t *testing.T) {
+	SetStdin(strings.NewReader("\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"a", "b", "c"}, WithDefaultIndex[string](1))
+	assert.Equal(t, []string{"b"}, vals)
+}
+
 func TestSetStdin_Good_ResetNil(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })

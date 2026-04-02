@@ -441,6 +441,9 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 
 		// Empty response returns no selections
 		if response == "" {
+			if cfg.defaultN >= 0 {
+				return []T{items[defaultVisibleIndex(visible, cfg.defaultN)]}
+			}
 			return nil
 		}
 
