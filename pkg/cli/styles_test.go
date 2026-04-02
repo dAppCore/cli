@@ -81,6 +81,22 @@ func TestTable_Good(t *testing.T) {
 		assert.Contains(t, out, "║")
 	})
 
+	t.Run("ASCII theme uses ASCII borders", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tbl := NewTable("REPO", "STATUS").WithBorders(BorderRounded)
+		tbl.AddRow("core", "clean")
+
+		out := tbl.String()
+		assert.Contains(t, out, "+")
+		assert.Contains(t, out, "-")
+		assert.Contains(t, out, "|")
+		assert.NotContains(t, out, "╭")
+		assert.NotContains(t, out, "╮")
+		assert.NotContains(t, out, "│")
+	})
+
 	t.Run("bordered structure", func(t *testing.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)

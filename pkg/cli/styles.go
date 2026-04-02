@@ -174,6 +174,13 @@ var borderSets = map[BorderStyle]borderSet{
 	BorderDouble:  {"╔", "╗", "╚", "╝", "═", "║", "╦", "╩", "╠", "╣", "╬"},
 }
 
+var borderSetsASCII = map[BorderStyle]borderSet{
+	BorderNormal:  {"+", "+", "+", "+", "-", "|", "+", "+", "+", "+", "+"},
+	BorderRounded: {"+", "+", "+", "+", "-", "|", "+", "+", "+", "+", "+"},
+	BorderHeavy:   {"+", "+", "+", "+", "=", "|", "+", "+", "+", "+", "+"},
+	BorderDouble:  {"+", "+", "+", "+", "=", "|", "+", "+", "+", "+", "+"},
+}
+
 // CellStyleFn returns a style based on the cell's raw value.
 // Return nil to use the table's default CellStyle.
 type CellStyleFn func(value string) *AnsiStyle
@@ -391,7 +398,7 @@ func (t *Table) renderPlain() string {
 }
 
 func (t *Table) renderBordered() string {
-	b := borderSets[t.borders]
+	b := tableBorderSet(t.borders)
 	widths := t.columnWidths()
 	cols := t.colCount()
 
@@ -471,4 +478,16 @@ func (t *Table) renderBordered() string {
 	sb.WriteByte('\n')
 
 	return sb.String()
+}
+
+func tableBorderSet(style BorderStyle) borderSet {
+	if currentTheme == ThemeASCII {
+		if b, ok := borderSetsASCII[style]; ok {
+			return b
+		}
+	}
+	if b, ok := borderSets[style]; ok {
+		return b
+	}
+	return borderSet{}
 }
