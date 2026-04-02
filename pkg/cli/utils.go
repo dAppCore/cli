@@ -31,6 +31,10 @@ func GhAuthenticated() bool {
 }
 
 // ConfirmOption configures Confirm behaviour.
+//
+//	if cli.Confirm("Proceed?", cli.DefaultYes()) {
+//	    cli.Success("continuing")
+//	}
 type ConfirmOption func(*confirmConfig)
 
 type confirmConfig struct {
@@ -198,6 +202,8 @@ func ConfirmDangerousAction(verb, subject string) bool {
 }
 
 // QuestionOption configures Question behaviour.
+//
+//	name := cli.Question("Project name:", cli.WithDefault("my-app"))
 type QuestionOption func(*questionConfig)
 
 type questionConfig struct {
@@ -286,6 +292,10 @@ func QuestionAction(verb, subject string, opts ...QuestionOption) string {
 }
 
 // ChooseOption configures Choose behaviour.
+//
+//	choice := cli.Choose("Pick one:", items, cli.Display(func(v Item) string {
+//	    return v.Name
+//	}))
 type ChooseOption[T any] func(*chooseConfig[T])
 
 type chooseConfig[T any] struct {
@@ -579,17 +589,17 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 				rangeParts = append(rangeParts, p)
 			}
 			if len(rangeParts) != 2 {
-				return nil, fmt.Errorf("invalid range: %s", part)
+				return nil, Err("invalid range: %s", part)
 			}
 			var start, end int
 			if _, err := fmt.Sscanf(rangeParts[0], "%d", &start); err != nil {
-				return nil, fmt.Errorf("invalid range start: %s", rangeParts[0])
+				return nil, Err("invalid range start: %s", rangeParts[0])
 			}
 			if _, err := fmt.Sscanf(rangeParts[1], "%d", &end); err != nil {
-				return nil, fmt.Errorf("invalid range end: %s", rangeParts[1])
+				return nil, Err("invalid range end: %s", rangeParts[1])
 			}
 			if start < 1 || start > maxItems || end < 1 || end > maxItems || start > end {
-				return nil, fmt.Errorf("range out of bounds: %s", part)
+				return nil, Err("range out of bounds: %s", part)
 			}
 			for i := start; i <= end; i++ {
 				selected[i-1] = true // Convert to 0-based
@@ -598,10 +608,10 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 			// Single number
 			var n int
 			if _, err := fmt.Sscanf(part, "%d", &n); err != nil {
-				return nil, fmt.Errorf("invalid number: %s", part)
+				return nil, Err("invalid number: %s", part)
 			}
 			if n < 1 || n > maxItems {
-				return nil, fmt.Errorf("number out of range: %d", n)
+				return nil, Err("number out of range: %d", n)
 			}
 			selected[n-1] = true // Convert to 0-based
 		}

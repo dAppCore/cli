@@ -17,6 +17,11 @@ import (
 )
 
 // DaemonOptions configures a background process helper.
+//
+//	daemon := cli.NewDaemon(cli.DaemonOptions{
+//	    PIDFile:    "/tmp/core.pid",
+//	    HealthAddr: "127.0.0.1:8080",
+//	})
 type DaemonOptions struct {
 	// PIDFile stores the current process ID on Start and removes it on Stop.
 	PIDFile string
@@ -41,6 +46,9 @@ type DaemonOptions struct {
 }
 
 // Daemon manages a PID file and optional HTTP health endpoints.
+//
+//	daemon := cli.NewDaemon(cli.DaemonOptions{PIDFile: "/tmp/core.pid"})
+//	_ = daemon.Start(context.Background())
 type Daemon struct {
 	opts DaemonOptions
 
