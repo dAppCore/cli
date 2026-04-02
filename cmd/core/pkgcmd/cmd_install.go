@@ -25,7 +25,7 @@ var (
 // addPkgInstallCommand adds the 'pkg install' command.
 func addPkgInstallCommand(parent *cobra.Command) {
 	installCmd := &cobra.Command{
-		Use:   "install <org/repo>",
+		Use:   "install [org/]repo",
 		Short: i18n.T("cmd.pkg.install.short"),
 		Long:  i18n.T("cmd.pkg.install.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -45,12 +45,18 @@ func addPkgInstallCommand(parent *cobra.Command) {
 func runPkgInstall(repoArg, targetDir string, addToRegistry bool) error {
 	ctx := context.Background()
 
-	// Parse org/repo
-	parts := strings.Split(repoArg, "/")
-	if len(parts) != 2 {
-		return errors.New(i18n.T("cmd.pkg.error.invalid_repo_format"))
+	// Parse repo shorthand:
+	// - repoName -> defaults to host-uk/repoName
+	// - org/repo  -> uses the explicit org
+	org := "host-uk"
+	repoName := repoArg
+	if strings.Contains(repoArg, "/") {
+		parts := strings.Split(repoArg, "/")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return errors.New(i18n.T("cmd.pkg.error.invalid_repo_format"))
+		}
+		org, repoName = parts[0], parts[1]
 	}
-	org, repoName := parts[0], parts[1]
 
 	// Determine target directory
 	if targetDir == "" {

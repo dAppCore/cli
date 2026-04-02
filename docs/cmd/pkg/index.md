@@ -60,10 +60,10 @@ core pkg search --refresh
 
 ## pkg install
 
-Clone a package from GitHub.
+Clone a package from GitHub. If you pass only a repo name, `core` assumes the `host-uk` org.
 
 ```bash
-core pkg install <org/repo> [flags]
+core pkg install [org/]repo [flags]
 ```
 
 ### Flags
@@ -76,6 +76,9 @@ core pkg install <org/repo> [flags]
 ### Examples
 
 ```bash
+# Clone from the default host-uk org
+core pkg install core-api
+
 # Clone to packages/
 core pkg install host-uk/core-php
 
