@@ -74,6 +74,8 @@ func TestAddHelpCommands_Good(t *testing.T) {
 	})
 	assert.Contains(t, out, "AVAILABLE HELP TOPICS")
 	assert.Contains(t, out, topics[0].ID)
+	assert.Contains(t, out, "browse")
+	assert.Contains(t, out, "core help search <topic>")
 }
 
 func TestAddHelpCommands_Good_Serve(t *testing.T) {
@@ -118,6 +120,8 @@ func TestAddHelpCommands_Good_Search(t *testing.T) {
 
 	assert.Contains(t, out, "SEARCH RESULTS")
 	assert.Contains(t, out, query)
+	assert.Contains(t, out, "browse")
+	assert.Contains(t, out, "core help search")
 }
 
 func TestRenderSearchResults_Good(t *testing.T) {
@@ -137,6 +141,8 @@ func TestRenderSearchResults_Good(t *testing.T) {
 	assert.Contains(t, out, "SEARCH RESULTS")
 	assert.Contains(t, out, "config - Configuration")
 	assert.Contains(t, out, "Core is configured via environment variables.")
+	assert.Contains(t, out, "browse")
+	assert.Contains(t, out, "core help search \"config\"")
 }
 
 func TestRenderTopicList_Good(t *testing.T) {
@@ -154,6 +160,23 @@ func TestRenderTopicList_Good(t *testing.T) {
 	assert.Contains(t, out, "AVAILABLE HELP TOPICS")
 	assert.Contains(t, out, "config - Configuration")
 	assert.Contains(t, out, "Core is configured via environment variables.")
+	assert.Contains(t, out, "browse")
+	assert.Contains(t, out, "core help search <topic>")
+}
+
+func TestRenderTopic_Good(t *testing.T) {
+	out := captureOutput(t, func() {
+		renderTopic(&gohelp.Topic{
+			ID:      "config",
+			Title:   "Configuration",
+			Content: "Core is configured via environment variables.",
+		})
+	})
+
+	assert.Contains(t, out, "Configuration")
+	assert.Contains(t, out, "Core is configured via environment variables.")
+	assert.Contains(t, out, "browse")
+	assert.Contains(t, out, "core help search \"config\"")
 }
 
 func TestAddHelpCommands_Bad(t *testing.T) {
@@ -189,16 +212,16 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		root := &cli.Command{Use: "core"}
 		AddHelpCommands(root)
 
-		cmd, _, err := root.Find([]string{"help", "search"})
-		require.NoError(t, err)
+		cmd, _, findErr := root.Find([]string{"help", "search"})
+		require.NoError(t, findErr)
 		require.NotNil(t, cmd)
 
-		var err error
+		var runErr error
 		out := captureOutput(t, func() {
-			err = cmd.RunE(cmd, nil)
+			runErr = cmd.RunE(cmd, nil)
 		})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "help search query is required")
+		require.Error(t, runErr)
+		assert.Contains(t, runErr.Error(), "help search query is required")
 		assert.Contains(t, out, "browse")
 		assert.Contains(t, out, "core help")
 	})
