@@ -41,7 +41,7 @@ func UseRenderBoxed() { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
-	fmt.Print(c.String())
+	fmt.Fprint(stdoutWriter(), c.String())
 }
 
 // String returns the rendered layout.

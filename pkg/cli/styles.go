@@ -275,7 +275,7 @@ func (t *Table) String() string {
 
 // Render prints the table to stdout.
 func (t *Table) Render() {
-	fmt.Print(t.String())
+	fmt.Fprint(stdoutWriter(), t.String())
 }
 
 func (t *Table) colCount() int {

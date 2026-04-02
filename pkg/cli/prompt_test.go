@@ -395,6 +395,20 @@ func TestSetStdin_Good_ResetNil(t *testing.T) {
 	assert.Same(t, os.Stdin, stdin)
 }
 
+func TestPrompt_Good_UsesStderrSetter(t *testing.T) {
+	SetStdin(strings.NewReader("alice\n"))
+	defer SetStdin(nil)
+
+	var errBuf bytes.Buffer
+	SetStderr(&errBuf)
+	defer SetStderr(nil)
+
+	val, err := Prompt("Name", "")
+	assert.NoError(t, err)
+	assert.Equal(t, "alice", val)
+	assert.Contains(t, errBuf.String(), "Name")
+}
+
 func TestPromptHints_Good_UseStderr(t *testing.T) {
 	oldOut := os.Stdout
 	oldErr := os.Stderr

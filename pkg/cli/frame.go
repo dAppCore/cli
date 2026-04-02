@@ -61,7 +61,7 @@ func NewFrame(variant string) *Frame {
 		variant: variant,
 		layout:  Layout(variant),
 		models:  make(map[Region]Model),
-		out:     os.Stderr,
+		out:     stderrWriter(),
 		done:    make(chan struct{}),
 		focused: RegionContent,
 		keyMap:  DefaultKeyMap(),
@@ -467,7 +467,7 @@ func (f *Frame) runLive() {
 	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),
 	}
-	if f.out != os.Stdout {
+	if f.out != stdoutWriter() {
 		opts = append(opts, tea.WithOutput(f.out))
 	}
 

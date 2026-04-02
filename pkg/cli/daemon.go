@@ -60,7 +60,10 @@ func DetectMode() Mode {
 //	    cli.Success("interactive output enabled")
 //	}
 func IsTTY() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	if f, ok := stdoutWriter().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
 
 // IsStdinTTY returns true if stdin is a terminal.
@@ -69,7 +72,10 @@ func IsTTY() bool {
 //	    cli.Warn("input is piped")
 //	}
 func IsStdinTTY() bool {
-	return term.IsTerminal(int(os.Stdin.Fd()))
+	if f, ok := stdinReader().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
 
 // IsStderrTTY returns true if stderr is a terminal.
@@ -78,5 +84,8 @@ func IsStdinTTY() bool {
 //	    cli.Progress("load", 1, 3, "config")
 //	}
 func IsStderrTTY() bool {
-	return term.IsTerminal(int(os.Stderr.Fd()))
+	if f, ok := stderrWriter().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
