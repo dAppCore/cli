@@ -161,9 +161,28 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		cmd := newHelpCommand(t)
 		require.NoError(t, cmd.Flags().Set("search", "zzzyyyxxx"))
 
-		err := cmd.RunE(cmd, nil)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "no help topics matched")
+		out := captureOutput(t, func() {
+			err := cmd.RunE(cmd, nil)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "no help topics matched")
+		})
+
+		assert.Contains(t, out, "browse")
+		assert.Contains(t, out, "core help")
+		assert.Contains(t, out, "core help search")
+	})
+
+	t.Run("missing topic without suggestions shows hints", func(t *testing.T) {
+		cmd := newHelpCommand(t)
+
+		out := captureOutput(t, func() {
+			err := cmd.RunE(cmd, []string{"definitely-not-a-real-topic"})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "help topic")
+		})
+
+		assert.Contains(t, out, "browse")
+		assert.Contains(t, out, "core help")
 	})
 
 	t.Run("missing search query", func(t *testing.T) {
@@ -177,13 +196,6 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		err = cmd.RunE(cmd, nil)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "help search query is required")
-	})
-
-	t.Run("missing topic", func(t *testing.T) {
-		cmd := newHelpCommand(t)
-		err := cmd.RunE(cmd, []string{"definitely-not-a-real-topic"})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "help topic")
 	})
 
 	t.Run("missing topic shows suggestions when available", func(t *testing.T) {

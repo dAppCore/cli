@@ -2,6 +2,7 @@ package help
 
 import (
 	"bufio"
+	"fmt"
 	"strings"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -38,7 +39,10 @@ func AddHelpCommands(root *cli.Command) {
 						return suggestErr
 					}
 					cli.Blank()
+					renderHelpHint(args[0])
+					return cli.Err("help topic %q not found", args[0])
 				}
+				renderHelpHint(args[0])
 				return cli.Err("help topic %q not found", args[0])
 			}
 
@@ -89,6 +93,7 @@ func searchHelpTopics(catalog *gohelp.Catalog, query string) error {
 
 func renderSearchResults(results []*gohelp.SearchResult, query string) error {
 	if len(results) == 0 {
+		renderHelpHint(query)
 		return cli.Err("no help topics matched %q", query)
 	}
 
@@ -100,6 +105,13 @@ func renderSearchResults(results []*gohelp.SearchResult, query string) error {
 		}
 	}
 	return nil
+}
+
+func renderHelpHint(query string) {
+	cli.Hint("browse", "core help")
+	if trimmed := strings.TrimSpace(query); trimmed != "" {
+		cli.Hint("search", fmt.Sprintf("core help search %q", trimmed))
+	}
 }
 
 func renderTopicList(topics []*gohelp.Topic) error {
