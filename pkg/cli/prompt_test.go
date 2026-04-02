@@ -68,12 +68,28 @@ func TestConfirm_Good(t *testing.T) {
 	assert.True(t, Confirm("Proceed?"))
 }
 
+func TestConfirm_Bad_EOFUsesDefault(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	assert.False(t, Confirm("Proceed?", Required()))
+	assert.True(t, Confirm("Proceed?", DefaultYes(), Required()))
+}
+
 func TestQuestion_Good(t *testing.T) {
 	SetStdin(strings.NewReader("alice\n"))
 	defer SetStdin(nil)
 
 	val := Question("Name:")
 	assert.Equal(t, "alice", val)
+}
+
+func TestQuestion_Bad_EOFReturnsDefault(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	assert.Equal(t, "anonymous", Question("Name:", WithDefault("anonymous")))
+	assert.Equal(t, "", Question("Name:", RequiredInput()))
 }
 
 func TestChoose_Good_DefaultIndex(t *testing.T) {

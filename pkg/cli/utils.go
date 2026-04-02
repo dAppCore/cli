@@ -119,14 +119,18 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 				return cfg.defaultYes
 			}
 		} else {
-			response, _ = reader.ReadString('\n')
+			line, err := reader.ReadString('\n')
+			if err != nil && line == "" {
+				return cfg.defaultYes
+			}
+			response = line
 			response = strings.ToLower(strings.TrimSpace(response))
 		}
 
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				continue // Ask again
+				return cfg.defaultYes
 			}
 			return cfg.defaultYes
 		}
@@ -224,14 +228,16 @@ func Question(prompt string, opts ...QuestionOption) string {
 			fmt.Printf("%s ", prompt)
 		}
 
-		response, _ := reader.ReadString('\n')
+		response, err := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
+		if err != nil && response == "" {
+			return cfg.defaultValue
+		}
 
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				fmt.Println("Response required")
-				continue
+				return cfg.defaultValue
 			}
 			response = cfg.defaultValue
 		}
