@@ -114,7 +114,7 @@ func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
 
 // NewTaskTracker creates a new parallel task tracker.
 func NewTaskTracker() *TaskTracker {
-	return &TaskTracker{out: os.Stdout}
+	return &TaskTracker{out: os.Stderr}
 }
 
 // Add registers a task and returns it for goroutine use.

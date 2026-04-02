@@ -38,6 +38,49 @@ func captureStderr(t *testing.T, fn func()) string {
 	return buf.String()
 }
 
+func captureStdoutStderr(t *testing.T, fn func()) (string, string) {
+	t.Helper()
+
+	oldOut := os.Stdout
+	oldErr := os.Stderr
+	rOut, wOut, err := os.Pipe()
+	if !assert.NoError(t, err) {
+		return "", ""
+	}
+	rErr, wErr, err := os.Pipe()
+	if !assert.NoError(t, err) {
+		return "", ""
+	}
+	os.Stdout = wOut
+	os.Stderr = wErr
+
+	defer func() {
+		os.Stdout = oldOut
+		os.Stderr = oldErr
+	}()
+
+	fn()
+
+	if !assert.NoError(t, wOut.Close()) {
+		return "", ""
+	}
+	if !assert.NoError(t, wErr.Close()) {
+		return "", ""
+	}
+
+	var outBuf bytes.Buffer
+	var errBuf bytes.Buffer
+	_, err = io.Copy(&outBuf, rOut)
+	if !assert.NoError(t, err) {
+		return "", ""
+	}
+	_, err = io.Copy(&errBuf, rErr)
+	if !assert.NoError(t, err) {
+		return "", ""
+	}
+	return outBuf.String(), errBuf.String()
+}
+
 func TestPrompt_Good(t *testing.T) {
 	SetStdin(strings.NewReader("hello\n"))
 	defer SetStdin(nil) // reset
@@ -352,4 +395,18 @@ func TestPromptHints_Good_UseStderr(t *testing.T) {
 	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "try again")
 	assert.Contains(t, stderr.String(), "invalid")
+}
+
+func TestPrompt_Good_WritesToStderr(t *testing.T) {
+	SetStdin(strings.NewReader("hello\n"))
+	defer SetStdin(nil)
+
+	stdout, stderr := captureStdoutStderr(t, func() {
+		val, err := Prompt("Name", "")
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", val)
+	})
+
+	assert.Empty(t, stdout)
+	assert.Contains(t, stderr, "Name:")
 }
