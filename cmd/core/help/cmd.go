@@ -65,6 +65,7 @@ func AddHelpCommands(root *cli.Command) {
 			query = strings.TrimSpace(strings.Join(args, " "))
 		}
 		if query == "" {
+			renderHelpHint("")
 			return cli.Err("help search query is required")
 		}
 		return searchHelpTopics(catalog, query)
