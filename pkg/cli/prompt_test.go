@@ -10,6 +10,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	oldErr := os.Stderr
+	r, w, err := os.Pipe()
+	if !assert.NoError(t, err) {
+		return ""
+	}
+	os.Stderr = w
+
+	defer func() {
+		os.Stderr = oldErr
+	}()
+
+	fn()
+
+	if !assert.NoError(t, w.Close()) {
+		return ""
+	}
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, r)
+	if !assert.NoError(t, err) {
+		return ""
+	}
+	return buf.String()
+}
+
 func TestPrompt_Good(t *testing.T) {
 	SetStdin(strings.NewReader("hello\n"))
 	defer SetStdin(nil) // reset
@@ -59,9 +87,13 @@ func TestSelect_Bad_Invalid(t *testing.T) {
 	SetStdin(strings.NewReader("5\n"))
 	defer SetStdin(nil)
 
-	_, err := Select("Pick", []string{"a", "b"})
+	var err error
+	stderr := captureStderr(t, func() {
+		_, err = Select("Pick", []string{"a", "b"})
+	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "choose a number between 1 and 2")
+	assert.Contains(t, stderr, "Please enter a number between 1 and 2.")
 }
 
 func TestSelect_Bad_EOF(t *testing.T) {
@@ -221,6 +253,19 @@ func TestChoose_Bad_FilteredDefaultDoesNotFallBackToFirstVisible(t *testing.T) {
 
 	val := Choose("Pick", []string{"apple", "banana", "apricot"}, WithDefaultIndex[string](1), Filter[string]())
 	assert.Equal(t, "apricot", val)
+}
+
+func TestChoose_Bad_InvalidNumberUsesStderrHint(t *testing.T) {
+	SetStdin(strings.NewReader("5\n2\n"))
+	defer SetStdin(nil)
+
+	var val string
+	stderr := captureStderr(t, func() {
+		val = Choose("Pick", []string{"a", "b"})
+	})
+
+	assert.Equal(t, "b", val)
+	assert.Contains(t, stderr, "Please enter a number between 1 and 2.")
 }
 
 func TestChooseMulti_Good_Filter(t *testing.T) {
