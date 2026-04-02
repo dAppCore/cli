@@ -24,7 +24,7 @@ func AddHelpCommands(root *cli.Command) {
 			catalog := gohelp.DefaultCatalog()
 
 			if searchQuery != "" {
-				return renderSearchResults(catalog.Search(searchQuery), searchQuery)
+				return searchHelpTopics(catalog, searchQuery)
 			}
 
 			if len(args) == 0 {
@@ -47,6 +47,25 @@ func AddHelpCommands(root *cli.Command) {
 		},
 	}
 
+	searchCmd := &cli.Command{
+		Use:   "search [query]",
+		Short: "Search help topics",
+		Args:  cobra.ArbitraryArgs,
+	}
+	var searchCmdQuery string
+	searchCmd.Flags().StringVarP(&searchCmdQuery, "query", "q", "", "Search query")
+	searchCmd.RunE = func(cmd *cli.Command, args []string) error {
+		catalog := gohelp.DefaultCatalog()
+		query := strings.TrimSpace(searchCmdQuery)
+		if query == "" {
+			query = strings.TrimSpace(strings.Join(args, " "))
+		}
+		if query == "" {
+			return cli.Err("help search query is required")
+		}
+		return searchHelpTopics(catalog, query)
+	}
+
 	var serveAddr string
 	serveCmd := &cli.Command{
 		Use:   "serve",
@@ -59,8 +78,13 @@ func AddHelpCommands(root *cli.Command) {
 	serveCmd.Flags().StringVar(&serveAddr, "addr", ":8080", "HTTP listen address")
 
 	helpCmd.AddCommand(serveCmd)
+	helpCmd.AddCommand(searchCmd)
 	helpCmd.Flags().StringVarP(&searchQuery, "search", "s", "", "Search help topics")
 	root.AddCommand(helpCmd)
+}
+
+func searchHelpTopics(catalog *gohelp.Catalog, query string) error {
+	return renderSearchResults(catalog.Search(query), query)
 }
 
 func renderSearchResults(results []*gohelp.SearchResult, query string) error {

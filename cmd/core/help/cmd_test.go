@@ -45,6 +45,23 @@ func newHelpCommand(t *testing.T) *cli.Command {
 	return cmd
 }
 
+func searchableHelpQuery(t *testing.T) string {
+	t.Helper()
+
+	catalog := gohelp.DefaultCatalog()
+	for _, candidate := range []string{"configuration", "docs", "search", "topic", "help"} {
+		if _, err := catalog.Get(candidate); err == nil {
+			continue
+		}
+		if len(catalog.Search(candidate)) > 0 {
+			return candidate
+		}
+	}
+
+	t.Skip("no suitable query found with suggestions")
+	return ""
+}
+
 func TestAddHelpCommands_Good(t *testing.T) {
 	cmd := newHelpCommand(t)
 
@@ -81,6 +98,26 @@ func TestAddHelpCommands_Good_Serve(t *testing.T) {
 	err = cmd.RunE(cmd, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:9090", gotAddr)
+}
+
+func TestAddHelpCommands_Good_Search(t *testing.T) {
+	root := &cli.Command{Use: "core"}
+	AddHelpCommands(root)
+
+	cmd, _, err := root.Find([]string{"help", "search"})
+	require.NoError(t, err)
+	require.NotNil(t, cmd)
+
+	query := searchableHelpQuery(t)
+	require.NoError(t, cmd.Flags().Set("query", query))
+
+	out := captureOutput(t, func() {
+		err := cmd.RunE(cmd, nil)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, out, "SEARCH RESULTS")
+	assert.Contains(t, out, query)
 }
 
 func TestRenderSearchResults_Good(t *testing.T) {
@@ -129,6 +166,19 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		assert.Contains(t, err.Error(), "no help topics matched")
 	})
 
+	t.Run("missing search query", func(t *testing.T) {
+		root := &cli.Command{Use: "core"}
+		AddHelpCommands(root)
+
+		cmd, _, err := root.Find([]string{"help", "search"})
+		require.NoError(t, err)
+		require.NotNil(t, cmd)
+
+		err = cmd.RunE(cmd, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "help search query is required")
+	})
+
 	t.Run("missing topic", func(t *testing.T) {
 		cmd := newHelpCommand(t)
 		err := cmd.RunE(cmd, []string{"definitely-not-a-real-topic"})
@@ -137,20 +187,7 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 	})
 
 	t.Run("missing topic shows suggestions when available", func(t *testing.T) {
-		catalog := gohelp.DefaultCatalog()
-		query := ""
-		for _, candidate := range []string{"configuration", "docs", "search", "topic", "help"} {
-			if _, err := catalog.Get(candidate); err == nil {
-				continue
-			}
-			if len(catalog.Search(candidate)) > 0 {
-				query = candidate
-				break
-			}
-		}
-		if query == "" {
-			t.Skip("no suitable query found with suggestions")
-		}
+		query := searchableHelpQuery(t)
 
 		cmd := newHelpCommand(t)
 		out := captureOutput(t, func() {
