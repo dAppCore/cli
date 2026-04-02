@@ -32,6 +32,8 @@ func newReader() *bufio.Reader {
 
 // Prompt asks for text input with a default value.
 func Prompt(label, defaultVal string) (string, error) {
+	label = compileGlyphs(label)
+	defaultVal = compileGlyphs(defaultVal)
 	if defaultVal != "" {
 		fmt.Printf("%s [%s]: ", label, defaultVal)
 	} else {
@@ -40,7 +42,7 @@ func Prompt(label, defaultVal string) (string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err
 	}
 
@@ -53,15 +55,15 @@ func Prompt(label, defaultVal string) (string, error) {
 
 // Select presents numbered options and returns the selected value.
 func Select(label string, options []string) (string, error) {
-	fmt.Println(label)
+	fmt.Println(compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Printf("  %d. %s\n", i+1, opt)
+		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
 	}
 	fmt.Printf("Choose [1-%d]: ", len(options))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	if err != nil {
+	if err != nil && strings.TrimSpace(input) == "" {
 		return "", err
 	}
 
@@ -74,9 +76,9 @@ func Select(label string, options []string) (string, error) {
 
 // MultiSelect presents checkboxes (space-separated numbers).
 func MultiSelect(label string, options []string) ([]string, error) {
-	fmt.Println(label)
+	fmt.Println(compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Printf("  %d. %s\n", i+1, opt)
+		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
 	}
 	fmt.Printf("Choose (space-separated) [1-%d]: ", len(options))
 

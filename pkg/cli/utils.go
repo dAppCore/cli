@@ -81,6 +81,8 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		opt(cfg)
 	}
 
+	prompt = compileGlyphs(prompt)
+
 	// Build the prompt suffix
 	var suffix string
 	if cfg.required {
@@ -218,12 +220,14 @@ func Question(prompt string, opts ...QuestionOption) string {
 		opt(cfg)
 	}
 
+	prompt = compileGlyphs(prompt)
+
 	reader := newReader()
 
 	for {
 		// Build prompt with default
 		if cfg.defaultValue != "" {
-			fmt.Printf("%s [%s] ", prompt, cfg.defaultValue)
+			fmt.Printf("%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
 		} else {
 			fmt.Printf("%s ", prompt)
 		}
@@ -328,6 +332,8 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		opt(cfg)
 	}
 
+	prompt = compileGlyphs(prompt)
+
 	reader := newReader()
 	visible := make([]int, len(items))
 	for i := range items {
@@ -404,6 +410,8 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		opt(cfg)
 	}
 
+	prompt = compileGlyphs(prompt)
+
 	reader := newReader()
 	visible := make([]int, len(items))
 	for i := range items {
@@ -458,7 +466,7 @@ func renderChoices[T any](prompt string, items []T, visible []int, displayFn fun
 		if defaultN >= 0 && idx == defaultN {
 			marker = "*"
 		}
-		fmt.Printf("  %s%d. %s\n", marker, i+1, displayFn(items[idx]))
+		fmt.Printf("  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
 	}
 	if filter {
 		fmt.Println("  (type to filter the list)")

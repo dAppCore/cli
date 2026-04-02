@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -26,6 +27,15 @@ func TestPrompt_Good_Default(t *testing.T) {
 	assert.Equal(t, "world", val)
 }
 
+func TestPrompt_Bad_EOFUsesDefault(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	val, err := Prompt("Name", "world")
+	assert.NoError(t, err)
+	assert.Equal(t, "world", val)
+}
+
 func TestSelect_Good(t *testing.T) {
 	SetStdin(strings.NewReader("2\n"))
 	defer SetStdin(nil)
@@ -41,6 +51,14 @@ func TestSelect_Bad_Invalid(t *testing.T) {
 
 	_, err := Select("Pick", []string{"a", "b"})
 	assert.Error(t, err)
+}
+
+func TestSelect_Bad_EOF(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	_, err := Select("Pick", []string{"a", "b"})
+	assert.ErrorIs(t, err, io.EOF)
 }
 
 func TestMultiSelect_Good(t *testing.T) {
