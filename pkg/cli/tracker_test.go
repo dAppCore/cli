@@ -121,8 +121,7 @@ func TestTaskTracker_Good(t *testing.T) {
 
 	t.Run("wait completes for non-TTY", func(t *testing.T) {
 		var buf bytes.Buffer
-		tr := NewTaskTracker()
-		tr.out = &buf
+		tr := NewTaskTracker().WithOutput(&buf)
 
 		task := tr.Add("quick")
 		go func() {
@@ -131,6 +130,17 @@ func TestTaskTracker_Good(t *testing.T) {
 		}()
 
 		tr.Wait()
+		assert.Contains(t, buf.String(), "quick")
+		assert.Contains(t, buf.String(), "done")
+	})
+
+	t.Run("WithOutput sets output writer", func(t *testing.T) {
+		var buf bytes.Buffer
+		tr := NewTaskTracker().WithOutput(&buf)
+
+		tr.Add("quick").Done("done")
+		tr.Wait()
+
 		assert.Contains(t, buf.String(), "quick")
 		assert.Contains(t, buf.String(), "done")
 	})
