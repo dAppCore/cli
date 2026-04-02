@@ -38,6 +38,14 @@ type confirmConfig struct {
 	timeout    time.Duration
 }
 
+func promptHint(msg string) {
+	fmt.Println(DimStyle.Render(compileGlyphs(msg)))
+}
+
+func promptWarning(msg string) {
+	fmt.Println(WarningStyle.Render(compileGlyphs(msg)))
+}
+
 // DefaultYes sets the default response to "yes" (pressing Enter confirms).
 func DefaultYes() ConfirmOption {
 	return func(c *confirmConfig) {
@@ -137,7 +145,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		// Handle empty response
 		if response == "" {
 			if readErr == nil && cfg.required {
-				fmt.Println("Please enter y or n, then press Enter.")
+				promptHint("Please enter y or n, then press Enter.")
 				continue
 			}
 			if cfg.required {
@@ -156,7 +164,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 
 		// Invalid response
 		if cfg.required {
-			fmt.Println("Please enter y or n, then press Enter.")
+			promptHint("Please enter y or n, then press Enter.")
 			continue
 		}
 
@@ -250,7 +258,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				fmt.Println("Please enter a value, then press Enter.")
+				promptHint("Please enter a value, then press Enter.")
 				continue
 			}
 			response = cfg.defaultValue
@@ -259,7 +267,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 		// Validate if validator provided
 		if cfg.validator != nil {
 			if err := cfg.validator(response); err != nil {
-				fmt.Printf("Invalid: %v\n", err)
+				promptWarning(fmt.Sprintf("Invalid: %v", err))
 				continue
 			}
 		}
@@ -375,10 +383,10 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 				return items[idx]
 			}
 			if cfg.defaultN >= 0 {
-				fmt.Printf("Default selection is not available in the current list. Narrow the list or choose another number.\n")
+				promptHint("Default selection is not available in the current list. Narrow the list or choose another number.")
 				continue
 			}
-			fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
+			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
 
@@ -394,14 +402,14 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		if cfg.filter {
 			nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 			if len(nextVisible) == 0 {
-				fmt.Printf("No matches for %q. Try a shorter search term or clear the filter.\n", response)
+				promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
 				continue
 			}
 			visible = nextVisible
 			continue
 		}
 
-		fmt.Printf("Please enter a number between 1 and %d.\n", len(visible))
+		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 	}
 }
 
@@ -462,7 +470,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 				return []T{items[idx]}
 			}
 			if cfg.defaultN >= 0 {
-				fmt.Printf("Default selection is not available in the current list. Narrow the list or choose another number.\n")
+				promptHint("Default selection is not available in the current list. Narrow the list or choose another number.")
 				continue
 			}
 			return nil
@@ -474,13 +482,13 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 			if cfg.filter && !looksLikeMultiSelectionInput(response) {
 				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 				if len(nextVisible) == 0 {
-					fmt.Printf("No matches for %q. Try a shorter search term or clear the filter.\n", response)
+					promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
 					continue
 				}
 				visible = nextVisible
 				continue
 			}
-			fmt.Printf("Invalid selection %q: enter numbers like 1 3 or 1-3.\n", response)
+			promptWarning(fmt.Sprintf("Invalid selection %q: enter numbers like 1 3 or 1-3.", response))
 			continue
 		}
 
