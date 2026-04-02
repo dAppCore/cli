@@ -84,6 +84,9 @@ func MultiSelect(label string, options []string) ([]string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
+	if err != nil && strings.TrimSpace(input) == "" {
+		return []string{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
