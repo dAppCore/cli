@@ -291,14 +291,14 @@ func (t *Table) columnWidths() []int {
 	widths := make([]int, cols)
 
 	for i, h := range t.Headers {
-		if w := displayWidth(h); w > widths[i] {
+		if w := displayWidth(compileGlyphs(h)); w > widths[i] {
 			widths[i] = w
 		}
 	}
 	for _, row := range t.Rows {
 		for i, cell := range row {
 			if i < cols {
-				if w := displayWidth(cell); w > widths[i] {
+				if w := displayWidth(compileGlyphs(cell)); w > widths[i] {
 					widths[i] = w
 				}
 			}
@@ -367,7 +367,7 @@ func (t *Table) renderPlain() string {
 			if i > 0 {
 				sb.WriteString(sep)
 			}
-			cell := Pad(Truncate(h, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(h), widths[i]), widths[i])
 			if t.Style.HeaderStyle != nil {
 				cell = t.Style.HeaderStyle.Render(cell)
 			}
@@ -385,7 +385,7 @@ func (t *Table) renderPlain() string {
 			if i < len(row) {
 				val = row[i]
 			}
-			cell := Pad(Truncate(val, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(val), widths[i]), widths[i])
 			if style := t.resolveStyle(i, val); style != nil {
 				cell = style.Render(cell)
 			}
@@ -423,7 +423,7 @@ func (t *Table) renderBordered() string {
 			if i < len(t.Headers) {
 				h = t.Headers[i]
 			}
-			cell := Pad(Truncate(h, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(h), widths[i]), widths[i])
 			if t.Style.HeaderStyle != nil {
 				cell = t.Style.HeaderStyle.Render(cell)
 			}
@@ -454,7 +454,7 @@ func (t *Table) renderBordered() string {
 			if i < len(row) {
 				val = row[i]
 			}
-			cell := Pad(Truncate(val, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(val), widths[i]), widths[i])
 			if style := t.resolveStyle(i, val); style != nil {
 				cell = style.Render(cell)
 			}
