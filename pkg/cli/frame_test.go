@@ -145,6 +145,20 @@ func TestFrame_Bad(t *testing.T) {
 		assert.Equal(t, "", f.String())
 	})
 
+	t.Run("static string strips ANSI", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		f.Header(StatusLine("core dev", "18 repos"))
+		f.Content(StaticModel("body"))
+		f.Footer(KeyHints("q quit"))
+
+		out := f.String()
+		assert.NotContains(t, out, "\x1b[")
+		assert.Contains(t, out, "core dev")
+		assert.Contains(t, out, "body")
+		assert.Contains(t, out, "q quit")
+	})
+
 	t.Run("back on empty history", func(t *testing.T) {
 		f := NewFrame("C")
 		f.out = &bytes.Buffer{}
@@ -276,7 +290,7 @@ func TestFrameFocus_Good(t *testing.T) {
 
 	t.Run("Focus ignores invalid region", func(t *testing.T) {
 		f := NewFrame("HCF")
-		f.Focus(RegionLeft) // Left not in "HCF"
+		f.Focus(RegionLeft)                         // Left not in "HCF"
 		assert.Equal(t, RegionContent, f.Focused()) // unchanged
 	})
 
@@ -550,4 +564,3 @@ func TestFrameMessageRouting_Good(t *testing.T) {
 		})
 	})
 }
-
