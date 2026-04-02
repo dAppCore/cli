@@ -114,15 +114,15 @@ func Dim(msg string) {
 func Progress(verb string, current, total int, item ...string) {
 	msg := i18n.Progress(verb)
 	if len(item) > 0 && item[0] != "" {
-		fmt.Printf("\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, item[0])
+		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, item[0])
 	} else {
-		fmt.Printf("\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
+		fmt.Fprintf(os.Stderr, "\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
 	}
 }
 
 // ProgressDone clears the progress line.
 func ProgressDone() {
-	fmt.Print("\033[2K\r")
+	fmt.Fprint(os.Stderr, "\033[2K\r")
 }
 
 // Label prints a "Label: value" line.

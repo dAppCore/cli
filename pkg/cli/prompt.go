@@ -35,9 +35,9 @@ func Prompt(label, defaultVal string) (string, error) {
 	label = compileGlyphs(label)
 	defaultVal = compileGlyphs(defaultVal)
 	if defaultVal != "" {
-		fmt.Printf("%s [%s]: ", label, defaultVal)
+		fmt.Fprintf(os.Stderr, "%s [%s]: ", label, defaultVal)
 	} else {
-		fmt.Printf("%s: ", label)
+		fmt.Fprintf(os.Stderr, "%s: ", label)
 	}
 
 	r := newReader()
@@ -66,11 +66,11 @@ func Select(label string, options []string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Println(compileGlyphs(label))
+	fmt.Fprintln(os.Stderr, compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
+		fmt.Fprintf(os.Stderr, "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
-	fmt.Printf("Choose [1-%d]: ", len(options))
+	fmt.Fprintf(os.Stderr, "Choose [1-%d]: ", len(options))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
@@ -94,11 +94,11 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	fmt.Println(compileGlyphs(label))
+	fmt.Fprintln(os.Stderr, compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
+		fmt.Fprintf(os.Stderr, "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
-	fmt.Printf("Choose (space-separated) [1-%d]: ", len(options))
+	fmt.Fprintf(os.Stderr, "Choose (space-separated) [1-%d]: ", len(options))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
