@@ -78,6 +78,12 @@ func Join(errs ...error) error {
 }
 
 // ExitError represents an error that should cause the CLI to exit with a specific code.
+//
+//	err := cli.Exit(2, cli.Err("validation failed"))
+//	var exitErr *cli.ExitError
+//	if cli.As(err, &exitErr) {
+//	    cli.Println("exit code:", exitErr.Code)
+//	}
 type ExitError struct {
 	Code int
 	Err  error
@@ -95,7 +101,8 @@ func (e *ExitError) Unwrap() error {
 }
 
 // Exit creates a new ExitError with the given code and error.
-// Use this to return an error from a command with a specific exit code.
+//
+//	return cli.Exit(2, cli.Err("validation failed"))
 func Exit(code int, err error) error {
 	if err == nil {
 		return nil

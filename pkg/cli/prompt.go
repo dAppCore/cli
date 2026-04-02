@@ -76,14 +76,14 @@ func Select(label string, options []string) (string, error) {
 	input, err := r.ReadString('\n')
 	if err != nil && strings.TrimSpace(input) == "" {
 		promptHint("No input received. Selection cancelled.")
-		return "", fmt.Errorf("selection cancelled: %w", err)
+		return "", Wrap(err, "selection cancelled")
 	}
 
 	trimmed := strings.TrimSpace(input)
 	n, err := strconv.Atoi(trimmed)
 	if err != nil || n < 1 || n > len(options) {
 		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(options)))
-		return "", fmt.Errorf("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
+		return "", Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
 	}
 	return options[n-1], nil
 }
@@ -112,7 +112,7 @@ func MultiSelect(label string, options []string) ([]string, error) {
 
 	selected, parseErr := parseMultiSelection(trimmed, len(options))
 	if parseErr != nil {
-		return nil, fmt.Errorf("invalid selection %q: %w", trimmed, parseErr)
+		return nil, Wrap(parseErr, fmt.Sprintf("invalid selection %q", trimmed))
 	}
 
 	selectedOptions := make([]string, 0, len(selected))

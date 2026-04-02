@@ -11,6 +11,8 @@ import (
 )
 
 // StreamOption configures a Stream.
+//
+//	stream := cli.NewStream(cli.WithWordWrap(80), cli.WithStreamOutput(os.Stdout))
 type StreamOption func(*Stream)
 
 // WithWordWrap sets the word-wrap column width.
@@ -130,7 +132,7 @@ func (s *Stream) Column() int {
 	return s.col
 }
 
-// Captured returns the stream output as a string when using a bytes.Buffer.
+// Captured returns the stream output as a string when using a stringable writer.
 // Panics if the output writer is not a *strings.Builder or fmt.Stringer.
 func (s *Stream) Captured() string {
 	s.mu.Lock()
