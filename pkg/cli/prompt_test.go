@@ -173,6 +173,30 @@ func TestChoose_Good_DefaultIndex(t *testing.T) {
 	assert.Equal(t, "b", val)
 }
 
+func TestChoose_Good_EmptyRepromptsWithoutDefault(t *testing.T) {
+	SetStdin(strings.NewReader("\n2\n"))
+	defer SetStdin(nil)
+
+	val := Choose("Pick", []string{"a", "b", "c"})
+	assert.Equal(t, "b", val)
+}
+
+func TestChoose_Bad_EOFWithoutDefaultReturnsZeroValue(t *testing.T) {
+	SetStdin(strings.NewReader(""))
+	defer SetStdin(nil)
+
+	val := Choose("Pick", []string{"a", "b", "c"})
+	assert.Empty(t, val)
+}
+
+func TestChooseMulti_Good_EmptyWithoutDefaultReturnsNone(t *testing.T) {
+	SetStdin(strings.NewReader("\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"a", "b", "c"})
+	assert.Empty(t, vals)
+}
+
 func TestChoose_Good_Filter(t *testing.T) {
 	SetStdin(strings.NewReader("ap\n2\n"))
 	defer SetStdin(nil)
