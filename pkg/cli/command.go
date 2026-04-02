@@ -186,6 +186,19 @@ func StringArrayFlag(cmd *Command, ptr *[]string, name, short string, def []stri
 	}
 }
 
+// StringToStringFlag adds a string-to-string map flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var labels map[string]string
+//	cli.StringToStringFlag(cmd, &labels, "label", "l", nil, "Labels to apply")
+func StringToStringFlag(cmd *Command, ptr *map[string]string, name, short string, def map[string]string, usage string) {
+	if short != "" {
+		cmd.Flags().StringToStringVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().StringToStringVar(ptr, name, def, usage)
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Persistent Flag Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -259,6 +272,15 @@ func PersistentStringArrayFlag(cmd *Command, ptr *[]string, name, short string, 
 		cmd.PersistentFlags().StringArrayVarP(ptr, name, short, def, usage)
 	} else {
 		cmd.PersistentFlags().StringArrayVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringToStringFlag adds a persistent string-to-string map flag (inherited by subcommands).
+func PersistentStringToStringFlag(cmd *Command, ptr *map[string]string, name, short string, def map[string]string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringToStringVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringToStringVar(ptr, name, def, usage)
 	}
 }
 

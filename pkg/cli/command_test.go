@@ -14,13 +14,14 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 		parent := NewGroup("parent", "Parent", "")
 
 		var (
-			str   string
-			b     bool
-			i     int
-			i64   int64
-			f64   float64
-			dur   time.Duration
-			slice []string
+			str    string
+			b      bool
+			i      int
+			i64    int64
+			f64    float64
+			dur    time.Duration
+			slice  []string
+			labels map[string]string
 		)
 
 		PersistentStringFlag(parent, &str, "name", "n", "default", "Name")
@@ -30,6 +31,7 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 		PersistentFloat64Flag(parent, &f64, "ratio", "", 3.5, "Ratio")
 		PersistentDurationFlag(parent, &dur, "timeout", "t", 4*time.Second, "Timeout")
 		PersistentStringSliceFlag(parent, &slice, "tag", "", nil, "Tags")
+		PersistentStringToStringFlag(parent, &labels, "label", "l", nil, "Labels")
 
 		child := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
 			assert.Equal(t, "override", str)
@@ -39,6 +41,7 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 			assert.InDelta(t, 7.25, f64, 1e-9)
 			assert.Equal(t, 15*time.Second, dur)
 			assert.Equal(t, []string{"alpha", "beta"}, slice)
+			assert.Equal(t, map[string]string{"env": "prod", "team": "platform"}, labels)
 			return nil
 		})
 		parent.AddCommand(child)
@@ -53,6 +56,7 @@ func TestPersistentFlagHelpers_Good(t *testing.T) {
 			"--timeout", "15s",
 			"--tag", "alpha",
 			"--tag", "beta",
+			"--label", "env=prod,team=platform",
 		})
 
 		require.NoError(t, parent.Execute())
@@ -121,5 +125,34 @@ func TestFlagHelpers_Good(t *testing.T) {
 
 		require.NoError(t, cmd.Execute())
 		assert.Equal(t, []string{"alpha"}, tags)
+	})
+
+	t.Run("string-to-string flags parse key value pairs", func(t *testing.T) {
+		cmd := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
+			return nil
+		})
+
+		var labels map[string]string
+		StringToStringFlag(cmd, &labels, "label", "l", nil, "Labels")
+		cmd.SetArgs([]string{"--label", "env=prod,team=platform"})
+
+		require.NoError(t, cmd.Execute())
+		assert.Equal(t, map[string]string{"env": "prod", "team": "platform"}, labels)
+	})
+
+	t.Run("persistent string-to-string flags inherit through subcommands", func(t *testing.T) {
+		parent := NewGroup("parent", "Parent", "")
+
+		var labels map[string]string
+		PersistentStringToStringFlag(parent, &labels, "label", "l", nil, "Labels")
+
+		child := NewCommand("child", "Child", "", func(_ *Command, _ []string) error {
+			assert.Equal(t, map[string]string{"env": "prod", "team": "platform"}, labels)
+			return nil
+		})
+		parent.AddCommand(child)
+		parent.SetArgs([]string{"child", "-l", "env=prod,team=platform"})
+
+		require.NoError(t, parent.Execute())
 	})
 }
