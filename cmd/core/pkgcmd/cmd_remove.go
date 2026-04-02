@@ -18,6 +18,7 @@ import (
 	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-scm/repos"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var removeForce bool
@@ -87,8 +88,76 @@ func runPkgRemove(name string, force bool) error {
 		return err
 	}
 
+	if err := removeRepoFromRegistry(regPath, name); err != nil {
+		return fmt.Errorf("removed %s from disk, but failed to update registry: %w", name, err)
+	}
+
 	fmt.Printf("%s\n", successStyle.Render("ok"))
 	return nil
+}
+
+func removeRepoFromRegistry(regPath, name string) error {
+	content, err := coreio.Local.Read(regPath)
+	if err != nil {
+		return err
+	}
+
+	var doc yaml.Node
+	if err := yaml.Unmarshal([]byte(content), &doc); err != nil {
+		return fmt.Errorf("failed to parse registry file: %w", err)
+	}
+	if len(doc.Content) == 0 {
+		return errors.New("registry file is empty")
+	}
+
+	root := doc.Content[0]
+	reposNode := mappingValue(root, "repos")
+	if reposNode == nil {
+		return errors.New("registry file has no repos section")
+	}
+	if reposNode.Kind != yaml.MappingNode {
+		return errors.New("registry repos section is malformed")
+	}
+
+	if removeMappingEntry(reposNode, name) {
+		out, err := yaml.Marshal(&doc)
+		if err != nil {
+			return fmt.Errorf("failed to format registry file: %w", err)
+		}
+		return coreio.Local.Write(regPath, string(out))
+	}
+
+	return nil
+}
+
+func mappingValue(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		if node.Content[i].Value == key {
+			return node.Content[i+1]
+		}
+	}
+
+	return nil
+}
+
+func removeMappingEntry(node *yaml.Node, key string) bool {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return false
+	}
+
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		if node.Content[i].Value != key {
+			continue
+		}
+		node.Content = append(node.Content[:i], node.Content[i+2:]...)
+		return true
+	}
+
+	return false
 }
 
 // checkRepoSafety checks a git repo for uncommitted changes and unpushed branches.

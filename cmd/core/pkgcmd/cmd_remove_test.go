@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,6 +77,43 @@ func TestCheckRepoSafety_Stash(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected stash warning in reasons: %v", reasons)
+}
+
+func TestRunPkgRemove_RemovesRegistryEntry_Good(t *testing.T) {
+	tmp := t.TempDir()
+	repoPath := setupTestRepo(t, tmp, "core-alpha")
+
+	registry := strings.TrimSpace(`
+version: 1
+org: host-uk
+base_path: .
+repos:
+  core-alpha:
+    type: foundation
+    description: Alpha package
+  core-beta:
+    type: module
+    description: Beta package
+`) + "\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "repos.yaml"), []byte(registry), 0644))
+
+	oldwd, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(tmp))
+	t.Cleanup(func() {
+		require.NoError(t, os.Chdir(oldwd))
+	})
+
+	require.NoError(t, runPkgRemove("core-alpha", false))
+
+	_, err = os.Stat(repoPath)
+	assert.True(t, os.IsNotExist(err))
+
+	updated, err := os.ReadFile(filepath.Join(tmp, "repos.yaml"))
+	require.NoError(t, err)
+	assert.NotContains(t, string(updated), "core-alpha")
+	assert.Contains(t, string(updated), "core-beta")
 }
 
 func contains(s, substr string) bool {
