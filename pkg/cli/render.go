@@ -66,9 +66,9 @@ func (c *Composite) renderSeparator(sb *strings.Builder, depth int) {
 	indent := strings.Repeat("  ", depth)
 	switch currentRenderStyle {
 	case RenderBoxed:
-		sb.WriteString(indent + "├" + strings.Repeat("─", 40) + "┤\n")
+		sb.WriteString(indent + Glyph(":tee:") + strings.Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
 	case RenderSimple:
-		sb.WriteString(indent + strings.Repeat("─", 40) + "\n")
+		sb.WriteString(indent + strings.Repeat(Glyph(":dash:"), 40) + "\n")
 	}
 }
 

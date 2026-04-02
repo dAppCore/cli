@@ -29,6 +29,9 @@ func TestCheckBuilder(t *testing.T) {
 	if got == "" {
 		t.Error("Empty output for Skip")
 	}
+	if !strings.Contains(got, "[SKIP]") {
+		t.Error("Expected ASCII skip icon")
+	}
 
 	// Warn
 	c = Check("foo").Warn()

@@ -38,7 +38,7 @@ func (c *CheckBuilder) Fail() *CheckBuilder {
 func (c *CheckBuilder) Skip() *CheckBuilder {
 	c.status = "skipped"
 	c.style = DimStyle
-	c.icon = "-"
+	c.icon = Glyph(":skip:")
 	return c
 }
 
