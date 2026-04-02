@@ -148,6 +148,26 @@ func TestRegisterCommands_Bad(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "late", cmd.Use)
 	})
+
+	t.Run("nested registration during startup does not deadlock", func(t *testing.T) {
+		resetGlobals(t)
+
+		RegisterCommands(func(root *cobra.Command) {
+			root.AddCommand(&cobra.Command{Use: "outer", Short: "Outer"})
+			RegisterCommands(func(root *cobra.Command) {
+				root.AddCommand(&cobra.Command{Use: "inner", Short: "Inner"})
+			})
+		})
+
+		err := Init(Options{AppName: "test"})
+		require.NoError(t, err)
+
+		for _, name := range []string{"outer", "inner"} {
+			cmd, _, err := RootCmd().Find([]string{name})
+			require.NoError(t, err)
+			assert.Equal(t, name, cmd.Use)
+		}
+	})
 }
 
 // TestLocaleLoading_Good verifies locale files become available to the active i18n service.
