@@ -126,6 +126,7 @@ core pkg update [<name>...] [flags]
 | Flag | Description |
 |------|-------------|
 | `--all` | Update all packages |
+| `--format` | Output format (`table` or `json`) |
 
 ### Examples
 
@@ -135,7 +136,14 @@ core pkg update core-php
 
 # Update all packages
 core pkg update --all
+
+# JSON output for automation
+core pkg update --format json
 ```
+
+### JSON Output
+
+When `--format json` is set, `core pkg update` emits a structured report with per-package update status and summary totals.
 
 ---
 

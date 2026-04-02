@@ -297,11 +297,54 @@ func TestRunPkgUpdate_NoArgs_UpdatesAll(t *testing.T) {
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
-		err := runPkgUpdate(nil, false)
+		err := runPkgUpdate(nil, false, "table")
 		require.NoError(t, err)
 	})
 
 	assert.Contains(t, out, "updating")
 	assert.Contains(t, out, "core-fresh")
 	assert.Contains(t, out, "core-stale")
+}
+
+func TestRunPkgUpdate_JSON(t *testing.T) {
+	tmp := setupOutdatedRegistry(t)
+	withWorkingDir(t, tmp)
+
+	out := capturePkgOutput(t, func() {
+		err := runPkgUpdate(nil, false, "json")
+		require.NoError(t, err)
+	})
+
+	var report pkgUpdateReport
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
+	assert.Equal(t, "json", report.Format)
+	assert.Equal(t, 3, report.Total)
+	assert.Equal(t, 2, report.Installed)
+	assert.Equal(t, 1, report.Missing)
+	assert.Equal(t, 1, report.Updated)
+	assert.Equal(t, 1, report.UpToDate)
+	assert.Equal(t, 0, report.Failed)
+	require.Len(t, report.Packages, 3)
+
+	var updatedFound, upToDateFound, missingFound bool
+	for _, pkg := range report.Packages {
+		switch pkg.Name {
+		case "core-stale":
+			updatedFound = true
+			assert.True(t, pkg.Installed)
+			assert.Equal(t, "updated", pkg.Status)
+		case "core-fresh":
+			upToDateFound = true
+			assert.True(t, pkg.Installed)
+			assert.Equal(t, "up_to_date", pkg.Status)
+		case "core-missing":
+			missingFound = true
+			assert.False(t, pkg.Installed)
+			assert.Equal(t, "missing", pkg.Status)
+		}
+	}
+
+	assert.True(t, updatedFound)
+	assert.True(t, upToDateFound)
+	assert.True(t, missingFound)
 }

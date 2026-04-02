@@ -157,6 +157,7 @@ func runPkgList(format string) error {
 }
 
 var updateAll bool
+var updateFormat string
 
 // addPkgUpdateCommand adds the 'pkg update' command.
 func addPkgUpdateCommand(parent *cobra.Command) {
@@ -165,16 +166,40 @@ func addPkgUpdateCommand(parent *cobra.Command) {
 		Short: i18n.T("cmd.pkg.update.short"),
 		Long:  i18n.T("cmd.pkg.update.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPkgUpdate(args, updateAll)
+			format, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+			return runPkgUpdate(args, updateAll, format)
 		},
 	}
 
 	updateCmd.Flags().BoolVar(&updateAll, "all", false, i18n.T("cmd.pkg.update.flag.all"))
+	updateCmd.Flags().StringVar(&updateFormat, "format", "table", "Output format: table or json")
 
 	parent.AddCommand(updateCmd)
 }
 
-func runPkgUpdate(packages []string, all bool) error {
+type pkgUpdateEntry struct {
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	Installed bool   `json:"installed"`
+	Status    string `json:"status"`
+	Output    string `json:"output,omitempty"`
+}
+
+type pkgUpdateReport struct {
+	Format    string           `json:"format"`
+	Total     int              `json:"total"`
+	Installed int              `json:"installed"`
+	Missing   int              `json:"missing"`
+	Updated   int              `json:"updated"`
+	UpToDate  int              `json:"upToDate"`
+	Failed    int              `json:"failed"`
+	Packages  []pkgUpdateEntry `json:"packages"`
+}
+
+func runPkgUpdate(packages []string, all bool, format string) error {
 	regPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
@@ -193,6 +218,7 @@ func runPkgUpdate(packages []string, all bool) error {
 		basePath = filepath.Join(filepath.Dir(regPath), basePath)
 	}
 
+	jsonOutput := strings.EqualFold(format, "json")
 	var toUpdate []string
 	if all || len(packages) == 0 {
 		for _, r := range reg.List() {
@@ -202,41 +228,114 @@ func runPkgUpdate(packages []string, all bool) error {
 		toUpdate = packages
 	}
 
-	fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.update.update_label")), i18n.T("cmd.pkg.update.updating", map[string]int{"Count": len(toUpdate)}))
+	if !jsonOutput {
+		fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.update.update_label")), i18n.T("cmd.pkg.update.updating", map[string]int{"Count": len(toUpdate)}))
+	}
 
-	var updated, skipped, failed int
+	var updated, upToDate, skipped, failed int
+	var entries []pkgUpdateEntry
 	for _, name := range toUpdate {
 		repoPath := filepath.Join(basePath, name)
 
 		if _, err := coreio.Local.List(filepath.Join(repoPath, ".git")); err != nil {
-			fmt.Printf("  %s %s (%s)\n", dimStyle.Render("○"), name, i18n.T("cmd.pkg.update.not_installed"))
+			if !jsonOutput {
+				fmt.Printf("  %s %s (%s)\n", dimStyle.Render("○"), name, i18n.T("cmd.pkg.update.not_installed"))
+			}
+			if jsonOutput {
+				entries = append(entries, pkgUpdateEntry{
+					Name:      name,
+					Path:      repoPath,
+					Installed: false,
+					Status:    "missing",
+				})
+			}
 			skipped++
 			continue
 		}
 
-		fmt.Printf("  %s %s... ", dimStyle.Render("↓"), name)
+		if !jsonOutput {
+			fmt.Printf("  %s %s... ", dimStyle.Render("↓"), name)
+		}
 
 		cmd := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			fmt.Printf("%s\n", errorStyle.Render("✗"))
-			fmt.Printf("      %s\n", strings.TrimSpace(string(output)))
+			if !jsonOutput {
+				fmt.Printf("%s\n", errorStyle.Render("✗"))
+				fmt.Printf("      %s\n", strings.TrimSpace(string(output)))
+			}
+			if jsonOutput {
+				entries = append(entries, pkgUpdateEntry{
+					Name:      name,
+					Path:      repoPath,
+					Installed: true,
+					Status:    "failed",
+					Output:    strings.TrimSpace(string(output)),
+				})
+			}
 			failed++
 			continue
 		}
 
 		if strings.Contains(string(output), "Already up to date") {
-			fmt.Printf("%s\n", dimStyle.Render(i18n.T("common.status.up_to_date")))
+			if !jsonOutput {
+				fmt.Printf("%s\n", dimStyle.Render(i18n.T("common.status.up_to_date")))
+			}
+			if jsonOutput {
+				entries = append(entries, pkgUpdateEntry{
+					Name:      name,
+					Path:      repoPath,
+					Installed: true,
+					Status:    "up_to_date",
+					Output:    strings.TrimSpace(string(output)),
+				})
+			}
+			upToDate++
 		} else {
-			fmt.Printf("%s\n", successStyle.Render("✓"))
+			if !jsonOutput {
+				fmt.Printf("%s\n", successStyle.Render("✓"))
+			}
+			if jsonOutput {
+				entries = append(entries, pkgUpdateEntry{
+					Name:      name,
+					Path:      repoPath,
+					Installed: true,
+					Status:    "updated",
+					Output:    strings.TrimSpace(string(output)),
+				})
+			}
+			updated++
 		}
-		updated++
+	}
+
+	if jsonOutput {
+		report := pkgUpdateReport{
+			Format:    "json",
+			Total:     len(toUpdate),
+			Installed: updated + upToDate + failed,
+			Missing:   skipped,
+			Updated:   updated,
+			UpToDate:  upToDate,
+			Failed:    failed,
+			Packages:  entries,
+		}
+		return printPkgUpdateJSON(report)
 	}
 
 	fmt.Println()
 	fmt.Printf("%s %s\n",
-		dimStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.update.summary", map[string]int{"Updated": updated, "Skipped": skipped, "Failed": failed}))
+		dimStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.update.summary", map[string]int{"Updated": updated + upToDate, "Skipped": skipped, "Failed": failed}))
 
+	return nil
+}
+
+func printPkgUpdateJSON(report pkgUpdateReport) error {
+	out, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.format", "update results"), err)
+	}
+
+	fmt.Println(string(out))
 	return nil
 }
 
