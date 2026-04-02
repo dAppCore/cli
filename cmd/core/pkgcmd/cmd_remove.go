@@ -10,6 +10,7 @@ package pkgcmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -71,11 +72,11 @@ func runPkgRemove(name string, force bool) error {
 	if !force {
 		blocked, reasons := checkRepoSafety(repoPath)
 		if blocked {
-			fmt.Printf("%s Cannot remove %s:\n", errorStyle.Render("Blocked:"), repoNameStyle.Render(name))
+			fmt.Fprintf(os.Stderr, "%s Cannot remove %s:\n", errorStyle.Render("Blocked:"), repoNameStyle.Render(name))
 			for _, r := range reasons {
-				fmt.Printf("  %s %s\n", errorStyle.Render("·"), r)
+				fmt.Fprintf(os.Stderr, "  %s %s\n", errorStyle.Render("·"), r)
 			}
-			fmt.Printf("\nResolve the issues above or use --force to override.\n")
+			fmt.Fprintln(os.Stderr, "\nResolve the issues above or use --force to override.")
 			return errors.New("package has unresolved changes")
 		}
 	}
