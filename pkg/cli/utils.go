@@ -363,16 +363,20 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		response = strings.TrimSpace(response)
 
 		if err != nil && response == "" {
-			if cfg.defaultN >= 0 {
-				return items[defaultVisibleIndex(visible, cfg.defaultN)]
+			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
+				return items[idx]
 			}
 			var zero T
 			return zero
 		}
 
 		if response == "" {
+			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
+				return items[idx]
+			}
 			if cfg.defaultN >= 0 {
-				return items[defaultVisibleIndex(visible, cfg.defaultN)]
+				fmt.Printf("Default selection is not available in the current list\n")
+				continue
 			}
 			fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
 			continue
@@ -454,8 +458,12 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 
 		// Empty response returns no selections
 		if response == "" {
+			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
+				return []T{items[idx]}
+			}
 			if cfg.defaultN >= 0 {
-				return []T{items[defaultVisibleIndex(visible, cfg.defaultN)]}
+				fmt.Printf("Default selection is not available in the current list\n")
+				continue
 			}
 			return nil
 		}
@@ -499,18 +507,16 @@ func renderChoices[T any](prompt string, items []T, visible []int, displayFn fun
 	}
 }
 
-func defaultVisibleIndex(visible []int, defaultN int) int {
-	if defaultN >= 0 {
-		for _, idx := range visible {
-			if idx == defaultN {
-				return idx
-			}
+func defaultVisibleIndex(visible []int, defaultN int) (int, bool) {
+	if defaultN < 0 {
+		return 0, false
+	}
+	for _, idx := range visible {
+		if idx == defaultN {
+			return idx, true
 		}
 	}
-	if len(visible) > 0 {
-		return visible[0]
-	}
-	return 0
+	return 0, false
 }
 
 func filterVisible[T any](items []T, visible []int, query string, displayFn func(T) string) []int {
