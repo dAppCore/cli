@@ -1,6 +1,9 @@
 package cli
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCheckBuilder(t *testing.T) {
 	restoreThemeAndColors(t)
@@ -46,5 +49,18 @@ func TestCheckBuilder(t *testing.T) {
 	got = c.String()
 	if got == "" {
 		t.Error("Empty output for Message")
+	}
+
+	// Glyph shortcodes
+	c = Check(":check: foo").Warn().Message(":warn:")
+	got = c.String()
+	if got == "" {
+		t.Error("Empty output for glyph shortcode rendering")
+	}
+	if !strings.Contains(got, "[OK] foo") {
+		t.Error("Expected shortcode-rendered name")
+	}
+	if strings.Count(got, "[WARN]") < 2 {
+		t.Error("Expected shortcode-rendered warning icon and message")
 	}
 }
