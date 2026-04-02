@@ -233,8 +233,11 @@ func TestFrameComponents_GlyphShortcodes(t *testing.T) {
 }
 
 func TestStaticModel_Good(t *testing.T) {
-	m := StaticModel("hello")
-	assert.Equal(t, "hello", m.View(80, 24))
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	m := StaticModel(":check: hello")
+	assert.Equal(t, "[OK] hello", m.View(80, 24))
 }
 
 func TestFrameModel_Good(t *testing.T) {

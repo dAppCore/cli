@@ -95,5 +95,5 @@ func StaticModel(text string) Model {
 }
 
 func (s *staticModel) View(_, _ int) string {
-	return s.text
+	return compileGlyphs(s.text)
 }

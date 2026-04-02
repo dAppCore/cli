@@ -141,5 +141,5 @@ func (s *Stream) Captured() string {
 	if st, ok := s.out.(fmt.Stringer); ok {
 		return st.String()
 	}
-	return ""
+	panic("stream output writer does not support Capture")
 }

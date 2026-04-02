@@ -23,3 +23,13 @@ func TestParseVariant(t *testing.T) {
 		}
 	}
 }
+
+func TestStringBlock_GlyphShortcodes(t *testing.T) {
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	block := StringBlock(":check: ready")
+	if got := block.Render(); got != "[OK] ready" {
+		t.Fatalf("expected shortcode rendering, got %q", got)
+	}
+}
