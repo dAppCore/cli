@@ -135,6 +135,12 @@ choice := cli.Choose("Select a file:", files,
 )
 ```
 
+Enable `cli.Filter()` to let users type a substring and narrow the visible choices before selecting a number:
+
+```go
+choice := cli.Choose("Select:", items, cli.Filter[Item]())
+```
+
 With a default selection:
 
 ```go

@@ -75,6 +75,22 @@ func TestChoose_Good_DefaultIndex(t *testing.T) {
 	assert.Equal(t, "b", val)
 }
 
+func TestChoose_Good_Filter(t *testing.T) {
+	SetStdin(strings.NewReader("ap\n2\n"))
+	defer SetStdin(nil)
+
+	val := Choose("Pick", []string{"apple", "apricot", "banana"}, Filter[string]())
+	assert.Equal(t, "apricot", val)
+}
+
+func TestChooseMulti_Good_Filter(t *testing.T) {
+	SetStdin(strings.NewReader("ap\n1 2\n"))
+	defer SetStdin(nil)
+
+	vals := ChooseMulti("Pick", []string{"apple", "apricot", "banana"}, Filter[string]())
+	assert.Equal(t, []string{"apple", "apricot"}, vals)
+}
+
 func TestSetStdin_Good_ResetNil(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })

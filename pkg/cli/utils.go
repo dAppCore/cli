@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"unicode"
 
 	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-log"
@@ -261,7 +262,7 @@ type ChooseOption[T any] func(*chooseConfig[T])
 type chooseConfig[T any] struct {
 	displayFn func(T) string
 	defaultN  int  // 0-based index of default selection
-	filter    bool // Enable fuzzy filtering
+	filter    bool // Enable type-to-filter selection
 	multi     bool // Allow multiple selection
 }
 
@@ -280,9 +281,7 @@ func WithDefaultIndex[T any](idx int) ChooseOption[T] {
 }
 
 // Filter enables type-to-filter functionality.
-// Users can type to narrow down the list of options.
-// Note: This is a hint for interactive UIs; the basic CLI Choose
-// implementation uses numbered selection which doesn't support filtering.
+// When enabled, typed text narrows the visible options before selection.
 func Filter[T any]() ChooseOption[T] {
 	return func(c *chooseConfig[T]) {
 		c.filter = true
@@ -323,37 +322,48 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 		opt(cfg)
 	}
 
-	// Display options
-	fmt.Println(prompt)
-	for i, item := range items {
-		marker := " "
-		if i == cfg.defaultN {
-			marker = "*"
-		}
-		fmt.Printf("  %s%d. %s\n", marker, i+1, cfg.displayFn(item))
+	reader := newReader()
+	visible := make([]int, len(items))
+	for i := range items {
+		visible[i] = i
 	}
 
-	reader := newReader()
-
 	for {
-		fmt.Printf("Enter number [1-%d]: ", len(items))
+		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
+
+		if cfg.filter {
+			fmt.Printf("Enter number [1-%d] or filter: ", len(visible))
+		} else {
+			fmt.Printf("Enter number [1-%d]: ", len(visible))
+		}
 		response, _ := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
 
-		// Empty response uses default
+		// Empty response uses default.
 		if response == "" {
-			return items[cfg.defaultN]
+			return items[defaultVisibleIndex(visible, cfg.defaultN)]
 		}
 
-		// Parse number
 		var n int
 		if _, err := fmt.Sscanf(response, "%d", &n); err == nil {
-			if n >= 1 && n <= len(items) {
-				return items[n-1]
+			if n >= 1 && n <= len(visible) {
+				return items[visible[n-1]]
 			}
+			fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
+			continue
 		}
 
-		fmt.Printf("Please enter a number between 1 and %d\n", len(items))
+		if cfg.filter {
+			nextVisible := filterVisible(items, visible, response, cfg.displayFn)
+			if len(nextVisible) == 0 {
+				fmt.Printf("No matches for %q\n", response)
+				continue
+			}
+			visible = nextVisible
+			continue
+		}
+
+		fmt.Printf("Please enter a number between 1 and %d\n", len(visible))
 	}
 }
 
@@ -388,16 +398,20 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		opt(cfg)
 	}
 
-	// Display options
-	fmt.Println(prompt)
-	for i, item := range items {
-		fmt.Printf("  %d. %s\n", i+1, cfg.displayFn(item))
+	reader := newReader()
+	visible := make([]int, len(items))
+	for i := range items {
+		visible[i] = i
 	}
 
-	reader := newReader()
-
 	for {
-		fmt.Printf("Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
+
+		if cfg.filter {
+			fmt.Printf("Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
+		} else {
+			fmt.Printf("Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+		}
 		response, _ := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
 
@@ -406,9 +420,18 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 			return nil
 		}
 
-		// Parse the selection
-		selected, err := parseMultiSelection(response, len(items))
+		// Parse the selection.
+		selected, err := parseMultiSelection(response, len(visible))
 		if err != nil {
+			if cfg.filter && !looksLikeMultiSelectionInput(response) {
+				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
+				if len(nextVisible) == 0 {
+					fmt.Printf("No matches for %q\n", response)
+					continue
+				}
+				visible = nextVisible
+				continue
+			}
 			fmt.Printf("Invalid selection: %v\n", err)
 			continue
 		}
@@ -416,10 +439,68 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		// Build result
 		result := make([]T, 0, len(selected))
 		for _, idx := range selected {
-			result = append(result, items[idx])
+			result = append(result, items[visible[idx]])
 		}
 		return result
 	}
+}
+
+func renderChoices[T any](prompt string, items []T, visible []int, displayFn func(T) string, defaultN int, filter bool) {
+	fmt.Println(prompt)
+	for i, idx := range visible {
+		marker := " "
+		if defaultN >= 0 && idx == defaultN {
+			marker = "*"
+		}
+		fmt.Printf("  %s%d. %s\n", marker, i+1, displayFn(items[idx]))
+	}
+	if filter {
+		fmt.Println("  (type to filter the list)")
+	}
+}
+
+func defaultVisibleIndex(visible []int, defaultN int) int {
+	if defaultN >= 0 {
+		for _, idx := range visible {
+			if idx == defaultN {
+				return idx
+			}
+		}
+	}
+	if len(visible) > 0 {
+		return visible[0]
+	}
+	return 0
+}
+
+func filterVisible[T any](items []T, visible []int, query string, displayFn func(T) string) []int {
+	q := strings.ToLower(strings.TrimSpace(query))
+	if q == "" {
+		return visible
+	}
+
+	filtered := make([]int, 0, len(visible))
+	for _, idx := range visible {
+		if strings.Contains(strings.ToLower(displayFn(items[idx])), q) {
+			filtered = append(filtered, idx)
+		}
+	}
+	return filtered
+}
+
+func looksLikeMultiSelectionInput(input string) bool {
+	hasDigit := false
+	for _, r := range input {
+		switch {
+		case unicode.IsSpace(r), r == '-' || r == ',':
+			continue
+		case unicode.IsDigit(r):
+			hasDigit = true
+		default:
+			return false
+		}
+	}
+	return hasDigit
 }
 
 // parseMultiSelection parses a multi-selection string like "1 3 5" or "1-3 5".
