@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"strings"
@@ -271,4 +272,30 @@ func TestSetStdin_Good_ResetNil(t *testing.T) {
 
 	SetStdin(nil)
 	assert.Same(t, os.Stdin, stdin)
+}
+
+func TestPromptHints_Good_UseStderr(t *testing.T) {
+	oldOut := os.Stdout
+	oldErr := os.Stderr
+	rOut, wOut, _ := os.Pipe()
+	rErr, wErr, _ := os.Pipe()
+	os.Stdout = wOut
+	os.Stderr = wErr
+
+	promptHint("try again")
+	promptWarning("invalid")
+
+	_ = wOut.Close()
+	_ = wErr.Close()
+	os.Stdout = oldOut
+	os.Stderr = oldErr
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	_, _ = io.Copy(&stdout, rOut)
+	_, _ = io.Copy(&stderr, rErr)
+
+	assert.Empty(t, stdout.String())
+	assert.Contains(t, stderr.String(), "try again")
+	assert.Contains(t, stderr.String(), "invalid")
 }
