@@ -59,6 +59,30 @@ func TestAddHelpCommands_Good(t *testing.T) {
 	assert.Contains(t, out, topics[0].ID)
 }
 
+func TestAddHelpCommands_Good_Serve(t *testing.T) {
+	root := &cli.Command{Use: "core"}
+	AddHelpCommands(root)
+
+	cmd, _, err := root.Find([]string{"help", "serve"})
+	require.NoError(t, err)
+	require.NotNil(t, cmd)
+
+	oldStart := startHelpServer
+	defer func() { startHelpServer = oldStart }()
+
+	var gotAddr string
+	startHelpServer = func(catalog *gohelp.Catalog, addr string) error {
+		require.NotNil(t, catalog)
+		gotAddr = addr
+		return nil
+	}
+
+	require.NoError(t, cmd.Flags().Set("addr", "127.0.0.1:9090"))
+	err = cmd.RunE(cmd, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "127.0.0.1:9090", gotAddr)
+}
+
 func TestRenderSearchResults_Good(t *testing.T) {
 	out := captureOutput(t, func() {
 		err := renderSearchResults([]*gohelp.SearchResult{

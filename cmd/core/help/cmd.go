@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var startHelpServer = func(catalog *gohelp.Catalog, addr string) error {
+	return gohelp.NewServer(catalog, addr).ListenAndServe()
+}
+
 func AddHelpCommands(root *cli.Command) {
 	var searchQuery string
 
@@ -37,6 +41,18 @@ func AddHelpCommands(root *cli.Command) {
 		},
 	}
 
+	var serveAddr string
+	serveCmd := &cli.Command{
+		Use:   "serve",
+		Short: "Serve help documentation over HTTP",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cli.Command, args []string) error {
+			return startHelpServer(gohelp.DefaultCatalog(), serveAddr)
+		},
+	}
+	serveCmd.Flags().StringVar(&serveAddr, "addr", ":8080", "HTTP listen address")
+
+	helpCmd.AddCommand(serveCmd)
 	helpCmd.Flags().StringVarP(&searchQuery, "search", "s", "", "Search help topics")
 	root.AddCommand(helpCmd)
 }
