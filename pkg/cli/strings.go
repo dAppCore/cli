@@ -14,11 +14,17 @@ func Sprint(args ...any) string {
 
 // Styled returns text with a style applied.
 func Styled(style *AnsiStyle, text string) string {
+	if style == nil {
+		return compileGlyphs(text)
+	}
 	return style.Render(compileGlyphs(text))
 }
 
 // Styledf returns formatted text with a style applied.
 func Styledf(style *AnsiStyle, format string, args ...any) string {
+	if style == nil {
+		return compileGlyphs(fmt.Sprintf(format, args...))
+	}
 	return style.Render(compileGlyphs(fmt.Sprintf(format, args...)))
 }
 

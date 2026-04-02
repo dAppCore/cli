@@ -222,3 +222,17 @@ func TestPad_Good(t *testing.T) {
 	assert.Equal(t, "hello", Pad("hello", 3))
 	assert.Equal(t, "東京  ", Pad("東京", 6))
 }
+
+func TestStyled_Good_NilStyle(t *testing.T) {
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	assert.Equal(t, "hello [OK]", Styled(nil, "hello :check:"))
+}
+
+func TestStyledf_Good_NilStyle(t *testing.T) {
+	restoreThemeAndColors(t)
+	UseASCII()
+
+	assert.Equal(t, "value: [WARN]", Styledf(nil, "value: %s", ":warn:"))
+}
