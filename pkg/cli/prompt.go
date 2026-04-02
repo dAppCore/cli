@@ -55,6 +55,10 @@ func Prompt(label, defaultVal string) (string, error) {
 
 // Select presents numbered options and returns the selected value.
 func Select(label string, options []string) (string, error) {
+	if len(options) == 0 {
+		return "", nil
+	}
+
 	fmt.Println(compileGlyphs(label))
 	for i, opt := range options {
 		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
@@ -76,6 +80,10 @@ func Select(label string, options []string) (string, error) {
 
 // MultiSelect presents checkboxes (space-separated numbers).
 func MultiSelect(label string, options []string) ([]string, error) {
+	if len(options) == 0 {
+		return []string{}, nil
+	}
+
 	fmt.Println(compileGlyphs(label))
 	for i, opt := range options {
 		fmt.Printf("  %d. %s\n", i+1, compileGlyphs(opt))
@@ -91,7 +99,10 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		return nil, err
 	}
 
-	var selected []string
+	var (
+		selected []string
+		seen     = make(map[int]bool, len(options))
+	)
 	normalized := strings.NewReplacer(",", " ").Replace(input)
 	for _, s := range strings.Fields(normalized) {
 		if strings.Contains(s, "-") {
@@ -105,7 +116,10 @@ func MultiSelect(label string, options []string) ([]string, error) {
 				continue
 			}
 			for n := start; n <= end; n++ {
-				selected = append(selected, options[n-1])
+				if !seen[n-1] {
+					seen[n-1] = true
+					selected = append(selected, options[n-1])
+				}
 			}
 			continue
 		}
@@ -114,7 +128,10 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		if convErr != nil || n < 1 || n > len(options) {
 			continue
 		}
-		selected = append(selected, options[n-1])
+		if !seen[n-1] {
+			seen[n-1] = true
+			selected = append(selected, options[n-1])
+		}
 	}
 	return selected, nil
 }
