@@ -146,6 +146,19 @@ func TestTable_Good(t *testing.T) {
 		assert.Contains(t, out, "ok")
 	})
 
+	t.Run("glyph shortcodes render in headers and cells", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tbl := NewTable(":check: NAME", "STATUS").
+			WithBorders(BorderRounded)
+		tbl.AddRow("core", ":warn:")
+
+		out := tbl.String()
+		assert.Contains(t, out, "[OK] NAME")
+		assert.Contains(t, out, "[WARN]")
+	})
+
 	t.Run("max width truncates", func(t *testing.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
