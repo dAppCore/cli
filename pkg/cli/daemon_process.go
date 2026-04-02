@@ -3,13 +3,16 @@ package cli
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -47,6 +50,28 @@ type Daemon struct {
 	addr     string
 	started  bool
 }
+
+var (
+	processNow   = time.Now
+	processSleep = time.Sleep
+	processAlive = func(pid int) bool {
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			return false
+		}
+		err = proc.Signal(syscall.Signal(0))
+		return err == nil || errors.Is(err, syscall.EPERM)
+	}
+	processSignal = func(pid int, sig syscall.Signal) error {
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			return err
+		}
+		return proc.Signal(sig)
+	}
+	processPollInterval = 100 * time.Millisecond
+	processShutdownWait = 30 * time.Second
+)
 
 // NewDaemon creates a daemon helper with sensible defaults.
 func NewDaemon(opts DaemonOptions) *Daemon {
@@ -133,6 +158,76 @@ func (d *Daemon) HealthAddr() string {
 		return d.addr
 	}
 	return d.opts.HealthAddr
+}
+
+// StopPIDFile sends SIGTERM to the process identified by pidFile, waits for it
+// to exit, escalates to SIGKILL after the timeout, and then removes the file.
+//
+// If the PID file does not exist, StopPIDFile returns nil.
+func StopPIDFile(pidFile string, timeout time.Duration) error {
+	if pidFile == "" {
+		return nil
+	}
+	if timeout <= 0 {
+		timeout = processShutdownWait
+	}
+
+	rawPID, err := os.ReadFile(pidFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	pid, err := parsePID(strings.TrimSpace(string(rawPID)))
+	if err != nil {
+		return fmt.Errorf("parse pid file %q: %w", pidFile, err)
+	}
+
+	if err := processSignal(pid, syscall.SIGTERM); err != nil && !isProcessGone(err) {
+		return err
+	}
+
+	deadline := processNow().Add(timeout)
+	for processAlive(pid) && processNow().Before(deadline) {
+		processSleep(processPollInterval)
+	}
+
+	if processAlive(pid) {
+		if err := processSignal(pid, syscall.SIGKILL); err != nil && !isProcessGone(err) {
+			return err
+		}
+
+		deadline = processNow().Add(processShutdownWait)
+		for processAlive(pid) && processNow().Before(deadline) {
+			processSleep(processPollInterval)
+		}
+
+		if processAlive(pid) {
+			return fmt.Errorf("process %d did not exit after SIGKILL", pid)
+		}
+	}
+
+	return os.Remove(pidFile)
+}
+
+func parsePID(raw string) (int, error) {
+	if raw == "" {
+		return 0, fmt.Errorf("empty pid")
+	}
+	pid, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, err
+	}
+	if pid <= 0 {
+		return 0, fmt.Errorf("invalid pid %d", pid)
+	}
+	return pid, nil
+}
+
+func isProcessGone(err error) bool {
+	return errors.Is(err, os.ErrProcessDone) || errors.Is(err, syscall.ESRCH)
 }
 
 func (d *Daemon) writePIDFile() error {

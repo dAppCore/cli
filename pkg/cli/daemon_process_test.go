@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -87,4 +89,111 @@ func TestDaemon_StopRemovesPIDFile(t *testing.T) {
 	_, err = os.Stat(pidFile)
 	require.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
+}
+
+func TestStopPIDFile_Good(t *testing.T) {
+	tmp := t.TempDir()
+	pidFile := filepath.Join(tmp, "daemon.pid")
+	require.NoError(t, os.WriteFile(pidFile, []byte("1234\n"), 0o644))
+
+	originalSignal := processSignal
+	originalAlive := processAlive
+	originalNow := processNow
+	originalSleep := processSleep
+	originalPoll := processPollInterval
+	originalShutdownWait := processShutdownWait
+	t.Cleanup(func() {
+		processSignal = originalSignal
+		processAlive = originalAlive
+		processNow = originalNow
+		processSleep = originalSleep
+		processPollInterval = originalPoll
+		processShutdownWait = originalShutdownWait
+	})
+
+	var mu sync.Mutex
+	var signals []syscall.Signal
+	processSignal = func(pid int, sig syscall.Signal) error {
+		mu.Lock()
+		signals = append(signals, sig)
+		mu.Unlock()
+		return nil
+	}
+	processAlive = func(pid int) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		if len(signals) == 0 {
+			return true
+		}
+		return signals[len(signals)-1] != syscall.SIGTERM
+	}
+	processPollInterval = 0
+	processShutdownWait = 0
+
+	require.NoError(t, StopPIDFile(pidFile, time.Second))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Equal(t, []syscall.Signal{syscall.SIGTERM}, signals)
+
+	_, err := os.Stat(pidFile)
+	require.Error(t, err)
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestStopPIDFile_Bad_Escalates(t *testing.T) {
+	tmp := t.TempDir()
+	pidFile := filepath.Join(tmp, "daemon.pid")
+	require.NoError(t, os.WriteFile(pidFile, []byte("4321\n"), 0o644))
+
+	originalSignal := processSignal
+	originalAlive := processAlive
+	originalNow := processNow
+	originalSleep := processSleep
+	originalPoll := processPollInterval
+	originalShutdownWait := processShutdownWait
+	t.Cleanup(func() {
+		processSignal = originalSignal
+		processAlive = originalAlive
+		processNow = originalNow
+		processSleep = originalSleep
+		processPollInterval = originalPoll
+		processShutdownWait = originalShutdownWait
+	})
+
+	var mu sync.Mutex
+	var signals []syscall.Signal
+	current := time.Unix(0, 0)
+	processNow = func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return current
+	}
+	processSleep = func(d time.Duration) {
+		mu.Lock()
+		current = current.Add(d)
+		mu.Unlock()
+	}
+	processSignal = func(pid int, sig syscall.Signal) error {
+		mu.Lock()
+		signals = append(signals, sig)
+		mu.Unlock()
+		return nil
+	}
+	processAlive = func(pid int) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		if len(signals) == 0 {
+			return true
+		}
+		return signals[len(signals)-1] != syscall.SIGKILL
+	}
+	processPollInterval = 10 * time.Millisecond
+	processShutdownWait = 0
+
+	require.NoError(t, StopPIDFile(pidFile, 15*time.Millisecond))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Equal(t, []syscall.Signal{syscall.SIGTERM, syscall.SIGKILL}, signals)
 }

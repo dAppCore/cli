@@ -70,6 +70,11 @@ defer func() {
 `Start()` writes the current process ID to the configured file, and `Stop()`
 removes it after shutting the probe server down.
 
+If you need to stop a daemon process from outside its own process tree, use
+`cli.StopPIDFile(pidFile, timeout)`. It sends `SIGTERM`, waits up to the
+timeout for exit, escalates to `SIGKILL` if needed, and removes the PID file
+after the process stops.
+
 ## Shutdown with Timeout
 
 The daemon stop logic sends SIGTERM and waits up to 30 seconds. If the process has not exited by then, it sends SIGKILL and removes the PID file.
