@@ -27,6 +27,7 @@ func captureOutput(f func()) string {
 }
 
 func TestSemanticOutput_Good(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 	SetColorEnabled(false)
 	defer SetColorEnabled(true)
@@ -52,6 +53,7 @@ func TestSemanticOutput_Good(t *testing.T) {
 }
 
 func TestSemanticOutput_Bad(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 	SetColorEnabled(false)
 	defer SetColorEnabled(true)
@@ -74,6 +76,7 @@ func TestSemanticOutput_Bad(t *testing.T) {
 }
 
 func TestSemanticOutput_Ugly(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 
 	// Severity with various levels should not panic.

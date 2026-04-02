@@ -6,6 +6,7 @@ import (
 )
 
 func TestCheckBuilder_Good(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII() // Deterministic output
 
 	checkResult := Check("database").Pass()
@@ -19,6 +20,7 @@ func TestCheckBuilder_Good(t *testing.T) {
 }
 
 func TestCheckBuilder_Bad(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 
 	checkResult := Check("lint").Fail()
@@ -41,6 +43,7 @@ func TestCheckBuilder_Bad(t *testing.T) {
 }
 
 func TestCheckBuilder_Ugly(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseASCII()
 
 	// Zero-value builder should not panic.

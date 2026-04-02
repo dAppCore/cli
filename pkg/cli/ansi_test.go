@@ -112,6 +112,7 @@ func TestUseUnicodeAndEmojiRestoreColorsAfterASCII(t *testing.T) {
 }
 
 func TestRender_NilStyle_Good(t *testing.T) {
+	restoreThemeAndColors(t)
 	var s *AnsiStyle
 	got := s.Render("test")
 	if got != "test" {
@@ -120,6 +121,7 @@ func TestRender_NilStyle_Good(t *testing.T) {
 }
 
 func TestAnsiStyle_Bad(t *testing.T) {
+	restoreThemeAndColors(t)
 	original := ColorEnabled()
 	defer SetColorEnabled(original)
 
@@ -140,6 +142,7 @@ func TestAnsiStyle_Bad(t *testing.T) {
 }
 
 func TestAnsiStyle_Ugly(t *testing.T) {
+	restoreThemeAndColors(t)
 	original := ColorEnabled()
 	defer SetColorEnabled(original)
 

@@ -3,6 +3,7 @@ package cli
 import "testing"
 
 func TestGlyph_Good(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseUnicode()
 	if Glyph(":check:") != "✓" {
 		t.Errorf("Expected ✓, got %s", Glyph(":check:"))
@@ -15,6 +16,7 @@ func TestGlyph_Good(t *testing.T) {
 }
 
 func TestGlyph_Bad(t *testing.T) {
+	restoreThemeAndColors(t)
 	// Unknown shortcode returns the shortcode unchanged.
 	UseUnicode()
 	got := Glyph(":unknown:")
@@ -24,6 +26,7 @@ func TestGlyph_Bad(t *testing.T) {
 }
 
 func TestGlyph_Ugly(t *testing.T) {
+	restoreThemeAndColors(t)
 	// Empty shortcode should not panic.
 	got := Glyph("")
 	if got != "" {
@@ -32,6 +35,7 @@ func TestGlyph_Ugly(t *testing.T) {
 }
 
 func TestCompileGlyphs_Good(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseUnicode()
 	got := compileGlyphs("Status: :check:")
 	if got != "Status: ✓" {
@@ -40,6 +44,7 @@ func TestCompileGlyphs_Good(t *testing.T) {
 }
 
 func TestCompileGlyphs_Bad(t *testing.T) {
+	restoreThemeAndColors(t)
 	UseUnicode()
 	// Text with no shortcodes should be returned as-is.
 	got := compileGlyphs("no glyphs here")
@@ -49,6 +54,7 @@ func TestCompileGlyphs_Bad(t *testing.T) {
 }
 
 func TestCompileGlyphs_Ugly(t *testing.T) {
+	restoreThemeAndColors(t)
 	// Empty string should not panic.
 	got := compileGlyphs("")
 	if got != "" {
