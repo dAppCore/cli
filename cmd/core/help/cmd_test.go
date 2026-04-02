@@ -193,9 +193,14 @@ func TestAddHelpCommands_Bad(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, cmd)
 
-		err = cmd.RunE(cmd, nil)
+		var err error
+		out := captureOutput(t, func() {
+			err = cmd.RunE(cmd, nil)
+		})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "help search query is required")
+		assert.Contains(t, out, "browse")
+		assert.Contains(t, out, "core help")
 	})
 
 	t.Run("missing topic shows suggestions when available", func(t *testing.T) {
