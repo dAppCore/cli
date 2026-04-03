@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
+	"unicode"
 
 	"forge.lthn.ai/core/go-i18n"
 	"forge.lthn.ai/core/go-log"
@@ -31,12 +30,24 @@ func GhAuthenticated() bool {
 }
 
 // ConfirmOption configures Confirm behaviour.
+//
+//	if cli.Confirm("Proceed?", cli.DefaultYes()) {
+//	    cli.Success("continuing")
+//	}
 type ConfirmOption func(*confirmConfig)
 
 type confirmConfig struct {
 	defaultYes bool
 	required   bool
 	timeout    time.Duration
+}
+
+func promptHint(msg string) {
+	fmt.Fprintln(stderrWriter(), DimStyle.Render(compileGlyphs(msg)))
+}
+
+func promptWarning(msg string) {
+	fmt.Fprintln(stderrWriter(), WarningStyle.Render(compileGlyphs(msg)))
 }
 
 // DefaultYes sets the default response to "yes" (pressing Enter confirms).
@@ -82,6 +93,8 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		opt(cfg)
 	}
 
+	prompt = compileGlyphs(prompt)
+
 	// Build the prompt suffix
 	var suffix string
 	if cfg.required {
@@ -97,37 +110,50 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		suffix = fmt.Sprintf("%s(auto in %s) ", suffix, cfg.timeout.Round(time.Second))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
 
 	for {
-		fmt.Printf("%s %s", prompt, suffix)
+		fmt.Fprintf(stderrWriter(), "%s %s", prompt, suffix)
 
 		var response string
+		var readErr error
 
 		if cfg.timeout > 0 {
 			// Use timeout-based reading
 			resultChan := make(chan string, 1)
+			errChan := make(chan error, 1)
 			go func() {
-				line, _ := reader.ReadString('\n')
+				line, err := reader.ReadString('\n')
 				resultChan <- line
+				errChan <- err
 			}()
 
 			select {
 			case response = <-resultChan:
+				readErr = <-errChan
 				response = strings.ToLower(strings.TrimSpace(response))
 			case <-time.After(cfg.timeout):
-				fmt.Println() // New line after timeout
+				fmt.Fprintln(stderrWriter()) // New line after timeout
 				return cfg.defaultYes
 			}
 		} else {
-			response, _ = reader.ReadString('\n')
+			line, err := reader.ReadString('\n')
+			readErr = err
+			if err != nil && line == "" {
+				return cfg.defaultYes
+			}
+			response = line
 			response = strings.ToLower(strings.TrimSpace(response))
 		}
 
 		// Handle empty response
 		if response == "" {
+			if readErr == nil && cfg.required {
+				promptHint("Please enter y or n, then press Enter.")
+				continue
+			}
 			if cfg.required {
-				continue // Ask again
+				return cfg.defaultYes
 			}
 			return cfg.defaultYes
 		}
@@ -142,7 +168,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 
 		// Invalid response
 		if cfg.required {
-			fmt.Println("Please enter 'y' or 'n'")
+			promptHint("Please enter y or n, then press Enter.")
 			continue
 		}
 
@@ -175,6 +201,8 @@ func ConfirmDangerousAction(verb, subject string) bool {
 }
 
 // QuestionOption configures Question behaviour.
+//
+//	name := cli.Question("Project name:", cli.WithDefault("my-app"))
 type QuestionOption func(*questionConfig)
 
 type questionConfig struct {
@@ -215,23 +243,28 @@ func Question(prompt string, opts ...QuestionOption) string {
 		opt(cfg)
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	prompt = compileGlyphs(prompt)
+
+	reader := newReader()
 
 	for {
 		// Build prompt with default
 		if cfg.defaultValue != "" {
-			fmt.Printf("%s [%s] ", prompt, cfg.defaultValue)
+			fmt.Fprintf(stderrWriter(), "%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
 		} else {
-			fmt.Printf("%s ", prompt)
+			fmt.Fprintf(stderrWriter(), "%s ", prompt)
 		}
 
-		response, _ := reader.ReadString('\n')
+		response, err := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
+		if err != nil && response == "" {
+			return cfg.defaultValue
+		}
 
 		// Handle empty response
 		if response == "" {
 			if cfg.required {
-				fmt.Println("Response required")
+				promptHint("Please enter a value, then press Enter.")
 				continue
 			}
 			response = cfg.defaultValue
@@ -240,7 +273,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 		// Validate if validator provided
 		if cfg.validator != nil {
 			if err := cfg.validator(response); err != nil {
-				fmt.Printf("Invalid: %v\n", err)
+				promptWarning(fmt.Sprintf("Invalid: %v", err))
 				continue
 			}
 		}
@@ -258,12 +291,16 @@ func QuestionAction(verb, subject string, opts ...QuestionOption) string {
 }
 
 // ChooseOption configures Choose behaviour.
+//
+//	choice := cli.Choose("Pick one:", items, cli.Display(func(v Item) string {
+//	    return v.Name
+//	}))
 type ChooseOption[T any] func(*chooseConfig[T])
 
 type chooseConfig[T any] struct {
 	displayFn func(T) string
 	defaultN  int  // 0-based index of default selection
-	filter    bool // Enable fuzzy filtering
+	filter    bool // Enable type-to-filter selection
 	multi     bool // Allow multiple selection
 }
 
@@ -282,9 +319,7 @@ func WithDefaultIndex[T any](idx int) ChooseOption[T] {
 }
 
 // Filter enables type-to-filter functionality.
-// Users can type to narrow down the list of options.
-// Note: This is a hint for interactive UIs; the basic CLI Choose
-// implementation uses numbered selection which doesn't support filtering.
+// When enabled, typed text narrows the visible options before selection.
 func Filter[T any]() ChooseOption[T] {
 	return func(c *chooseConfig[T]) {
 		c.filter = true
@@ -320,42 +355,77 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 
 	cfg := &chooseConfig[T]{
 		displayFn: func(item T) string { return fmt.Sprint(item) },
+		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	// Display options
-	fmt.Println(prompt)
-	for i, item := range items {
-		marker := " "
-		if i == cfg.defaultN {
-			marker = "*"
-		}
-		fmt.Printf("  %s%d. %s\n", marker, i+1, cfg.displayFn(item))
-	}
+	prompt = compileGlyphs(prompt)
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := newReader()
+	visible := make([]int, len(items))
+	for i := range items {
+		visible[i] = i
+	}
+	allVisible := append([]int(nil), visible...)
 
 	for {
-		fmt.Printf("Enter number [1-%d]: ", len(items))
-		response, _ := reader.ReadString('\n')
+		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
+
+		if cfg.filter {
+			fmt.Fprintf(stderrWriter(), "Enter number [1-%d] or filter: ", len(visible))
+		} else {
+			fmt.Fprintf(stderrWriter(), "Enter number [1-%d]: ", len(visible))
+		}
+		response, err := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
 
-		// Empty response uses default
-		if response == "" {
-			return items[cfg.defaultN]
+		if err != nil && response == "" {
+			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
+				return items[idx]
+			}
+			var zero T
+			return zero
 		}
 
-		// Parse number
+		if response == "" {
+			if cfg.filter && len(visible) != len(allVisible) {
+				visible = append([]int(nil), allVisible...)
+				promptHint("Filter cleared.")
+				continue
+			}
+			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
+				return items[idx]
+			}
+			if cfg.defaultN >= 0 {
+				promptHint("Default selection is not available in the current list. Narrow the list or choose another number.")
+				continue
+			}
+			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
+			continue
+		}
+
 		var n int
 		if _, err := fmt.Sscanf(response, "%d", &n); err == nil {
-			if n >= 1 && n <= len(items) {
-				return items[n-1]
+			if n >= 1 && n <= len(visible) {
+				return items[visible[n-1]]
 			}
+			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
+			continue
 		}
 
-		fmt.Printf("Please enter a number between 1 and %d\n", len(items))
+		if cfg.filter {
+			nextVisible := filterVisible(items, visible, response, cfg.displayFn)
+			if len(nextVisible) == 0 {
+				promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
+				continue
+			}
+			visible = nextVisible
+			continue
+		}
+
+		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 	}
 }
 
@@ -385,51 +455,126 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 
 	cfg := &chooseConfig[T]{
 		displayFn: func(item T) string { return fmt.Sprint(item) },
+		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	// Display options
-	fmt.Println(prompt)
-	for i, item := range items {
-		fmt.Printf("  %d. %s\n", i+1, cfg.displayFn(item))
+	prompt = compileGlyphs(prompt)
+
+	reader := newReader()
+	visible := make([]int, len(items))
+	for i := range items {
+		visible[i] = i
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-
 	for {
-		fmt.Printf("Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
+
+		if cfg.filter {
+			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
+		} else {
+			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+		}
 		response, _ := reader.ReadString('\n')
 		response = strings.TrimSpace(response)
 
-		// Empty response returns no selections
+		// Empty response returns no selections.
 		if response == "" {
 			return nil
 		}
 
-		// Parse the selection
-		selected, err := parseMultiSelection(response, len(items))
+		// Parse the selection.
+		selected, err := parseMultiSelection(response, len(visible))
 		if err != nil {
-			fmt.Printf("Invalid selection: %v\n", err)
+			if cfg.filter && !looksLikeMultiSelectionInput(response) {
+				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
+				if len(nextVisible) == 0 {
+					promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
+					continue
+				}
+				visible = nextVisible
+				continue
+			}
+			promptWarning(fmt.Sprintf("Invalid selection %q: enter numbers like 1 3 or 1-3.", response))
 			continue
 		}
 
 		// Build result
 		result := make([]T, 0, len(selected))
 		for _, idx := range selected {
-			result = append(result, items[idx])
+			result = append(result, items[visible[idx]])
 		}
 		return result
 	}
 }
 
-// parseMultiSelection parses a multi-selection string like "1 3 5" or "1-3 5".
+func renderChoices[T any](prompt string, items []T, visible []int, displayFn func(T) string, defaultN int, filter bool) {
+	fmt.Fprintln(stderrWriter(), prompt)
+	for i, idx := range visible {
+		marker := " "
+		if defaultN >= 0 && idx == defaultN {
+			marker = "*"
+		}
+		fmt.Fprintf(stderrWriter(), "  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
+	}
+	if filter {
+		fmt.Fprintln(stderrWriter(), "  (type to filter the list)")
+	}
+}
+
+func defaultVisibleIndex(visible []int, defaultN int) (int, bool) {
+	if defaultN < 0 {
+		return 0, false
+	}
+	for _, idx := range visible {
+		if idx == defaultN {
+			return idx, true
+		}
+	}
+	return 0, false
+}
+
+func filterVisible[T any](items []T, visible []int, query string, displayFn func(T) string) []int {
+	q := strings.ToLower(strings.TrimSpace(query))
+	if q == "" {
+		return visible
+	}
+
+	filtered := make([]int, 0, len(visible))
+	for _, idx := range visible {
+		if strings.Contains(strings.ToLower(displayFn(items[idx])), q) {
+			filtered = append(filtered, idx)
+		}
+	}
+	return filtered
+}
+
+func looksLikeMultiSelectionInput(input string) bool {
+	hasDigit := false
+	for _, r := range input {
+		switch {
+		case unicode.IsSpace(r), r == '-' || r == ',':
+			continue
+		case unicode.IsDigit(r):
+			hasDigit = true
+		default:
+			return false
+		}
+	}
+	return hasDigit
+}
+
+// parseMultiSelection parses a multi-selection string like "1 3 5", "1,3,5",
+// or "1-3 5".
 // Returns 0-based indices.
 func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	selected := make(map[int]bool)
 
-	for part := range strings.FieldsSeq(input) {
+	normalized := strings.NewReplacer(",", " ").Replace(input)
+
+	for part := range strings.FieldsSeq(normalized) {
 		// Check for range (e.g., "1-3")
 		if strings.Contains(part, "-") {
 			var rangeParts []string
@@ -437,17 +582,17 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 				rangeParts = append(rangeParts, p)
 			}
 			if len(rangeParts) != 2 {
-				return nil, fmt.Errorf("invalid range: %s", part)
+				return nil, Err("invalid range: %s", part)
 			}
 			var start, end int
 			if _, err := fmt.Sscanf(rangeParts[0], "%d", &start); err != nil {
-				return nil, fmt.Errorf("invalid range start: %s", rangeParts[0])
+				return nil, Err("invalid range start: %s", rangeParts[0])
 			}
 			if _, err := fmt.Sscanf(rangeParts[1], "%d", &end); err != nil {
-				return nil, fmt.Errorf("invalid range end: %s", rangeParts[1])
+				return nil, Err("invalid range end: %s", rangeParts[1])
 			}
 			if start < 1 || start > maxItems || end < 1 || end > maxItems || start > end {
-				return nil, fmt.Errorf("range out of bounds: %s", part)
+				return nil, Err("range out of bounds: %s", part)
 			}
 			for i := start; i <= end; i++ {
 				selected[i-1] = true // Convert to 0-based
@@ -456,10 +601,10 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 			// Single number
 			var n int
 			if _, err := fmt.Sscanf(part, "%d", &n); err != nil {
-				return nil, fmt.Errorf("invalid number: %s", part)
+				return nil, Err("invalid number: %s", part)
 			}
 			if n < 1 || n > maxItems {
-				return nil, fmt.Errorf("number out of range: %d", n)
+				return nil, Err("number out of range: %d", n)
 			}
 			selected[n-1] = true // Convert to 0-based
 		}
@@ -486,9 +631,19 @@ func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOpt
 // GitClone clones a GitHub repository to the specified path.
 // Prefers 'gh repo clone' if authenticated, falls back to SSH.
 func GitClone(ctx context.Context, org, repo, path string) error {
+	return GitCloneRef(ctx, org, repo, path, "")
+}
+
+// GitCloneRef clones a GitHub repository at a specific ref to the specified path.
+// Prefers 'gh repo clone' if authenticated, falls back to SSH.
+func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 	if GhAuthenticated() {
 		httpsURL := fmt.Sprintf("https://github.com/%s/%s.git", org, repo)
-		cmd := exec.CommandContext(ctx, "gh", "repo", "clone", httpsURL, path)
+		args := []string{"repo", "clone", httpsURL, path}
+		if ref != "" {
+			args = append(args, "--", "--branch", ref, "--single-branch")
+		}
+		cmd := exec.CommandContext(ctx, "gh", args...)
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			return nil
@@ -499,7 +654,12 @@ func GitClone(ctx context.Context, org, repo, path string) error {
 		}
 	}
 	// Fall back to SSH clone
-	cmd := exec.CommandContext(ctx, "git", "clone", fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
+	args := []string{"clone"}
+	if ref != "" {
+		args = append(args, "--branch", ref, "--single-branch")
+	}
+	args = append(args, fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
+	cmd := exec.CommandContext(ctx, "git", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New(strings.TrimSpace(string(output)))

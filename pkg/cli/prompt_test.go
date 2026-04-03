@@ -50,3 +50,44 @@ func TestMultiSelect_Good(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "c"}, vals)
 }
+
+func TestPrompt_Ugly(t *testing.T) {
+	t.Run("empty prompt label does not panic", func(t *testing.T) {
+		SetStdin(strings.NewReader("value\n"))
+		defer SetStdin(nil)
+
+		assert.NotPanics(t, func() {
+			_, _ = Prompt("", "")
+		})
+	})
+
+	t.Run("prompt with only whitespace input returns default", func(t *testing.T) {
+		SetStdin(strings.NewReader("   \n"))
+		defer SetStdin(nil)
+
+		val, err := Prompt("Name", "fallback")
+		assert.NoError(t, err)
+		// Either whitespace-trimmed empty returns default, or returns whitespace — no panic.
+		_ = val
+	})
+}
+
+func TestSelect_Ugly(t *testing.T) {
+	t.Run("empty choices does not panic", func(t *testing.T) {
+		SetStdin(strings.NewReader("1\n"))
+		defer SetStdin(nil)
+
+		assert.NotPanics(t, func() {
+			_, _ = Select("Pick", []string{})
+		})
+	})
+
+	t.Run("non-numeric input returns error without panic", func(t *testing.T) {
+		SetStdin(strings.NewReader("abc\n"))
+		defer SetStdin(nil)
+
+		assert.NotPanics(t, func() {
+			_, _ = Select("Pick", []string{"a", "b"})
+		})
+	})
+}

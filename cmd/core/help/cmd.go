@@ -1,12 +1,13 @@
 package help
 
 import (
-	"fmt"
-
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-help"
 )
 
+// AddHelpCommands registers the help command and subcommands.
+//
+//	help.AddHelpCommands(rootCmd)
 func AddHelpCommands(root *cli.Command) {
 	var searchFlag string
 
@@ -19,28 +20,28 @@ func AddHelpCommands(root *cli.Command) {
 			if searchFlag != "" {
 				results := catalog.Search(searchFlag)
 				if len(results) == 0 {
-					fmt.Println("No topics found.")
+					cli.Println("No topics found.")
 					return
 				}
-				fmt.Println("Search Results:")
-				for _, res := range results {
-					fmt.Printf("  %s - %s\n", res.Topic.ID, res.Topic.Title)
+				cli.Println("Search Results:")
+				for _, result := range results {
+					cli.Println("  %s - %s", result.Topic.ID, result.Topic.Title)
 				}
 				return
 			}
 
 			if len(args) == 0 {
 				topics := catalog.List()
-				fmt.Println("Available Help Topics:")
-				for _, t := range topics {
-					fmt.Printf("  %s - %s\n", t.ID, t.Title)
+				cli.Println("Available Help Topics:")
+				for _, topic := range topics {
+					cli.Println("  %s - %s", topic.ID, topic.Title)
 				}
 				return
 			}
 
 			topic, err := catalog.Get(args[0])
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				cli.Errorf("Error: %v", err)
 				return
 			}
 
@@ -52,11 +53,9 @@ func AddHelpCommands(root *cli.Command) {
 	root.AddCommand(helpCmd)
 }
 
-func renderTopic(t *help.Topic) {
-	// Simple ANSI rendering for now
-	// Use explicit ANSI codes or just print
-	fmt.Printf("\n\033[1;34m%s\033[0m\n", t.Title) // Blue bold title
-	fmt.Println("----------------------------------------")
-	fmt.Println(t.Content)
-	fmt.Println()
+func renderTopic(topic *help.Topic) {
+	cli.Println("\n%s", cli.TitleStyle.Render(topic.Title))
+	cli.Println("----------------------------------------")
+	cli.Println("%s", topic.Content)
+	cli.Blank()
 }

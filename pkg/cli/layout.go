@@ -68,7 +68,7 @@ type Renderable interface {
 type StringBlock string
 
 // Render returns the string content.
-func (s StringBlock) Render() string { return string(s) }
+func (s StringBlock) Render() string { return compileGlyphs(string(s)) }
 
 // Layout creates a new layout from a variant string.
 func Layout(variant string) *Composite {

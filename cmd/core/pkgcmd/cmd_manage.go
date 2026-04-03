@@ -1,12 +1,10 @@
 package pkgcmd
 
 import (
-	"errors"
-	"fmt"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
+	"dappco.re/go/core"
+	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-scm/repos"
@@ -28,36 +26,36 @@ func addPkgListCommand(parent *cobra.Command) {
 }
 
 func runPkgList() error {
-	regPath, err := repos.FindRegistry(coreio.Local)
+	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml_workspace"))
+		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml_workspace"))
 	}
 
-	reg, err := repos.LoadRegistry(coreio.Local, regPath)
+	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.load", "registry"), err)
+		return cli.Wrap(err, i18n.T("i18n.fail.load", "registry"))
 	}
 
-	basePath := reg.BasePath
+	basePath := registry.BasePath
 	if basePath == "" {
 		basePath = "."
 	}
-	if !filepath.IsAbs(basePath) {
-		basePath = filepath.Join(filepath.Dir(regPath), basePath)
+	if !core.PathIsAbs(basePath) {
+		basePath = core.Path(core.PathDir(registryPath), basePath)
 	}
 
-	allRepos := reg.List()
+	allRepos := registry.List()
 	if len(allRepos) == 0 {
-		fmt.Println(i18n.T("cmd.pkg.list.no_packages"))
+		cli.Println("%s", i18n.T("cmd.pkg.list.no_packages"))
 		return nil
 	}
 
-	fmt.Printf("%s\n\n", repoNameStyle.Render(i18n.T("cmd.pkg.list.title")))
+	cli.Println("%s\n", repoNameStyle.Render(i18n.T("cmd.pkg.list.title")))
 
 	var installed, missing int
-	for _, r := range allRepos {
-		repoPath := filepath.Join(basePath, r.Name)
-		exists := coreio.Local.Exists(filepath.Join(repoPath, ".git"))
+	for _, repo := range allRepos {
+		repoPath := core.Path(basePath, repo.Name)
+		exists := coreio.Local.Exists(core.Path(repoPath, ".git"))
 		if exists {
 			installed++
 		} else {
@@ -69,23 +67,23 @@ func runPkgList() error {
 			status = dimStyle.Render("○")
 		}
 
-		desc := r.Description
-		if len(desc) > 40 {
-			desc = desc[:37] + "..."
+		description := repo.Description
+		if len(description) > 40 {
+			description = description[:37] + "..."
 		}
-		if desc == "" {
-			desc = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
+		if description == "" {
+			description = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
 		}
 
-		fmt.Printf("  %s %s\n", status, repoNameStyle.Render(r.Name))
-		fmt.Printf("      %s\n", desc)
+		cli.Println("  %s %s", status, repoNameStyle.Render(repo.Name))
+		cli.Println("      %s", description)
 	}
 
-	fmt.Println()
-	fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("total")), i18n.T("cmd.pkg.list.summary", map[string]int{"Installed": installed, "Missing": missing}))
+	cli.Blank()
+	cli.Println("%s %s", dimStyle.Render(i18n.Label("total")), i18n.T("cmd.pkg.list.summary", map[string]int{"Installed": installed, "Missing": missing}))
 
 	if missing > 0 {
-		fmt.Printf("\n%s %s\n", i18n.T("cmd.pkg.list.install_missing"), dimStyle.Render("core setup"))
+		cli.Println("\n%s %s", i18n.T("cmd.pkg.list.install_missing"), dimStyle.Render("core setup"))
 	}
 
 	return nil
@@ -101,7 +99,7 @@ func addPkgUpdateCommand(parent *cobra.Command) {
 		Long:  i18n.T("cmd.pkg.update.long"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !updateAll && len(args) == 0 {
-				return errors.New(i18n.T("cmd.pkg.error.specify_package"))
+				return cli.Err(i18n.T("cmd.pkg.error.specify_package"))
 			}
 			return runPkgUpdate(args, updateAll)
 		},
@@ -113,66 +111,66 @@ func addPkgUpdateCommand(parent *cobra.Command) {
 }
 
 func runPkgUpdate(packages []string, all bool) error {
-	regPath, err := repos.FindRegistry(coreio.Local)
+	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
-	reg, err := repos.LoadRegistry(coreio.Local, regPath)
+	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.load", "registry"), err)
+		return cli.Wrap(err, i18n.T("i18n.fail.load", "registry"))
 	}
 
-	basePath := reg.BasePath
+	basePath := registry.BasePath
 	if basePath == "" {
 		basePath = "."
 	}
-	if !filepath.IsAbs(basePath) {
-		basePath = filepath.Join(filepath.Dir(regPath), basePath)
+	if !core.PathIsAbs(basePath) {
+		basePath = core.Path(core.PathDir(registryPath), basePath)
 	}
 
 	var toUpdate []string
 	if all {
-		for _, r := range reg.List() {
-			toUpdate = append(toUpdate, r.Name)
+		for _, repo := range registry.List() {
+			toUpdate = append(toUpdate, repo.Name)
 		}
 	} else {
 		toUpdate = packages
 	}
 
-	fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.update.update_label")), i18n.T("cmd.pkg.update.updating", map[string]int{"Count": len(toUpdate)}))
+	cli.Println("%s %s\n", dimStyle.Render(i18n.T("cmd.pkg.update.update_label")), i18n.T("cmd.pkg.update.updating", map[string]int{"Count": len(toUpdate)}))
 
 	var updated, skipped, failed int
 	for _, name := range toUpdate {
-		repoPath := filepath.Join(basePath, name)
+		repoPath := core.Path(basePath, name)
 
-		if _, err := coreio.Local.List(filepath.Join(repoPath, ".git")); err != nil {
-			fmt.Printf("  %s %s (%s)\n", dimStyle.Render("○"), name, i18n.T("cmd.pkg.update.not_installed"))
+		if _, err := coreio.Local.List(core.Path(repoPath, ".git")); err != nil {
+			cli.Println("  %s %s (%s)", dimStyle.Render("○"), name, i18n.T("cmd.pkg.update.not_installed"))
 			skipped++
 			continue
 		}
 
-		fmt.Printf("  %s %s... ", dimStyle.Render("↓"), name)
+		cli.Print("  %s %s... ", dimStyle.Render("↓"), name)
 
-		cmd := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
-		output, err := cmd.CombinedOutput()
+		proc := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
+		output, err := proc.CombinedOutput()
 		if err != nil {
-			fmt.Printf("%s\n", errorStyle.Render("✗"))
-			fmt.Printf("      %s\n", strings.TrimSpace(string(output)))
+			cli.Println("%s", errorStyle.Render("✗"))
+			cli.Println("      %s", core.Trim(string(output)))
 			failed++
 			continue
 		}
 
-		if strings.Contains(string(output), "Already up to date") {
-			fmt.Printf("%s\n", dimStyle.Render(i18n.T("common.status.up_to_date")))
+		if core.Contains(string(output), "Already up to date") {
+			cli.Println("%s", dimStyle.Render(i18n.T("common.status.up_to_date")))
 		} else {
-			fmt.Printf("%s\n", successStyle.Render("✓"))
+			cli.Println("%s", successStyle.Render("✓"))
 		}
 		updated++
 	}
 
-	fmt.Println()
-	fmt.Printf("%s %s\n",
+	cli.Blank()
+	cli.Println("%s %s",
 		dimStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.update.summary", map[string]int{"Updated": updated, "Skipped": skipped, "Failed": failed}))
 
 	return nil
@@ -193,63 +191,63 @@ func addPkgOutdatedCommand(parent *cobra.Command) {
 }
 
 func runPkgOutdated() error {
-	regPath, err := repos.FindRegistry(coreio.Local)
+	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
-	reg, err := repos.LoadRegistry(coreio.Local, regPath)
+	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.load", "registry"), err)
+		return cli.Wrap(err, i18n.T("i18n.fail.load", "registry"))
 	}
 
-	basePath := reg.BasePath
+	basePath := registry.BasePath
 	if basePath == "" {
 		basePath = "."
 	}
-	if !filepath.IsAbs(basePath) {
-		basePath = filepath.Join(filepath.Dir(regPath), basePath)
+	if !core.PathIsAbs(basePath) {
+		basePath = core.Path(core.PathDir(registryPath), basePath)
 	}
 
-	fmt.Printf("%s %s\n\n", dimStyle.Render(i18n.T("cmd.pkg.outdated.outdated_label")), i18n.T("common.progress.checking_updates"))
+	cli.Println("%s %s\n", dimStyle.Render(i18n.T("cmd.pkg.outdated.outdated_label")), i18n.T("common.progress.checking_updates"))
 
 	var outdated, upToDate, notInstalled int
 
-	for _, r := range reg.List() {
-		repoPath := filepath.Join(basePath, r.Name)
+	for _, repo := range registry.List() {
+		repoPath := core.Path(basePath, repo.Name)
 
-		if !coreio.Local.Exists(filepath.Join(repoPath, ".git")) {
+		if !coreio.Local.Exists(core.Path(repoPath, ".git")) {
 			notInstalled++
 			continue
 		}
 
-		// Fetch updates
+		// Fetch updates silently.
 		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run()
 
-		// Check if behind
-		cmd := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}")
-		output, err := cmd.Output()
+		// Check commit count behind upstream.
+		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}")
+		output, err := proc.Output()
 		if err != nil {
 			continue
 		}
 
-		count := strings.TrimSpace(string(output))
-		if count != "0" {
-			fmt.Printf("  %s %s (%s)\n",
-				errorStyle.Render("↓"), repoNameStyle.Render(r.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": count}))
+		commitCount := core.Trim(string(output))
+		if commitCount != "0" {
+			cli.Println("  %s %s (%s)",
+				errorStyle.Render("↓"), repoNameStyle.Render(repo.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": commitCount}))
 			outdated++
 		} else {
 			upToDate++
 		}
 	}
 
-	fmt.Println()
+	cli.Blank()
 	if outdated == 0 {
-		fmt.Printf("%s %s\n", successStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.outdated.all_up_to_date"))
+		cli.Println("%s %s", successStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.outdated.all_up_to_date"))
 	} else {
-		fmt.Printf("%s %s\n",
+		cli.Println("%s %s",
 			dimStyle.Render(i18n.Label("summary")), i18n.T("cmd.pkg.outdated.summary", map[string]int{"Outdated": outdated, "UpToDate": upToDate}))
-		fmt.Printf("\n%s %s\n", i18n.T("cmd.pkg.outdated.update_with"), dimStyle.Render("core pkg update --all"))
+		cli.Println("\n%s %s", i18n.T("cmd.pkg.outdated.update_with"), dimStyle.Render("core pkg update --all"))
 	}
 
 	return nil

@@ -280,4 +280,5 @@ cli.LogInfo("server started", "port", 8080)
 cli.LogWarn("slow query", "duration", "3.2s")
 cli.LogError("connection failed", "err", err)
 cli.LogSecurity("login attempt", "user", "admin")
+cli.LogSecurityf("login attempt from %s", username)
 ```

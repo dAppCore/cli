@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"maps"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -10,23 +9,23 @@ import (
 
 func addListCommand(parent *cli.Command) {
 	cmd := cli.NewCommand("list", "List all configuration values", "", func(cmd *cli.Command, args []string) error {
-		cfg, err := loadConfig()
+		configuration, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		all := maps.Collect(cfg.All())
+		all := maps.Collect(configuration.All())
 		if len(all) == 0 {
 			cli.Dim("No configuration values set")
 			return nil
 		}
 
-		out, err := yaml.Marshal(all)
+		output, err := yaml.Marshal(all)
 		if err != nil {
 			return cli.Wrap(err, "failed to format config")
 		}
 
-		fmt.Print(string(out))
+		cli.Print("%s", string(output))
 		return nil
 	})
 

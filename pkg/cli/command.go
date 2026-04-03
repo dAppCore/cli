@@ -173,6 +173,32 @@ func StringSliceFlag(cmd *Command, ptr *[]string, name, short string, def []stri
 	}
 }
 
+// StringArrayFlag adds a string array flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var tags []string
+//	cli.StringArrayFlag(cmd, &tags, "tag", "t", nil, "Tags to apply")
+func StringArrayFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.Flags().StringArrayVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().StringArrayVar(ptr, name, def, usage)
+	}
+}
+
+// StringToStringFlag adds a string-to-string map flag to a command.
+// The value will be stored in the provided pointer.
+//
+//	var labels map[string]string
+//	cli.StringToStringFlag(cmd, &labels, "label", "l", nil, "Labels to apply")
+func StringToStringFlag(cmd *Command, ptr *map[string]string, name, short string, def map[string]string, usage string) {
+	if short != "" {
+		cmd.Flags().StringToStringVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.Flags().StringToStringVar(ptr, name, def, usage)
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Persistent Flag Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,6 +218,69 @@ func PersistentBoolFlag(cmd *Command, ptr *bool, name, short string, def bool, u
 		cmd.PersistentFlags().BoolVarP(ptr, name, short, def, usage)
 	} else {
 		cmd.PersistentFlags().BoolVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentIntFlag adds a persistent integer flag (inherited by subcommands).
+func PersistentIntFlag(cmd *Command, ptr *int, name, short string, def int, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().IntVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().IntVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentInt64Flag adds a persistent int64 flag (inherited by subcommands).
+func PersistentInt64Flag(cmd *Command, ptr *int64, name, short string, def int64, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().Int64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().Int64Var(ptr, name, def, usage)
+	}
+}
+
+// PersistentFloat64Flag adds a persistent float64 flag (inherited by subcommands).
+func PersistentFloat64Flag(cmd *Command, ptr *float64, name, short string, def float64, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().Float64VarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().Float64Var(ptr, name, def, usage)
+	}
+}
+
+// PersistentDurationFlag adds a persistent time.Duration flag (inherited by subcommands).
+func PersistentDurationFlag(cmd *Command, ptr *time.Duration, name, short string, def time.Duration, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().DurationVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().DurationVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringSliceFlag adds a persistent string slice flag (inherited by subcommands).
+func PersistentStringSliceFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringSliceVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringSliceVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringArrayFlag adds a persistent string array flag (inherited by subcommands).
+func PersistentStringArrayFlag(cmd *Command, ptr *[]string, name, short string, def []string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringArrayVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringArrayVar(ptr, name, def, usage)
+	}
+}
+
+// PersistentStringToStringFlag adds a persistent string-to-string map flag (inherited by subcommands).
+func PersistentStringToStringFlag(cmd *Command, ptr *map[string]string, name, short string, def map[string]string, usage string) {
+	if short != "" {
+		cmd.PersistentFlags().StringToStringVarP(ptr, name, short, def, usage)
+	} else {
+		cmd.PersistentFlags().StringToStringVar(ptr, name, def, usage)
 	}
 }
 

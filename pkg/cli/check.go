@@ -1,7 +1,5 @@
 package cli
 
-import "fmt"
-
 // CheckBuilder provides fluent API for check results.
 type CheckBuilder struct {
 	name     string
@@ -40,7 +38,7 @@ func (c *CheckBuilder) Fail() *CheckBuilder {
 func (c *CheckBuilder) Skip() *CheckBuilder {
 	c.status = "skipped"
 	c.style = DimStyle
-	c.icon = "-"
+	c.icon = Glyph(":skip:")
 	return c
 }
 
@@ -66,26 +64,27 @@ func (c *CheckBuilder) Message(msg string) *CheckBuilder {
 
 // String returns the formatted check line.
 func (c *CheckBuilder) String() string {
-	icon := c.icon
+	icon := compileGlyphs(c.icon)
 	if c.style != nil {
-		icon = c.style.Render(c.icon)
+		icon = c.style.Render(icon)
 	}
 
-	status := c.status
+	name := Pad(compileGlyphs(c.name), 20)
+	status := Pad(compileGlyphs(c.status), 10)
 	if c.style != nil && c.status != "" {
-		status = c.style.Render(c.status)
+		status = c.style.Render(status)
 	}
 
 	if c.duration != "" {
-		return fmt.Sprintf("  %s %-20s %-10s %s", icon, c.name, status, DimStyle.Render(c.duration))
+		return Sprintf("  %s %s %s %s", icon, name, status, DimStyle.Render(compileGlyphs(c.duration)))
 	}
 	if status != "" {
-		return fmt.Sprintf("  %s %s %s", icon, c.name, status)
+		return Sprintf("  %s %s %s", icon, name, status)
 	}
-	return fmt.Sprintf("  %s %s", icon, c.name)
+	return Sprintf("  %s %s", icon, name)
 }
 
 // Print outputs the check result.
 func (c *CheckBuilder) Print() {
-	fmt.Println(c.String())
+	Println("%s", c.String())
 }

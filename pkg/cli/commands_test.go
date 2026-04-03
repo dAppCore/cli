@@ -159,3 +159,28 @@ func TestWithAppName_Good(t *testing.T) {
 	})
 }
 
+// TestRegisterCommands_Ugly tests edge cases and concurrent registration.
+func TestRegisterCommands_Ugly(t *testing.T) {
+	t.Run("register nil function does not panic", func(t *testing.T) {
+		resetGlobals(t)
+
+		// Registering a nil function should not panic at registration time.
+		assert.NotPanics(t, func() {
+			RegisterCommands(nil)
+		})
+	})
+
+	t.Run("re-init after shutdown is idempotent", func(t *testing.T) {
+		resetGlobals(t)
+
+		err := Init(Options{AppName: "test"})
+		require.NoError(t, err)
+		Shutdown()
+
+		resetGlobals(t)
+		err = Init(Options{AppName: "test"})
+		require.NoError(t, err)
+		assert.NotNil(t, RootCmd())
+	})
+}
+

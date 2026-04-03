@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/term"
 )
 
@@ -60,13 +61,22 @@ func NewFrame(variant string) *Frame {
 		variant: variant,
 		layout:  Layout(variant),
 		models:  make(map[Region]Model),
-		out:     os.Stdout,
+		out:     stderrWriter(),
 		done:    make(chan struct{}),
 		focused: RegionContent,
 		keyMap:  DefaultKeyMap(),
 		width:   80,
 		height:  24,
 	}
+}
+
+// WithOutput sets the destination writer for rendered output.
+// Pass nil to keep the current writer unchanged.
+func (f *Frame) WithOutput(out io.Writer) *Frame {
+	if out != nil {
+		f.out = out
+	}
+	return f
 }
 
 // Header sets the Header region model.
@@ -428,6 +438,7 @@ func (f *Frame) String() string {
 	if view == "" {
 		return ""
 	}
+	view = ansi.Strip(view)
 	// Ensure trailing newline for non-TTY consistency
 	if !strings.HasSuffix(view, "\n") {
 		view += "\n"
@@ -452,12 +463,11 @@ func (f *Frame) termSize() (int, int) {
 	return 80, 24 // sensible default
 }
 
-
 func (f *Frame) runLive() {
 	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),
 	}
-	if f.out != os.Stdout {
+	if f.out != stdoutWriter() {
 		opts = append(opts, tea.WithOutput(f.out))
 	}
 

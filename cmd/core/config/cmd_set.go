@@ -9,12 +9,12 @@ func addSetCommand(parent *cli.Command) {
 		key := args[0]
 		value := args[1]
 
-		cfg, err := loadConfig()
+		configuration, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		if err := cfg.Set(key, value); err != nil {
+		if err := configuration.Set(key, value); err != nil {
 			return cli.Wrap(err, "failed to set config value")
 		}
 

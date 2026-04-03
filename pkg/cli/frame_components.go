@@ -20,9 +20,9 @@ func StatusLine(title string, pairs ...string) Model {
 }
 
 func (s *statusLineModel) View(width, _ int) string {
-	parts := []string{BoldStyle.Render(s.title)}
+	parts := []string{BoldStyle.Render(compileGlyphs(s.title))}
 	for _, p := range s.pairs {
-		parts = append(parts, DimStyle.Render(p))
+		parts = append(parts, DimStyle.Render(compileGlyphs(p)))
 	}
 	line := strings.Join(parts, "  ")
 	if width > 0 {
@@ -46,7 +46,7 @@ func KeyHints(hints ...string) Model {
 func (k *keyHintsModel) View(width, _ int) string {
 	parts := make([]string, len(k.hints))
 	for i, h := range k.hints {
-		parts[i] = DimStyle.Render(h)
+		parts[i] = DimStyle.Render(compileGlyphs(h))
 	}
 	line := strings.Join(parts, "  ")
 	if width > 0 {
@@ -70,10 +70,11 @@ func Breadcrumb(parts ...string) Model {
 func (b *breadcrumbModel) View(width, _ int) string {
 	styled := make([]string, len(b.parts))
 	for i, p := range b.parts {
+		part := compileGlyphs(p)
 		if i == len(b.parts)-1 {
-			styled[i] = BoldStyle.Render(p)
+			styled[i] = BoldStyle.Render(part)
 		} else {
-			styled[i] = DimStyle.Render(p)
+			styled[i] = DimStyle.Render(part)
 		}
 	}
 	line := strings.Join(styled, DimStyle.Render(" > "))
@@ -94,5 +95,5 @@ func StaticModel(text string) Model {
 }
 
 func (s *staticModel) View(_, _ int) string {
-	return s.text
+	return compileGlyphs(s.text)
 }

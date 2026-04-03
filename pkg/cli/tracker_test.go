@@ -10,6 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func restoreThemeAndColors(t *testing.T) {
+	t.Helper()
+
+	prevTheme := currentTheme
+	prevColor := ColorEnabled()
+	t.Cleanup(func() {
+		currentTheme = prevTheme
+		SetColorEnabled(prevColor)
+	})
+}
+
 func TestTaskTracker_Good(t *testing.T) {
 	t.Run("add and complete tasks", func(t *testing.T) {
 		tr := NewTaskTracker()
@@ -110,8 +121,7 @@ func TestTaskTracker_Good(t *testing.T) {
 
 	t.Run("wait completes for non-TTY", func(t *testing.T) {
 		var buf bytes.Buffer
-		tr := NewTaskTracker()
-		tr.out = &buf
+		tr := NewTaskTracker().WithOutput(&buf)
 
 		task := tr.Add("quick")
 		go func() {
@@ -120,6 +130,17 @@ func TestTaskTracker_Good(t *testing.T) {
 		}()
 
 		tr.Wait()
+		assert.Contains(t, buf.String(), "quick")
+		assert.Contains(t, buf.String(), "done")
+	})
+
+	t.Run("WithOutput sets output writer", func(t *testing.T) {
+		var buf bytes.Buffer
+		tr := NewTaskTracker().WithOutput(&buf)
+
+		tr.Add("quick").Done("done")
+		tr.Wait()
+
 		assert.Contains(t, buf.String(), "quick")
 		assert.Contains(t, buf.String(), "done")
 	})
@@ -135,6 +156,17 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.Equal(t, 19, w)
 	})
 
+	t.Run("name width counts visible width", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("東京")
+		tr.Add("repo")
+
+		w := tr.nameWidth()
+		assert.Equal(t, 4, w)
+	})
+
 	t.Run("String output format", func(t *testing.T) {
 		tr := NewTaskTracker()
 		tr.out = &bytes.Buffer{}
@@ -147,6 +179,68 @@ func TestTaskTracker_Good(t *testing.T) {
 		assert.Contains(t, out, "✓")
 		assert.Contains(t, out, "✗")
 		assert.Contains(t, out, "⠋")
+	})
+
+	t.Run("glyph shortcodes render in names and statuses", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add(":check: repo").Done("done :warn:")
+
+		out := tr.String()
+		assert.Contains(t, out, "[OK] repo")
+		assert.Contains(t, out, "[WARN]")
+	})
+
+	t.Run("ASCII theme uses ASCII symbols", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("repo-a").Done("clean")
+		tr.Add("repo-b").Fail("dirty")
+		tr.Add("repo-c").Update("pulling")
+
+		out := tr.String()
+		assert.Contains(t, out, "[OK]")
+		assert.Contains(t, out, "[FAIL]")
+		assert.Contains(t, out, "-")
+		assert.NotContains(t, out, "✓")
+		assert.NotContains(t, out, "✗")
+	})
+
+	t.Run("iterators tolerate mutation during iteration", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		tr.Add("first")
+		tr.Add("second")
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			for task := range tr.Tasks() {
+				task.Update("visited")
+			}
+		}()
+
+		require.Eventually(t, func() bool {
+			select {
+			case <-done:
+				return true
+			default:
+				return false
+			}
+		}, time.Second, 10*time.Millisecond)
+
+		for name, status := range tr.Snapshots() {
+			assert.Equal(t, "visited", status, name)
+		}
 	})
 }
 
@@ -184,5 +278,48 @@ func TestTrackedTask_Good(t *testing.T) {
 		_, status, state := task.snapshot()
 		require.Equal(t, taskRunning, state)
 		require.Equal(t, "running", status)
+	})
+}
+
+func TestTaskTracker_Ugly(t *testing.T) {
+	t.Run("empty task name does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		assert.NotPanics(t, func() {
+			task := tr.Add("")
+			task.Done("ok")
+		})
+	})
+
+	t.Run("Done called twice does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+		task := tr.Add("double-done")
+
+		assert.NotPanics(t, func() {
+			task.Done("first")
+			task.Done("second")
+		})
+	})
+
+	t.Run("Fail after Done does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+		task := tr.Add("already-done")
+
+		assert.NotPanics(t, func() {
+			task.Done("completed")
+			task.Fail("too late")
+		})
+	})
+
+	t.Run("String on empty tracker does not panic", func(t *testing.T) {
+		tr := NewTaskTracker()
+		tr.out = &bytes.Buffer{}
+
+		assert.NotPanics(t, func() {
+			_ = tr.String()
+		})
 	})
 }

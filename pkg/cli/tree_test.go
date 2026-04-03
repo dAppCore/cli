@@ -103,11 +103,73 @@ func TestTree_Good(t *testing.T) {
 			"└── child\n"
 		assert.Equal(t, expected, tree.String())
 	})
+
+	t.Run("ASCII theme uses ASCII connectors", func(t *testing.T) {
+		prevTheme := currentTheme
+		prevColor := ColorEnabled()
+		UseASCII()
+		t.Cleanup(func() {
+			currentTheme = prevTheme
+			SetColorEnabled(prevColor)
+		})
+
+		tree := NewTree("core-php")
+		tree.Add("core-tenant").Add("core-bio")
+		tree.Add("core-admin")
+		tree.Add("core-api")
+
+		expected := "core-php\n" +
+			"+-- core-tenant\n" +
+			"|   `-- core-bio\n" +
+			"+-- core-admin\n" +
+			"`-- core-api\n"
+		assert.Equal(t, expected, tree.String())
+	})
+
+	t.Run("glyph shortcodes render in labels", func(t *testing.T) {
+		restoreThemeAndColors(t)
+		UseASCII()
+
+		tree := NewTree(":check: root")
+		tree.Add(":warn: child")
+
+		out := tree.String()
+		assert.Contains(t, out, "[OK] root")
+		assert.Contains(t, out, "[WARN] child")
+	})
 }
 
 func TestTree_Bad(t *testing.T) {
 	t.Run("empty label", func(t *testing.T) {
 		tree := NewTree("")
 		assert.Equal(t, "\n", tree.String())
+	})
+}
+
+func TestTree_Ugly(t *testing.T) {
+	t.Run("nil style does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			tree := NewTree("root").WithStyle(nil)
+			tree.Add("child")
+			_ = tree.String()
+		})
+	})
+
+	t.Run("AddStyled with nil style does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			tree := NewTree("root")
+			tree.AddStyled("item", nil)
+			_ = tree.String()
+		})
+	})
+
+	t.Run("very deep nesting does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			node := NewTree("root")
+			for range 100 {
+				node = node.Add("child")
+			}
+			_ = NewTree("root").String()
+		})
 	})
 }

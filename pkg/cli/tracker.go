@@ -12,8 +12,9 @@ import (
 	"golang.org/x/term"
 )
 
-// Spinner frames (braille pattern).
-var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+// Spinner frames for the live tracker.
+var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+var spinnerFramesASCII = []string{"-", "\\", "|", "/"}
 
 // taskState tracks the lifecycle of a tracked task.
 type taskState int
@@ -88,8 +89,11 @@ type TaskTracker struct {
 func (tr *TaskTracker) Tasks() iter.Seq[*TrackedTask] {
 	return func(yield func(*TrackedTask) bool) {
 		tr.mu.Lock()
-		defer tr.mu.Unlock()
-		for _, t := range tr.tasks {
+		tasks := make([]*TrackedTask, len(tr.tasks))
+		copy(tasks, tr.tasks)
+		tr.mu.Unlock()
+
+		for _, t := range tasks {
 			if !yield(t) {
 				return
 			}
@@ -101,8 +105,11 @@ func (tr *TaskTracker) Tasks() iter.Seq[*TrackedTask] {
 func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
 	return func(yield func(string, string) bool) {
 		tr.mu.Lock()
-		defer tr.mu.Unlock()
-		for _, t := range tr.tasks {
+		tasks := make([]*TrackedTask, len(tr.tasks))
+		copy(tasks, tr.tasks)
+		tr.mu.Unlock()
+
+		for _, t := range tasks {
 			name, status, _ := t.snapshot()
 			if !yield(name, status) {
 				return
@@ -113,7 +120,16 @@ func (tr *TaskTracker) Snapshots() iter.Seq2[string, string] {
 
 // NewTaskTracker creates a new parallel task tracker.
 func NewTaskTracker() *TaskTracker {
-	return &TaskTracker{out: os.Stdout}
+	return &TaskTracker{out: stderrWriter()}
+}
+
+// WithOutput sets the destination writer for tracker output.
+// Pass nil to keep the current writer unchanged.
+func (tr *TaskTracker) WithOutput(out io.Writer) *TaskTracker {
+	if out != nil {
+		tr.out = out
+	}
+	return tr
 }
 
 // Add registers a task and returns it for goroutine use.
@@ -159,6 +175,8 @@ func (tr *TaskTracker) waitStatic() {
 		allDone := true
 		for i, t := range tasks {
 			name, status, state := t.snapshot()
+			name = compileGlyphs(name)
+			status = compileGlyphs(status)
 			if state != taskDone && state != taskFailed {
 				allDone = false
 				continue
@@ -190,6 +208,9 @@ func (tr *TaskTracker) waitLive() {
 	for i := range n {
 		tr.renderLine(i, frame)
 	}
+	if n == 0 || tr.allDone() {
+		return
+	}
 
 	ticker := time.NewTicker(80 * time.Millisecond)
 	defer ticker.Stop()
@@ -220,6 +241,8 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 	tr.mu.Unlock()
 
 	name, status, state := t.snapshot()
+	name = compileGlyphs(name)
+	status = compileGlyphs(status)
 	nameW := tr.nameWidth()
 
 	var icon string
@@ -227,7 +250,7 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 	case taskPending:
 		icon = DimStyle.Render(Glyph(":pending:"))
 	case taskRunning:
-		icon = InfoStyle.Render(spinnerFrames[frame%len(spinnerFrames)])
+		icon = InfoStyle.Render(trackerSpinnerFrame(frame))
 	case taskDone:
 		icon = SuccessStyle.Render(Glyph(":check:"))
 	case taskFailed:
@@ -244,7 +267,7 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 		styledStatus = DimStyle.Render(status)
 	}
 
-	fmt.Fprintf(tr.out, "\033[2K%s %-*s %s\n", icon, nameW, name, styledStatus)
+	fmt.Fprintf(tr.out, "\033[2K%s %s %s\n", icon, Pad(name, nameW), styledStatus)
 }
 
 func (tr *TaskTracker) nameWidth() int {
@@ -252,8 +275,8 @@ func (tr *TaskTracker) nameWidth() int {
 	defer tr.mu.Unlock()
 	w := 0
 	for _, t := range tr.tasks {
-		if len(t.name) > w {
-			w = len(t.name)
+		if nameW := displayWidth(compileGlyphs(t.name)); nameW > w {
+			w = nameW
 		}
 	}
 	return w
@@ -304,16 +327,26 @@ func (tr *TaskTracker) String() string {
 	var sb strings.Builder
 	for _, t := range tasks {
 		name, status, state := t.snapshot()
-		icon := "…"
+		name = compileGlyphs(name)
+		status = compileGlyphs(status)
+		icon := Glyph(":pending:")
 		switch state {
 		case taskDone:
-			icon = "✓"
+			icon = Glyph(":check:")
 		case taskFailed:
-			icon = "✗"
+			icon = Glyph(":cross:")
 		case taskRunning:
-			icon = "⠋"
+			icon = Glyph(":spinner:")
 		}
-		fmt.Fprintf(&sb, "%s %-*s %s\n", icon, nameW, name, status)
+		fmt.Fprintf(&sb, "%s %s %s\n", icon, Pad(name, nameW), status)
 	}
 	return sb.String()
+}
+
+func trackerSpinnerFrame(frame int) string {
+	frames := spinnerFramesUnicode
+	if currentTheme == ThemeASCII {
+		frames = spinnerFramesASCII
+	}
+	return frames[frame%len(frames)]
 }

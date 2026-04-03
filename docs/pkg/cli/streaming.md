@@ -34,17 +34,19 @@ When word-wrap is enabled, the stream tracks the current column position and ins
 
 ## Custom Output Writer
 
-By default, streams write to `os.Stdout`. Redirect to any `io.Writer`:
+By default, streams write to the CLI stdout writer (`stdoutWriter()`), so tests can
+redirect output via `cli.SetStdout` and other callers can provide any `io.Writer`:
 
 ```go
 var buf strings.Builder
 stream := cli.NewStream(cli.WithStreamOutput(&buf))
 // ... write tokens ...
 stream.Done()
-result := stream.Captured() // or buf.String()
+result, ok := stream.CapturedOK() // or buf.String()
 ```
 
 `Captured()` returns the output as a string when using a `*strings.Builder` or any `fmt.Stringer`.
+`CapturedOK()` reports whether capture is supported by the configured writer.
 
 ## Reading from `io.Reader`
 
@@ -68,14 +70,15 @@ stream.Done()
 | `Done()` | Signal completion (adds trailing newline if needed) |
 | `Wait()` | Block until `Done` is called |
 | `Column()` | Current column position |
-| `Captured()` | Get output as string (requires `*strings.Builder` or `fmt.Stringer` writer) |
+| `Captured()` | Get output as string (returns `""` if capture is unsupported) |
+| `CapturedOK()` | Get output and support status |
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
 | `WithWordWrap(cols)` | Set the word-wrap column width |
-| `WithStreamOutput(w)` | Set the output writer (default: `os.Stdout`) |
+| `WithStreamOutput(w)` | Set the output writer (default: `stdoutWriter()`) |
 
 ## Example: LLM Token Streaming
 

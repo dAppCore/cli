@@ -52,6 +52,7 @@ The framework has three layers:
 | `TreeNode` | Tree structure with box-drawing connectors |
 | `TaskTracker` | Concurrent task display with live spinners |
 | `CheckBuilder` | Fluent API for pass/fail/skip result lines |
+| `Daemon` | PID file and probe helper for background processes |
 | `AnsiStyle` | Terminal text styling (bold, dim, colour) |
 
 ## Built-in Services

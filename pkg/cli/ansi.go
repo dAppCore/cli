@@ -18,8 +18,9 @@ const (
 )
 
 var (
-	colorEnabled   = true
-	colorEnabledMu sync.RWMutex
+	colorEnabled        = true
+	colorEnabledMu      sync.RWMutex
+	asciiDisabledColors bool
 )
 
 func init() {
@@ -48,6 +49,18 @@ func ColorEnabled() bool {
 func SetColorEnabled(enabled bool) {
 	colorEnabledMu.Lock()
 	colorEnabled = enabled
+	if enabled {
+		asciiDisabledColors = false
+	}
+	colorEnabledMu.Unlock()
+}
+
+func restoreColorIfASCII() {
+	colorEnabledMu.Lock()
+	if asciiDisabledColors {
+		colorEnabled = true
+		asciiDisabledColors = false
+	}
 	colorEnabledMu.Unlock()
 }
 

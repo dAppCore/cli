@@ -78,6 +78,12 @@ func Join(errs ...error) error {
 }
 
 // ExitError represents an error that should cause the CLI to exit with a specific code.
+//
+//	err := cli.Exit(2, cli.Err("validation failed"))
+//	var exitErr *cli.ExitError
+//	if cli.As(err, &exitErr) {
+//	    cli.Println("exit code:", exitErr.Code)
+//	}
 type ExitError struct {
 	Code int
 	Err  error
@@ -95,7 +101,8 @@ func (e *ExitError) Unwrap() error {
 }
 
 // Exit creates a new ExitError with the given code and error.
-// Use this to return an error from a command with a specific exit code.
+//
+//	return cli.Exit(2, cli.Err("validation failed"))
 func Exit(code int, err error) error {
 	if err == nil {
 		return nil
@@ -113,7 +120,7 @@ func Exit(code int, err error) error {
 func Fatal(err error) {
 	if err != nil {
 		LogError("Fatal error", "err", err)
-		fmt.Fprintln(os.Stderr, ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
+		fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
 		os.Exit(1)
 	}
 }
@@ -124,7 +131,7 @@ func Fatal(err error) {
 func Fatalf(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	LogError("Fatal error", "msg", msg)
-	fmt.Fprintln(os.Stderr, ErrorStyle.Render(Glyph(":cross:")+" "+msg))
+	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+msg))
 	os.Exit(1)
 }
 
@@ -140,7 +147,7 @@ func FatalWrap(err error, msg string) {
 	}
 	LogError("Fatal error", "msg", msg, "err", err)
 	fullMsg := fmt.Sprintf("%s: %v", msg, err)
-	fmt.Fprintln(os.Stderr, ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
+	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
 	os.Exit(1)
 }
 
@@ -157,6 +164,6 @@ func FatalWrapVerb(err error, verb, subject string) {
 	msg := i18n.ActionFailed(verb, subject)
 	LogError("Fatal error", "msg", msg, "err", err, "verb", verb, "subject", subject)
 	fullMsg := fmt.Sprintf("%s: %v", msg, err)
-	fmt.Fprintln(os.Stderr, ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
+	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
 	os.Exit(1)
 }

@@ -8,12 +8,10 @@
 package pkgcmd
 
 import (
-	"errors"
-	"fmt"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
+	"dappco.re/go/core"
+	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
 	"forge.lthn.ai/core/go-scm/repos"
@@ -30,7 +28,7 @@ func addPkgRemoveCommand(parent *cobra.Command) {
 changes or unpushed branches. Use --force to skip safety checks.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				return errors.New(i18n.T("cmd.pkg.error.repo_required"))
+				return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
 			}
 			return runPkgRemove(args[0], removeForce)
 		},
@@ -42,102 +40,105 @@ changes or unpushed branches. Use --force to skip safety checks.`,
 }
 
 func runPkgRemove(name string, force bool) error {
-	// Find package path via registry
-	regPath, err := repos.FindRegistry(coreio.Local)
+	// Find package path via registry.
+	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return errors.New(i18n.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
-	reg, err := repos.LoadRegistry(coreio.Local, regPath)
+	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return fmt.Errorf("%s: %w", i18n.T("i18n.fail.load", "registry"), err)
+		return cli.Wrap(err, i18n.T("i18n.fail.load", "registry"))
 	}
 
-	basePath := reg.BasePath
+	basePath := registry.BasePath
 	if basePath == "" {
 		basePath = "."
 	}
-	if !filepath.IsAbs(basePath) {
-		basePath = filepath.Join(filepath.Dir(regPath), basePath)
+	if !core.PathIsAbs(basePath) {
+		basePath = core.Path(core.PathDir(registryPath), basePath)
 	}
 
-	repoPath := filepath.Join(basePath, name)
+	repoPath := core.Path(basePath, name)
 
-	if !coreio.Local.IsDir(filepath.Join(repoPath, ".git")) {
-		return fmt.Errorf("package %s is not installed at %s", name, repoPath)
+	if !coreio.Local.IsDir(core.Path(repoPath, ".git")) {
+		return cli.Err("package %s is not installed at %s", name, repoPath)
 	}
 
 	if !force {
 		blocked, reasons := checkRepoSafety(repoPath)
 		if blocked {
-			fmt.Printf("%s Cannot remove %s:\n", errorStyle.Render("Blocked:"), repoNameStyle.Render(name))
-			for _, r := range reasons {
-				fmt.Printf("  %s %s\n", errorStyle.Render("·"), r)
+			cli.Println("%s Cannot remove %s:", errorStyle.Render("Blocked:"), repoNameStyle.Render(name))
+			for _, reason := range reasons {
+				cli.Println("  %s %s", errorStyle.Render("·"), reason)
 			}
-			fmt.Printf("\nResolve the issues above or use --force to override.\n")
-			return errors.New("package has unresolved changes")
+			cli.Println("\nResolve the issues above or use --force to override.")
+			return cli.Err("package has unresolved changes")
 		}
 	}
 
-	// Remove the directory
-	fmt.Printf("%s %s... ", dimStyle.Render("Removing"), repoNameStyle.Render(name))
+	// Remove the directory.
+	cli.Print("%s %s... ", dimStyle.Render("Removing"), repoNameStyle.Render(name))
 
 	if err := coreio.Local.DeleteAll(repoPath); err != nil {
-		fmt.Printf("%s\n", errorStyle.Render("x "+err.Error()))
+		cli.Println("%s", errorStyle.Render("x "+err.Error()))
 		return err
 	}
 
-	fmt.Printf("%s\n", successStyle.Render("ok"))
+	cli.Println("%s", successStyle.Render("ok"))
 	return nil
 }
 
 // checkRepoSafety checks a git repo for uncommitted changes and unpushed branches.
+//
+//	blocked, reasons := checkRepoSafety("/path/to/repo")
+//	if blocked { fmt.Println(reasons) }
 func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
-	// Check for uncommitted changes (staged, unstaged, untracked)
-	cmd := exec.Command("git", "-C", repoPath, "status", "--porcelain")
-	output, err := cmd.Output()
-	if err == nil && strings.TrimSpace(string(output)) != "" {
-		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	// Check for uncommitted changes (staged, unstaged, untracked).
+	proc := exec.Command("git", "-C", repoPath, "status", "--porcelain")
+	output, err := proc.Output()
+	if err == nil && core.Trim(string(output)) != "" {
+		lines := core.Split(core.Trim(string(output)), "\n")
 		blocked = true
-		reasons = append(reasons, fmt.Sprintf("has %d uncommitted changes", len(lines)))
+		reasons = append(reasons, cli.Sprintf("has %d uncommitted changes", len(lines)))
 	}
 
-	// Check for unpushed commits on current branch
-	cmd = exec.Command("git", "-C", repoPath, "log", "--oneline", "@{u}..HEAD")
-	output, err = cmd.Output()
-	if err == nil && strings.TrimSpace(string(output)) != "" {
-		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	// Check for unpushed commits on current branch.
+	proc = exec.Command("git", "-C", repoPath, "log", "--oneline", "@{u}..HEAD")
+	output, err = proc.Output()
+	if err == nil && core.Trim(string(output)) != "" {
+		lines := core.Split(core.Trim(string(output)), "\n")
 		blocked = true
-		reasons = append(reasons, fmt.Sprintf("has %d unpushed commits on current branch", len(lines)))
+		reasons = append(reasons, cli.Sprintf("has %d unpushed commits on current branch", len(lines)))
 	}
 
-	// Check all local branches for unpushed work
-	cmd = exec.Command("git", "-C", repoPath, "branch", "--no-merged", "origin/HEAD")
-	output, _ = cmd.Output()
-	if trimmed := strings.TrimSpace(string(output)); trimmed != "" {
-		branches := strings.Split(trimmed, "\n")
+	// Check all local branches for unpushed work.
+	proc = exec.Command("git", "-C", repoPath, "branch", "--no-merged", "origin/HEAD")
+	output, _ = proc.Output()
+	if trimmedOutput := core.Trim(string(output)); trimmedOutput != "" {
+		branches := core.Split(trimmedOutput, "\n")
 		var unmerged []string
-		for _, b := range branches {
-			b = strings.TrimSpace(b)
-			b = strings.TrimPrefix(b, "* ")
-			if b != "" {
-				unmerged = append(unmerged, b)
+		for _, branchName := range branches {
+			branchName = core.Trim(branchName)
+			branchName = core.TrimPrefix(branchName, "* ")
+			if branchName != "" {
+				unmerged = append(unmerged, branchName)
 			}
 		}
 		if len(unmerged) > 0 {
 			blocked = true
-			reasons = append(reasons, fmt.Sprintf("has %d unmerged branches: %s",
-				len(unmerged), strings.Join(unmerged, ", ")))
+			reasons = append(reasons, cli.Sprintf("has %d unmerged branches: %s",
+				len(unmerged), core.Join(", ", unmerged...)))
 		}
 	}
 
-	// Check for stashed changes
-	cmd = exec.Command("git", "-C", repoPath, "stash", "list")
-	output, err = cmd.Output()
-	if err == nil && strings.TrimSpace(string(output)) != "" {
-		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	// Check for stashed changes.
+	proc = exec.Command("git", "-C", repoPath, "stash", "list")
+	output, err = proc.Output()
+	if err == nil && core.Trim(string(output)) != "" {
+		lines := core.Split(core.Trim(string(output)), "\n")
 		blocked = true
-		reasons = append(reasons, fmt.Sprintf("has %d stashed entries", len(lines)))
+		reasons = append(reasons, cli.Sprintf("has %d stashed entries", len(lines)))
 	}
 
 	return blocked, reasons

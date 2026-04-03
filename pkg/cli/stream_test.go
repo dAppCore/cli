@@ -157,3 +157,41 @@ func TestStream_Bad(t *testing.T) {
 		assert.Equal(t, "", buf.String())
 	})
 }
+
+func TestStream_Ugly(t *testing.T) {
+	t.Run("Write after Done does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		s.Done()
+		s.Wait()
+
+		assert.NotPanics(t, func() {
+			s.Write("late write")
+		})
+	})
+
+	t.Run("word wrap width of 1 does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithWordWrap(1), WithStreamOutput(&buf))
+
+		assert.NotPanics(t, func() {
+			s.Write("hello")
+			s.Done()
+			s.Wait()
+		})
+	})
+
+	t.Run("very large write does not panic", func(t *testing.T) {
+		var buf bytes.Buffer
+		s := NewStream(WithStreamOutput(&buf))
+
+		large := strings.Repeat("x", 100_000)
+		assert.NotPanics(t, func() {
+			s.Write(large)
+			s.Done()
+			s.Wait()
+		})
+		assert.Equal(t, 100_000, len(strings.TrimRight(buf.String(), "\n")))
+	})
+}

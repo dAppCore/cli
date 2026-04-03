@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/mattn/go-runewidth"
 )
 
 // Tailwind colour palette (hex strings)
@@ -69,21 +72,53 @@ var (
 
 // Truncate shortens a string to max length with ellipsis.
 func Truncate(s string, max int) string {
-	if len(s) <= max {
+	if max <= 0 || s == "" {
+		return ""
+	}
+	if displayWidth(s) <= max {
 		return s
 	}
 	if max <= 3 {
-		return s[:max]
+		return truncateByWidth(s, max)
 	}
-	return s[:max-3] + "..."
+	return truncateByWidth(s, max-3) + "..."
 }
 
 // Pad right-pads a string to width.
 func Pad(s string, width int) string {
-	if len(s) >= width {
+	if displayWidth(s) >= width {
 		return s
 	}
-	return s + strings.Repeat(" ", width-len(s))
+	return s + strings.Repeat(" ", width-displayWidth(s))
+}
+
+func displayWidth(s string) int {
+	return runewidth.StringWidth(ansi.Strip(s))
+}
+
+func truncateByWidth(s string, max int) string {
+	if max <= 0 || s == "" {
+		return ""
+	}
+
+	plain := ansi.Strip(s)
+	if displayWidth(plain) <= max {
+		return plain
+	}
+
+	var (
+		width int
+		out   strings.Builder
+	)
+	for _, r := range plain {
+		rw := runewidth.RuneWidth(r)
+		if width+rw > max {
+			break
+		}
+		out.WriteRune(r)
+		width += rw
+	}
+	return out.String()
 }
 
 // FormatAge formats a time as human-readable age (e.g., "2h ago", "3d ago").
@@ -137,6 +172,13 @@ var borderSets = map[BorderStyle]borderSet{
 	BorderRounded: {"╭", "╮", "╰", "╯", "─", "│", "┬", "┴", "├", "┤", "┼"},
 	BorderHeavy:   {"┏", "┓", "┗", "┛", "━", "┃", "┳", "┻", "┣", "┫", "╋"},
 	BorderDouble:  {"╔", "╗", "╚", "╝", "═", "║", "╦", "╩", "╠", "╣", "╬"},
+}
+
+var borderSetsASCII = map[BorderStyle]borderSet{
+	BorderNormal:  {"+", "+", "+", "+", "-", "|", "+", "+", "+", "+", "+"},
+	BorderRounded: {"+", "+", "+", "+", "-", "|", "+", "+", "+", "+", "+"},
+	BorderHeavy:   {"+", "+", "+", "+", "=", "|", "+", "+", "+", "+", "+"},
+	BorderDouble:  {"+", "+", "+", "+", "=", "|", "+", "+", "+", "+", "+"},
 }
 
 // CellStyleFn returns a style based on the cell's raw value.
@@ -233,7 +275,7 @@ func (t *Table) String() string {
 
 // Render prints the table to stdout.
 func (t *Table) Render() {
-	fmt.Print(t.String())
+	fmt.Fprint(stdoutWriter(), t.String())
 }
 
 func (t *Table) colCount() int {
@@ -249,14 +291,16 @@ func (t *Table) columnWidths() []int {
 	widths := make([]int, cols)
 
 	for i, h := range t.Headers {
-		if len(h) > widths[i] {
-			widths[i] = len(h)
+		if w := displayWidth(compileGlyphs(h)); w > widths[i] {
+			widths[i] = w
 		}
 	}
 	for _, row := range t.Rows {
 		for i, cell := range row {
-			if i < cols && len(cell) > widths[i] {
-				widths[i] = len(cell)
+			if i < cols {
+				if w := displayWidth(compileGlyphs(cell)); w > widths[i] {
+					widths[i] = w
+				}
 			}
 		}
 	}
@@ -323,7 +367,7 @@ func (t *Table) renderPlain() string {
 			if i > 0 {
 				sb.WriteString(sep)
 			}
-			cell := Pad(Truncate(h, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(h), widths[i]), widths[i])
 			if t.Style.HeaderStyle != nil {
 				cell = t.Style.HeaderStyle.Render(cell)
 			}
@@ -341,7 +385,7 @@ func (t *Table) renderPlain() string {
 			if i < len(row) {
 				val = row[i]
 			}
-			cell := Pad(Truncate(val, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(val), widths[i]), widths[i])
 			if style := t.resolveStyle(i, val); style != nil {
 				cell = style.Render(cell)
 			}
@@ -354,7 +398,7 @@ func (t *Table) renderPlain() string {
 }
 
 func (t *Table) renderBordered() string {
-	b := borderSets[t.borders]
+	b := tableBorderSet(t.borders)
 	widths := t.columnWidths()
 	cols := t.colCount()
 
@@ -379,7 +423,7 @@ func (t *Table) renderBordered() string {
 			if i < len(t.Headers) {
 				h = t.Headers[i]
 			}
-			cell := Pad(Truncate(h, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(h), widths[i]), widths[i])
 			if t.Style.HeaderStyle != nil {
 				cell = t.Style.HeaderStyle.Render(cell)
 			}
@@ -410,7 +454,7 @@ func (t *Table) renderBordered() string {
 			if i < len(row) {
 				val = row[i]
 			}
-			cell := Pad(Truncate(val, widths[i]), widths[i])
+			cell := Pad(Truncate(compileGlyphs(val), widths[i]), widths[i])
 			if style := t.resolveStyle(i, val); style != nil {
 				cell = style.Render(cell)
 			}
@@ -434,4 +478,16 @@ func (t *Table) renderBordered() string {
 	sb.WriteByte('\n')
 
 	return sb.String()
+}
+
+func tableBorderSet(style BorderStyle) borderSet {
+	if currentTheme == ThemeASCII {
+		if b, ok := borderSetsASCII[style]; ok {
+			return b
+		}
+	}
+	if b, ok := borderSets[style]; ok {
+		return b
+	}
+	return borderSet{}
 }

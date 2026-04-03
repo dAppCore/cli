@@ -3,13 +3,16 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
-	"unicode/utf8"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // StreamOption configures a Stream.
+//
+//	stream := cli.NewStream(cli.WithWordWrap(80))
+//	stream.Wait()
 type StreamOption func(*Stream)
 
 // WithWordWrap sets the word-wrap column width.
@@ -17,7 +20,7 @@ func WithWordWrap(cols int) StreamOption {
 	return func(s *Stream) { s.wrap = cols }
 }
 
-// WithStreamOutput sets the output writer (default: os.Stdout).
+// WithStreamOutput sets the output writer (default: stdoutWriter()).
 func WithStreamOutput(w io.Writer) StreamOption {
 	return func(s *Stream) { s.out = w }
 }
@@ -38,13 +41,14 @@ type Stream struct {
 	wrap int
 	col  int // current column position (visible characters)
 	done chan struct{}
+	once sync.Once
 	mu   sync.Mutex
 }
 
 // NewStream creates a streaming text renderer.
 func NewStream(opts ...StreamOption) *Stream {
 	s := &Stream{
-		out:  os.Stdout,
+		out:  stdoutWriter(),
 		done: make(chan struct{}),
 	}
 	for _, opt := range opts {
@@ -60,11 +64,11 @@ func (s *Stream) Write(text string) {
 
 	if s.wrap <= 0 {
 		fmt.Fprint(s.out, text)
-		// Track column across newlines for Done() trailing-newline logic.
+		// Track visible width across newlines for Done() trailing-newline logic.
 		if idx := strings.LastIndex(text, "\n"); idx >= 0 {
-			s.col = utf8.RuneCountInString(text[idx+1:])
+			s.col = runewidth.StringWidth(text[idx+1:])
 		} else {
-			s.col += utf8.RuneCountInString(text)
+			s.col += runewidth.StringWidth(text)
 		}
 		return
 	}
@@ -76,13 +80,14 @@ func (s *Stream) Write(text string) {
 			continue
 		}
 
-		if s.col >= s.wrap {
+		rw := runewidth.RuneWidth(r)
+		if rw > 0 && s.col > 0 && s.col+rw > s.wrap {
 			fmt.Fprintln(s.out)
 			s.col = 0
 		}
 
 		fmt.Fprint(s.out, string(r))
-		s.col++
+		s.col += rw
 	}
 }
 
@@ -105,12 +110,14 @@ func (s *Stream) WriteFrom(r io.Reader) error {
 
 // Done signals that no more text will arrive.
 func (s *Stream) Done() {
-	s.mu.Lock()
-	if s.col > 0 {
-		fmt.Fprintln(s.out) // ensure trailing newline
-	}
-	s.mu.Unlock()
-	close(s.done)
+	s.once.Do(func() {
+		s.mu.Lock()
+		if s.col > 0 {
+			fmt.Fprintln(s.out) // ensure trailing newline
+		}
+		s.mu.Unlock()
+		close(s.done)
+	})
 }
 
 // Wait blocks until Done is called.
@@ -125,16 +132,24 @@ func (s *Stream) Column() int {
 	return s.col
 }
 
-// Captured returns the stream output as a string when using a bytes.Buffer.
-// Panics if the output writer is not a *strings.Builder or fmt.Stringer.
+// Captured returns the stream output as a string when the output writer is
+// capture-capable. If the writer cannot be captured, it returns an empty string.
+// Use CapturedOK when you need to distinguish that case.
 func (s *Stream) Captured() string {
+	out, _ := s.CapturedOK()
+	return out
+}
+
+// CapturedOK returns the stream output and whether the configured writer
+// supports capture.
+func (s *Stream) CapturedOK() (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if sb, ok := s.out.(*strings.Builder); ok {
-		return sb.String()
+		return sb.String(), true
 	}
 	if st, ok := s.out.(fmt.Stringer); ok {
-		return st.String()
+		return st.String(), true
 	}
-	return ""
+	return "", false
 }

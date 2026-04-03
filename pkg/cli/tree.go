@@ -79,24 +79,29 @@ func (n *TreeNode) String() string {
 
 // Render prints the tree to stdout.
 func (n *TreeNode) Render() {
-	fmt.Print(n.String())
+	fmt.Fprint(stdoutWriter(), n.String())
 }
 
 func (n *TreeNode) renderLabel() string {
+	label := compileGlyphs(n.label)
 	if n.style != nil {
-		return n.style.Render(n.label)
+		return n.style.Render(label)
 	}
-	return n.label
+	return label
 }
 
 func (n *TreeNode) writeChildren(sb *strings.Builder, prefix string) {
+	tee := Glyph(":tee:") + Glyph(":dash:") + Glyph(":dash:") + " "
+	corner := Glyph(":corner:") + Glyph(":dash:") + Glyph(":dash:") + " "
+	pipe := Glyph(":pipe:") + "   "
+
 	for i, child := range n.children {
 		last := i == len(n.children)-1
 
-		connector := "├── "
-		next := "│   "
+		connector := tee
+		next := pipe
 		if last {
-			connector = "└── "
+			connector = corner
 			next = "    "
 		}
 

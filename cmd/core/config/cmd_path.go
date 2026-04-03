@@ -1,19 +1,17 @@
 package config
 
 import (
-	"fmt"
-
 	"forge.lthn.ai/core/cli/pkg/cli"
 )
 
 func addPathCommand(parent *cli.Command) {
 	cmd := cli.NewCommand("path", "Show the configuration file path", "", func(cmd *cli.Command, args []string) error {
-		cfg, err := loadConfig()
+		configuration, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(cfg.Path())
+		cli.Println("%s", configuration.Path())
 		return nil
 	})
 

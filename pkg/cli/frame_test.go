@@ -551,3 +551,40 @@ func TestFrameMessageRouting_Good(t *testing.T) {
 	})
 }
 
+func TestFrame_Ugly(t *testing.T) {
+	t.Run("navigate with nil model does not panic", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("base"))
+
+		assert.NotPanics(t, func() {
+			f.Navigate(nil)
+		})
+	})
+
+	t.Run("deeply nested back stack does not panic", func(t *testing.T) {
+		f := NewFrame("C")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("p0"))
+		for i := 1; i <= 20; i++ {
+			f.Navigate(StaticModel("p" + string(rune('0'+i%10))))
+		}
+		for f.Back() {
+			// drain the full history stack
+		}
+		assert.False(t, f.Back(), "no more history after full drain")
+	})
+
+	t.Run("zero-size window renders without panic", func(t *testing.T) {
+		f := NewFrame("HCF")
+		f.out = &bytes.Buffer{}
+		f.Content(StaticModel("x"))
+		f.width = 0
+		f.height = 0
+
+		assert.NotPanics(t, func() {
+			_ = f.View()
+		})
+	})
+}
+

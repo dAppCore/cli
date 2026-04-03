@@ -85,6 +85,11 @@ Persistent flags are inherited by all subcommands:
 ```go
 cli.PersistentStringFlag(parentCmd, &dbPath, "db", "d", "", "Database path")
 cli.PersistentBoolFlag(parentCmd, &debug, "debug", "", false, "Debug mode")
+cli.PersistentIntFlag(parentCmd, &retries, "retries", "r", 3, "Retry count")
+cli.PersistentInt64Flag(parentCmd, &seed, "seed", "", 0, "Seed value")
+cli.PersistentFloat64Flag(parentCmd, &ratio, "ratio", "", 1.0, "Scaling ratio")
+cli.PersistentDurationFlag(parentCmd, &timeout, "timeout", "t", 30*time.Second, "Timeout")
+cli.PersistentStringSliceFlag(parentCmd, &tags, "tag", "", nil, "Tags")
 ```
 
 ## Args Validation

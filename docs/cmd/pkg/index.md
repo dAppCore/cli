@@ -60,10 +60,10 @@ core pkg search --refresh
 
 ## pkg install
 
-Clone a package from GitHub.
+Clone a package from GitHub. If you pass only a repo name, `core` assumes the `host-uk` org.
 
 ```bash
-core pkg install <org/repo> [flags]
+core pkg install [org/]repo [flags]
 ```
 
 ### Flags
@@ -76,6 +76,9 @@ core pkg install <org/repo> [flags]
 ### Examples
 
 ```bash
+# Clone from the default host-uk org
+core pkg install core-api
+
 # Clone to packages/
 core pkg install host-uk/core-php
 
@@ -98,6 +101,16 @@ core pkg list
 
 Shows installed status (✓) and description for each package.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--format` | Output format (`table` or `json`) |
+
+### JSON Output
+
+When `--format json` is set, `core pkg list` emits a structured report with package entries, installed state, and summary counts.
+
 ---
 
 ## pkg update
@@ -113,6 +126,7 @@ core pkg update [<name>...] [flags]
 | Flag | Description |
 |------|-------------|
 | `--all` | Update all packages |
+| `--format` | Output format (`table` or `json`) |
 
 ### Examples
 
@@ -122,7 +136,14 @@ core pkg update core-php
 
 # Update all packages
 core pkg update --all
+
+# JSON output for automation
+core pkg update --format json
 ```
+
+### JSON Output
+
+When `--format json` is set, `core pkg update` emits a structured report with per-package update status and summary totals.
 
 ---
 
@@ -135,6 +156,16 @@ core pkg outdated
 ```
 
 Fetches from remote and shows packages that are behind.
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--format` | Output format (`table` or `json`) |
+
+### JSON Output
+
+When `--format json` is set, `core pkg outdated` emits a structured report with package status, behind counts, and summary totals.
 
 ---
 

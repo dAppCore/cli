@@ -33,4 +33,5 @@ core pkg update core-api
 
 ```bash
 core pkg outdated
+core pkg outdated --format json
 ```

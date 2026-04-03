@@ -19,6 +19,7 @@ core pkg search [flags]
 | `--type` | Filter by type in name (mod, services, plug, website) |
 | `--limit` | Max results (default: 50) |
 | `--refresh` | Bypass cache and fetch fresh data |
+| `--format` | Output format (`table` or `json`) |
 
 ## Examples
 
@@ -40,6 +41,9 @@ core pkg search --refresh
 
 # Combine filters
 core pkg search --pattern "core-*" --type mod --limit 20
+
+# JSON output for automation
+core pkg search --format json
 ```
 
 ## Output

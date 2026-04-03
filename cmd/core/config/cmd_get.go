@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"forge.lthn.ai/core/cli/pkg/cli"
 )
 
@@ -10,17 +8,17 @@ func addGetCommand(parent *cli.Command) {
 	cmd := cli.NewCommand("get", "Get a configuration value", "", func(cmd *cli.Command, args []string) error {
 		key := args[0]
 
-		cfg, err := loadConfig()
+		configuration, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
 		var value any
-		if err := cfg.Get(key, &value); err != nil {
+		if err := configuration.Get(key, &value); err != nil {
 			return cli.Err("key not found: %s", key)
 		}
 
-		fmt.Println(value)
+		cli.Println("%v", value)
 		return nil
 	})
 

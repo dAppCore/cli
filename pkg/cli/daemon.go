@@ -8,6 +8,11 @@ import (
 )
 
 // Mode represents the CLI execution mode.
+//
+//	mode := cli.DetectMode()
+//	if mode == cli.ModeDaemon {
+//	    cli.LogInfo("running headless")
+//	}
 type Mode int
 
 const (
@@ -34,7 +39,11 @@ func (m Mode) String() string {
 }
 
 // DetectMode determines the execution mode based on environment.
-// Checks CORE_DAEMON env var first, then TTY status.
+//
+//	mode := cli.DetectMode()
+//	// cli.ModeDaemon when CORE_DAEMON=1
+//	// cli.ModePipe when stdout is not a terminal
+//	// cli.ModeInteractive otherwise
 func DetectMode() Mode {
 	if os.Getenv("CORE_DAEMON") == "1" {
 		return ModeDaemon
@@ -46,17 +55,37 @@ func DetectMode() Mode {
 }
 
 // IsTTY returns true if stdout is a terminal.
+//
+//	if cli.IsTTY() {
+//	    cli.Success("interactive output enabled")
+//	}
 func IsTTY() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	if f, ok := stdoutWriter().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
 
 // IsStdinTTY returns true if stdin is a terminal.
+//
+//	if !cli.IsStdinTTY() {
+//	    cli.Warn("input is piped")
+//	}
 func IsStdinTTY() bool {
-	return term.IsTerminal(int(os.Stdin.Fd()))
+	if f, ok := stdinReader().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
 
 // IsStderrTTY returns true if stderr is a terminal.
+//
+//	if cli.IsStderrTTY() {
+//	    cli.Progress("load", 1, 3, "config")
+//	}
 func IsStderrTTY() bool {
-	return term.IsTerminal(int(os.Stderr.Fd()))
+	if f, ok := stderrWriter().(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
-

@@ -6,6 +6,10 @@ import (
 )
 
 // RenderStyle controls how layouts are rendered.
+//
+//	cli.UseRenderBoxed()
+//	frame := cli.NewFrame("HCF")
+//	fmt.Print(frame.String())
 type RenderStyle int
 
 // Render style constants for layout output.
@@ -21,17 +25,23 @@ const (
 var currentRenderStyle = RenderFlat
 
 // UseRenderFlat sets the render style to flat (no borders).
+//
+//	cli.UseRenderFlat()
 func UseRenderFlat() { currentRenderStyle = RenderFlat }
 
 // UseRenderSimple sets the render style to simple (--- separators).
+//
+//	cli.UseRenderSimple()
 func UseRenderSimple() { currentRenderStyle = RenderSimple }
 
 // UseRenderBoxed sets the render style to boxed (Unicode box drawing).
+//
+//	cli.UseRenderBoxed()
 func UseRenderBoxed() { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
-	fmt.Print(c.String())
+	fmt.Fprint(stdoutWriter(), c.String())
 }
 
 // String returns the rendered layout.
@@ -66,9 +76,9 @@ func (c *Composite) renderSeparator(sb *strings.Builder, depth int) {
 	indent := strings.Repeat("  ", depth)
 	switch currentRenderStyle {
 	case RenderBoxed:
-		sb.WriteString(indent + "├" + strings.Repeat("─", 40) + "┤\n")
+		sb.WriteString(indent + Glyph(":tee:") + strings.Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
 	case RenderSimple:
-		sb.WriteString(indent + strings.Repeat("─", 40) + "\n")
+		sb.WriteString(indent + strings.Repeat(Glyph(":dash:"), 40) + "\n")
 	}
 }
 

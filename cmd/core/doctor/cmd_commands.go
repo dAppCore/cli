@@ -16,6 +16,8 @@ import (
 )
 
 // AddDoctorCommands registers the 'doctor' command and all subcommands.
+//
+//	doctor.AddDoctorCommands(rootCmd)
 func AddDoctorCommands(root *cobra.Command) {
 	doctorCmd.Short = i18n.T("cmd.doctor.short")
 	doctorCmd.Long = i18n.T("cmd.doctor.long")

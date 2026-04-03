@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"dappco.re/go/core"
+	"forge.lthn.ai/core/go-i18n"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,7 @@ import (
 //	)
 func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) CommandSetup {
 	return func(c *core.Core) {
+		loadLocaleSources(localeSourcesFromFS(localeFS...)...)
 		if root, ok := c.App().Runtime.(*cobra.Command); ok {
 			register(root)
 		}
@@ -27,6 +29,13 @@ func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) 
 }
 
 // CommandRegistration is a function that adds commands to the CLI root.
+//
+// Example:
+//   func addCommands(root *cobra.Command) {
+//   	root.AddCommand(cli.NewRun("ping", "Ping API", "", func(cmd *cli.Command, args []string) {
+//   		cli.Println("pong")
+//   	}))
+//   }
 type CommandRegistration func(root *cobra.Command)
 
 var (
@@ -42,6 +51,13 @@ var (
 //	func init() {
 //	    cli.RegisterCommands(AddCommands, locales.FS)
 //	}
+//
+// Example:
+//   cli.RegisterCommands(func(root *cobra.Command) {
+//   	root.AddCommand(cli.NewRun("version", "Show version", "", func(cmd *cli.Command, args []string) {
+//   		cli.Println(cli.SemVer())
+//   	}))
+//   })
 func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
 	registeredCommands = append(registeredCommands, fn)
@@ -49,6 +65,7 @@ func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	root := instance
 	registeredCommandsMu.Unlock()
 
+	loadLocaleSources(localeSourcesFromFS(localeFS...)...)
 	appendLocales(localeFS...)
 
 	// If commands already attached (CLI already running), attach immediately
@@ -73,19 +90,62 @@ func appendLocales(localeFS ...fs.FS) {
 	registeredCommandsMu.Unlock()
 }
 
+func localeSourcesFromFS(localeFS ...fs.FS) []LocaleSource {
+	sources := make([]LocaleSource, 0, len(localeFS))
+	for _, lfs := range localeFS {
+		if lfs != nil {
+			sources = append(sources, LocaleSource{FS: lfs, Dir: "."})
+		}
+	}
+	return sources
+}
+
+func loadLocaleSources(sources ...LocaleSource) {
+	svc := i18n.Default()
+	if svc == nil {
+		return
+	}
+	for _, src := range sources {
+		if src.FS == nil {
+			continue
+		}
+		if err := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); err != nil {
+			LogDebug("failed to load locale source", "dir", src.Dir, "err", err)
+		}
+	}
+}
+
 // RegisteredLocales returns all locale filesystems registered by command packages.
+//
+// Example:
+//   for _, fs := range cli.RegisteredLocales() {
+//   	_ = fs
+//   }
 func RegisteredLocales() []fs.FS {
 	registeredCommandsMu.Lock()
 	defer registeredCommandsMu.Unlock()
-	return registeredLocales
+	if len(registeredLocales) == 0 {
+		return nil
+	}
+	out := make([]fs.FS, len(registeredLocales))
+	copy(out, registeredLocales)
+	return out
 }
 
 // RegisteredCommands returns an iterator over the registered command functions.
+//
+// Example:
+//   for attach := range cli.RegisteredCommands() {
+//   	_ = attach
+//   }
 func RegisteredCommands() iter.Seq[CommandRegistration] {
 	return func(yield func(CommandRegistration) bool) {
 		registeredCommandsMu.Lock()
-		defer registeredCommandsMu.Unlock()
-		for _, fn := range registeredCommands {
+		snapshot := make([]CommandRegistration, len(registeredCommands))
+		copy(snapshot, registeredCommands)
+		registeredCommandsMu.Unlock()
+
+		for _, fn := range snapshot {
 			if !yield(fn) {
 				return
 			}
@@ -97,10 +157,12 @@ func RegisteredCommands() iter.Seq[CommandRegistration] {
 // Called by Init() after creating the root command.
 func attachRegisteredCommands(root *cobra.Command) {
 	registeredCommandsMu.Lock()
-	defer registeredCommandsMu.Unlock()
+	snapshot := make([]CommandRegistration, len(registeredCommands))
+	copy(snapshot, registeredCommands)
+	commandsAttached = true
+	registeredCommandsMu.Unlock()
 
-	for _, fn := range registeredCommands {
+	for _, fn := range snapshot {
 		fn(root)
 	}
-	commandsAttached = true
 }

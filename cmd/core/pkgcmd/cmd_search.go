@@ -2,16 +2,12 @@ package pkgcmd
 
 import (
 	"cmp"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
+	"dappco.re/go/core"
+	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-cache"
 	"forge.lthn.ai/core/go-i18n"
 	coreio "forge.lthn.ai/core/go-io"
@@ -69,82 +65,83 @@ type ghRepo struct {
 }
 
 func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error {
-	// Initialize cache in workspace .core/ directory
-	var cacheDir string
-	if regPath, err := repos.FindRegistry(coreio.Local); err == nil {
-		cacheDir = filepath.Join(filepath.Dir(regPath), ".core", "cache")
+	// Initialise cache in workspace .core/ directory.
+	var cacheDirectory string
+	if registryPath, err := repos.FindRegistry(coreio.Local); err == nil {
+		cacheDirectory = core.Path(core.PathDir(registryPath), ".core", "cache")
 	}
 
-	c, err := cache.New(coreio.Local, cacheDir, 0)
+	cacheInstance, err := cache.New(coreio.Local, cacheDirectory, 0)
 	if err != nil {
-		c = nil
+		cacheInstance = nil
 	}
 
 	cacheKey := cache.GitHubReposKey(org)
 	var ghRepos []ghRepo
 	var fromCache bool
 
-	// Try cache first (unless refresh requested)
-	if c != nil && !refresh {
-		if found, err := c.Get(cacheKey, &ghRepos); found && err == nil {
+	// Try cache first (unless refresh requested).
+	if cacheInstance != nil && !refresh {
+		if found, err := cacheInstance.Get(cacheKey, &ghRepos); found && err == nil {
 			fromCache = true
-			age := c.Age(cacheKey)
-			fmt.Printf("%s %s %s\n", dimStyle.Render(i18n.T("cmd.pkg.search.cache_label")), org, dimStyle.Render(fmt.Sprintf("(%s ago)", age.Round(time.Second))))
+			age := cacheInstance.Age(cacheKey)
+			cli.Println("%s %s %s", dimStyle.Render(i18n.T("cmd.pkg.search.cache_label")), org, dimStyle.Render(cli.Sprintf("(%s ago)", age.Round(time.Second))))
 		}
 	}
 
-	// Fetch from GitHub if not cached
+	// Fetch from GitHub if not cached.
 	if !fromCache {
 		if !ghAuthenticated() {
-			return errors.New(i18n.T("cmd.pkg.error.gh_not_authenticated"))
+			return cli.Err(i18n.T("cmd.pkg.error.gh_not_authenticated"))
 		}
 
-		if os.Getenv("GH_TOKEN") != "" {
-			fmt.Printf("%s %s\n", dimStyle.Render(i18n.Label("note")), i18n.T("cmd.pkg.search.gh_token_warning"))
-			fmt.Printf("%s %s\n\n", dimStyle.Render(""), i18n.T("cmd.pkg.search.gh_token_unset"))
+		if core.Env("GH_TOKEN") != "" {
+			cli.Println("%s %s", dimStyle.Render(i18n.Label("note")), i18n.T("cmd.pkg.search.gh_token_warning"))
+			cli.Println("%s %s\n", dimStyle.Render(""), i18n.T("cmd.pkg.search.gh_token_unset"))
 		}
 
-		fmt.Printf("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
+		cli.Print("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
 
-		cmd := exec.Command("gh", "repo", "list", org,
+		proc := exec.Command("gh", "repo", "list", org,
 			"--json", "name,description,visibility,updatedAt,primaryLanguage",
-			"--limit", fmt.Sprintf("%d", limit))
-		output, err := cmd.CombinedOutput()
+			"--limit", cli.Sprintf("%d", limit))
+		output, err := proc.CombinedOutput()
 
 		if err != nil {
-			fmt.Println()
-			errStr := strings.TrimSpace(string(output))
-			if strings.Contains(errStr, "401") || strings.Contains(errStr, "Bad credentials") {
-				return errors.New(i18n.T("cmd.pkg.error.auth_failed"))
+			cli.Blank()
+			errorOutput := core.Trim(string(output))
+			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
+				return cli.Err(i18n.T("cmd.pkg.error.auth_failed"))
 			}
-			return fmt.Errorf("%s: %s", i18n.T("cmd.pkg.error.search_failed"), errStr)
+			return cli.Err("%s: %s", i18n.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
 
-		if err := json.Unmarshal(output, &ghRepos); err != nil {
-			return fmt.Errorf("%s: %w", i18n.T("i18n.fail.parse", "results"), err)
+		result := core.JSONUnmarshal(output, &ghRepos)
+		if !result.OK {
+			return cli.Wrap(result.Value.(error), i18n.T("i18n.fail.parse", "results"))
 		}
 
-		if c != nil {
-			_ = c.Set(cacheKey, ghRepos)
+		if cacheInstance != nil {
+			_ = cacheInstance.Set(cacheKey, ghRepos)
 		}
 
-		fmt.Printf("%s\n", successStyle.Render("✓"))
+		cli.Println("%s", successStyle.Render("✓"))
 	}
 
-	// Filter by glob pattern and type
+	// Filter by glob pattern and type.
 	var filtered []ghRepo
-	for _, r := range ghRepos {
-		if !matchGlob(pattern, r.Name) {
+	for _, repo := range ghRepos {
+		if !matchGlob(pattern, repo.Name) {
 			continue
 		}
-		if repoType != "" && !strings.Contains(r.Name, repoType) {
+		if repoType != "" && !core.Contains(repo.Name, repoType) {
 			continue
 		}
-		filtered = append(filtered, r)
+		filtered = append(filtered, repo)
 	}
 
 	if len(filtered) == 0 {
-		fmt.Println(i18n.T("cmd.pkg.search.no_repos_found"))
+		cli.Println("%s", i18n.T("cmd.pkg.search.no_repos_found"))
 		return nil
 	}
 
@@ -152,54 +149,65 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	fmt.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
+	cli.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
 
-	for _, r := range filtered {
+	for _, repo := range filtered {
 		visibility := ""
-		if r.Visibility == "private" {
+		if repo.Visibility == "private" {
 			visibility = dimStyle.Render(" " + i18n.T("cmd.pkg.search.private_label"))
 		}
 
-		desc := r.Description
-		if len(desc) > 50 {
-			desc = desc[:47] + "..."
+		description := repo.Description
+		if len(description) > 50 {
+			description = description[:47] + "..."
 		}
-		if desc == "" {
-			desc = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
+		if description == "" {
+			description = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
 		}
 
-		fmt.Printf("  %s%s\n", repoNameStyle.Render(r.Name), visibility)
-		fmt.Printf("    %s\n", desc)
+		cli.Println("  %s%s", repoNameStyle.Render(repo.Name), visibility)
+		cli.Println("    %s", description)
 	}
 
-	fmt.Println()
-	fmt.Printf("%s %s\n", i18n.T("common.hint.install_with"), dimStyle.Render(fmt.Sprintf("core pkg install %s/<repo-name>", org)))
+	cli.Blank()
+	cli.Println("%s %s", i18n.T("common.hint.install_with"), dimStyle.Render(cli.Sprintf("core pkg install %s/<repo-name>", org)))
 
 	return nil
 }
 
-// matchGlob does simple glob matching with * wildcards
+// matchGlob does simple glob matching with * wildcards.
+//
+//	matchGlob("core-*", "core-php")   // true
+//	matchGlob("*-mod", "core-php")    // false
 func matchGlob(pattern, name string) bool {
 	if pattern == "*" || pattern == "" {
 		return true
 	}
 
-	parts := strings.Split(pattern, "*")
+	parts := core.Split(pattern, "*")
 	pos := 0
 	for i, part := range parts {
 		if part == "" {
 			continue
 		}
-		idx := strings.Index(name[pos:], part)
+		// Find part in name starting from pos.
+		remaining := name[pos:]
+		idx := -1
+		for j := 0; j <= len(remaining)-len(part); j++ {
+			if remaining[j:j+len(part)] == part {
+				idx = j
+				break
+			}
+		}
 		if idx == -1 {
 			return false
 		}
-		if i == 0 && !strings.HasPrefix(pattern, "*") && idx != 0 {
+		if i == 0 && !core.HasPrefix(pattern, "*") && idx != 0 {
 			return false
 		}
 		pos += idx + len(part)
 	}
-	if !strings.HasSuffix(pattern, "*") && pos != len(name) {
+	if !core.HasSuffix(pattern, "*") && pos != len(name) {
 		return false
 	}
 	return true
