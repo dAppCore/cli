@@ -1,12 +1,12 @@
-module forge.lthn.ai/core/cli
+module dappco.re/go/core/cli
 
 go 1.26.0
 
 require dappco.re/go/core v0.4.7
 
 require (
-	forge.lthn.ai/core/go-i18n v0.1.7
-	forge.lthn.ai/core/go-log v0.0.4
+	dappco.re/go/core/i18n v0.1.7
+	dappco.re/go/core/log v0.0.4
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/charmbracelet/x/ansi v0.11.6
@@ -17,8 +17,8 @@ require (
 )
 
 require (
-	forge.lthn.ai/core/go v0.3.3 // indirect
-	forge.lthn.ai/core/go-inference v0.1.7 // indirect
+	dappco.re/go/core v0.3.3 // indirect
+	dappco.re/go/core/inference v0.1.7 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
