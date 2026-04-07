@@ -42,9 +42,3 @@ require (
 	golang.org/x/text v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace (
-	dappco.re/go/core/config => /Users/snider/Code/core/config
-	dappco.re/go/core/help => /Users/snider/Code/go-help
-	dappco.re/go/core/lint => /Users/snider/Code/core/lint
-)

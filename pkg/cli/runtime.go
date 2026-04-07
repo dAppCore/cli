@@ -77,9 +77,8 @@ func Init(opts Options) error {
 		}
 
 		// Create Core with app identity
-		c := core.New(core.Options{
-			{Key: "name", Value: opts.AppName},
-		})
+		c := core.New()
+		c.App().Name = opts.AppName
 		c.App().Version = opts.Version
 		c.App().Runtime = rootCmd
 
