@@ -1,8 +1,8 @@
 package config
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/config"
+	"dappco.re/go/core/cli/pkg/cli"
+	"dappco.re/go/core/config"
 )
 
 // AddConfigCommands registers the 'config' command group and all subcommands.

@@ -4,7 +4,7 @@ import (
 	"os/exec"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/go-i18n"
+	"dappco.re/go/core/i18n"
 )
 
 // check represents a tool check configuration

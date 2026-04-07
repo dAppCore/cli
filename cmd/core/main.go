@@ -1,26 +1,26 @@
 package main
 
 import (
-	"forge.lthn.ai/core/cli/cmd/core/config"
-	"forge.lthn.ai/core/cli/cmd/core/doctor"
-	"forge.lthn.ai/core/cli/cmd/core/help"
-	"forge.lthn.ai/core/cli/cmd/core/pkgcmd"
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"dappco.re/go/core/cli/cmd/core/config"
+	"dappco.re/go/core/cli/cmd/core/doctor"
+	"dappco.re/go/core/cli/cmd/core/help"
+	"dappco.re/go/core/cli/cmd/core/pkgcmd"
+	"dappco.re/go/core/cli/pkg/cli"
 
 	// Ecosystem commands — self-register via init() + cli.RegisterCommands()
-	_ "forge.lthn.ai/core/go-build/cmd/build"
-	_ "forge.lthn.ai/core/go-build/cmd/ci"
-	_ "forge.lthn.ai/core/go-build/cmd/sdk"
-	_ "forge.lthn.ai/core/go-crypt/cmd/crypt"
-	_ "forge.lthn.ai/core/go-devops/cmd/deploy"
-	_ "forge.lthn.ai/core/go-devops/cmd/dev"
-	_ "forge.lthn.ai/core/go-devops/cmd/docs"
-	_ "forge.lthn.ai/core/go-devops/cmd/gitcmd"
-	_ "forge.lthn.ai/core/go-devops/cmd/setup"
-	_ "forge.lthn.ai/core/go-scm/cmd/collect"
-	_ "forge.lthn.ai/core/go-scm/cmd/forge"
-	_ "forge.lthn.ai/core/go-scm/cmd/gitea"
-	_ "forge.lthn.ai/core/lint/cmd/qa"
+	_ "dappco.re/go/core/build/cmd/build"
+	_ "dappco.re/go/core/build/cmd/ci"
+	_ "dappco.re/go/core/build/cmd/sdk"
+	_ "dappco.re/go/core/crypt/cmd/crypt"
+	_ "dappco.re/go/core/devops/cmd/deploy"
+	_ "dappco.re/go/core/devops/cmd/dev"
+	_ "dappco.re/go/core/devops/cmd/docs"
+	_ "dappco.re/go/core/devops/cmd/gitcmd"
+	_ "dappco.re/go/core/devops/cmd/setup"
+	_ "dappco.re/go/core/scm/cmd/collect"
+	_ "dappco.re/go/core/scm/cmd/forge"
+	_ "dappco.re/go/core/scm/cmd/gitea"
+	_ "dappco.re/go/core/lint/cmd/qa"
 )
 
 func main() {

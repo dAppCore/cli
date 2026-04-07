@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode"
 
-	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go-log"
+	"dappco.re/go/core/i18n"
+	"dappco.re/go/core/log"
 )
 
 // GhAuthenticated checks if the GitHub CLI is authenticated.

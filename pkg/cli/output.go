@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"forge.lthn.ai/core/go-i18n"
+	"dappco.re/go/core/i18n"
 )
 
 // Blank prints an empty line.

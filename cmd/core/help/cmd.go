@@ -1,8 +1,8 @@
 package help
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-help"
+	"dappco.re/go/core/cli/pkg/cli"
+	"dappco.re/go/core/help"
 )
 
 // AddHelpCommands registers the help command and subcommands.

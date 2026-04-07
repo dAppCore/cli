@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-cache"
-	"forge.lthn.ai/core/go-i18n"
-	coreio "forge.lthn.ai/core/go-io"
-	"forge.lthn.ai/core/go-scm/repos"
+	"dappco.re/go/core/cli/pkg/cli"
+	"dappco.re/go/core/cache"
+	"dappco.re/go/core/i18n"
+	coreio "dappco.re/go/core/io"
+	"dappco.re/go/core/scm/repos"
 	"github.com/spf13/cobra"
 )
 

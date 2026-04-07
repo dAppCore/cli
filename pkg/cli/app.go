@@ -8,8 +8,8 @@ import (
 	"runtime/debug"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go-log"
+	"dappco.re/go/core/i18n"
+	"dappco.re/go/core/log"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +22,10 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X forge.lthn.ai/core/cli/pkg/cli.AppVersion=1.2.0 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildCommit=df94c24 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildDate=2026-02-06 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildPreRelease=dev.8"
+//	go build -ldflags="-X dappco.re/go/core/cli/pkg/cli.AppVersion=1.2.0 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildCommit=df94c24 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildDate=2026-02-06 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildPreRelease=dev.8"
 var (
 	AppVersion      = "0.0.0"
 	BuildCommit     = "unknown"

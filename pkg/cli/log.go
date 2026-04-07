@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"forge.lthn.ai/core/go-log"
+	"dappco.re/go/core/log"
 )
 
 // LogLevel aliases for convenience.

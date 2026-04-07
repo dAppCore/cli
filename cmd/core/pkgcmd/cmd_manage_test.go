@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"forge.lthn.ai/core/go-cache"
+	"dappco.re/go/core/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
