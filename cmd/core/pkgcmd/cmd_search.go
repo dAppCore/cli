@@ -12,47 +12,29 @@ import (
 	"dappco.re/go/core/i18n"
 	coreio "dappco.re/go/core/io"
 	"dappco.re/go/core/scm/repos"
-	"github.com/spf13/cobra"
 )
 
-var (
-	searchOrg     string
-	searchPattern string
-	searchType    string
-	searchLimit   int
-	searchRefresh bool
-)
+func pkgSearchAction(opts core.Options) core.Result {
+	org := opts.String("org")
+	pattern := opts.String("pattern")
+	repoType := opts.String("type")
+	limit := opts.Int("limit")
+	refresh := opts.Bool("refresh")
 
-// addPkgSearchCommand adds the 'pkg search' command.
-func addPkgSearchCommand(parent *cobra.Command) {
-	searchCmd := &cobra.Command{
-		Use:   "search",
-		Short: i18n.T("cmd.pkg.search.short"),
-		Long:  i18n.T("cmd.pkg.search.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			org := searchOrg
-			pattern := searchPattern
-			limit := searchLimit
-			if org == "" {
-				org = "host-uk"
-			}
-			if pattern == "" {
-				pattern = "*"
-			}
-			if limit == 0 {
-				limit = 50
-			}
-			return runPkgSearch(org, pattern, searchType, limit, searchRefresh)
-		},
+	if org == "" {
+		org = "host-uk"
+	}
+	if pattern == "" {
+		pattern = "*"
+	}
+	if limit == 0 {
+		limit = 50
 	}
 
-	searchCmd.Flags().StringVar(&searchOrg, "org", "", i18n.T("cmd.pkg.search.flag.org"))
-	searchCmd.Flags().StringVar(&searchPattern, "pattern", "", i18n.T("cmd.pkg.search.flag.pattern"))
-	searchCmd.Flags().StringVar(&searchType, "type", "", i18n.T("cmd.pkg.search.flag.type"))
-	searchCmd.Flags().IntVar(&searchLimit, "limit", 0, i18n.T("cmd.pkg.search.flag.limit"))
-	searchCmd.Flags().BoolVar(&searchRefresh, "refresh", false, i18n.T("cmd.pkg.search.flag.refresh"))
-
-	parent.AddCommand(searchCmd)
+	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 type ghRepo struct {
@@ -125,7 +107,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 			_ = cacheInstance.Set(cacheKey, ghRepos)
 		}
 
-		cli.Println("%s", successStyle.Render("✓"))
+		cli.Println("%s", successStyle.Render("ok"))
 	}
 
 	// Filter by glob pattern and type.

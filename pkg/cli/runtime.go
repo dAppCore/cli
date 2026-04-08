@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"dappco.re/go/core"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -33,7 +32,6 @@ var (
 // runtime is the CLI's internal Core runtime.
 type runtime struct {
 	core   *core.Core
-	root   *cobra.Command
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -41,10 +39,11 @@ type runtime struct {
 // Options configures the CLI runtime.
 //
 // Example:
-//   opts := cli.Options{
-//   	AppName: "core",
-//   	Version: "1.0.0",
-//   }
+//
+//	opts := cli.Options{
+//		AppName: "core",
+//		Version: "1.0.0",
+//	}
 type Options struct {
 	AppName     string
 	Version     string
@@ -60,27 +59,21 @@ type Options struct {
 // Call this once at startup (typically in main.go or cmd.Execute).
 //
 // Example:
-//   err := cli.Init(cli.Options{AppName: "core"})
-//   if err != nil { panic(err) }
-//   defer cli.Shutdown()
+//
+//	err := cli.Init(cli.Options{AppName: "core"})
+//	if err != nil { panic(err) }
+//	defer cli.Shutdown()
 func Init(opts Options) error {
 	var initErr error
 	once.Do(func() {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		// Create root command
-		rootCmd := &cobra.Command{
-			Use:           opts.AppName,
-			Version:       opts.Version,
-			SilenceErrors: true,
-			SilenceUsage:  true,
-		}
-
-		// Create Core with app identity
-		c := core.New()
+		// Create Core instance with CLI service (registered automatically by core.New)
+		c := core.New(
+			core.WithOption("name", opts.AppName),
+		)
 		c.App().Name = opts.AppName
 		c.App().Version = opts.Version
-		c.App().Runtime = rootCmd
 
 		// Register signal service
 		signalSvc := &signalService{
@@ -108,7 +101,6 @@ func Init(opts Options) error {
 
 		instance = &runtime{
 			core:   c,
-			root:   rootCmd,
 			ctx:    ctx,
 			cancel: cancel,
 		}
@@ -124,7 +116,7 @@ func Init(opts Options) error {
 		loadLocaleSources(opts.I18nSources...)
 
 		// Attach registered commands AFTER Core startup so i18n is available
-		attachRegisteredCommands(rootCmd)
+		attachRegisteredCommands(c)
 	})
 	return initErr
 }
@@ -143,22 +135,27 @@ func Core() *core.Core {
 	return instance.core
 }
 
-// RootCmd returns the CLI's root cobra command.
-func RootCmd() *cobra.Command {
-	mustInit()
-	return instance.root
-}
-
-// Execute runs the CLI root command.
+// Execute runs the CLI via core.Cli().Run().
 // Returns an error if the command fails.
 //
 // Example:
-//   if err := cli.Execute(); err != nil {
-//   	cli.Warn("command failed:", "err", err)
-//   }
+//
+//	if err := cli.Execute(); err != nil {
+//		cli.Warn("command failed:", "err", err)
+//	}
 func Execute() error {
 	mustInit()
-	return instance.root.Execute()
+	cl := instance.core.Cli()
+	if cl == nil {
+		return core.E("cli.Execute", "CLI service not available", nil)
+	}
+	result := cl.Run(os.Args[1:]...)
+	if !result.OK {
+		if err, ok := result.Value.(error); ok {
+			return err
+		}
+	}
+	return nil
 }
 
 // Run executes the CLI and watches an external context for cancellation.
@@ -166,11 +163,12 @@ func Execute() error {
 // command error is returned if execution failed during shutdown.
 //
 // Example:
-//   ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-//   defer cancel()
-//   if err := cli.Run(ctx); err != nil {
-//   	cli.Error(err.Error())
-//   }
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+//	defer cancel()
+//	if err := cli.Run(ctx); err != nil {
+//		cli.Error(err.Error())
+//	}
 func Run(ctx context.Context) error {
 	mustInit()
 	if ctx == nil {
@@ -198,8 +196,9 @@ func Run(ctx context.Context) error {
 // for up to timeout before giving up. It is intended for deferred cleanup.
 //
 // Example:
-//   stop := cli.RunWithTimeout(5 * time.Second)
-//   defer stop()
+//
+//	stop := cli.RunWithTimeout(5 * time.Second)
+//	defer stop()
 func RunWithTimeout(timeout time.Duration) func() {
 	return func() {
 		if timeout <= 0 {
@@ -225,9 +224,10 @@ func RunWithTimeout(timeout time.Duration) func() {
 // Cancelled on SIGINT/SIGTERM.
 //
 // Example:
-//   if ctx := cli.Context(); ctx != nil {
-//   	_ = ctx
-//   }
+//
+//	if ctx := cli.Context(); ctx != nil {
+//		_ = ctx
+//	}
 func Context() context.Context {
 	mustInit()
 	return instance.ctx
@@ -236,7 +236,8 @@ func Context() context.Context {
 // Shutdown gracefully shuts down the CLI.
 //
 // Example:
-//   cli.Shutdown()
+//
+//	cli.Shutdown()
 func Shutdown() {
 	if instance == nil {
 		return

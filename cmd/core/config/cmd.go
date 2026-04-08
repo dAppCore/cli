@@ -1,21 +1,31 @@
 package config
 
 import (
+	"dappco.re/go/core"
 	"dappco.re/go/core/cli/pkg/cli"
 	"dappco.re/go/core/config"
 )
 
 // AddConfigCommands registers the 'config' command group and all subcommands.
 //
-//	config.AddConfigCommands(rootCmd)
-func AddConfigCommands(root *cli.Command) {
-	configCmd := cli.NewGroup("config", "Manage configuration", "")
-	root.AddCommand(configCmd)
-
-	addGetCommand(configCmd)
-	addSetCommand(configCmd)
-	addListCommand(configCmd)
-	addPathCommand(configCmd)
+//	config.AddConfigCommands(c)
+func AddConfigCommands(c *core.Core) {
+	c.Command("config/get", core.Command{
+		Description: "Get a configuration value",
+		Action:      configGetAction,
+	})
+	c.Command("config/set", core.Command{
+		Description: "Set a configuration value",
+		Action:      configSetAction,
+	})
+	c.Command("config/list", core.Command{
+		Description: "List all configuration values",
+		Action:      configListAction,
+	})
+	c.Command("config/path", core.Command{
+		Description: "Show the configuration file path",
+		Action:      configPathAction,
+	})
 }
 
 func loadConfig() (*config.Config, error) {

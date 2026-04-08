@@ -8,21 +8,13 @@ import (
 	"dappco.re/go/core/i18n"
 	coreio "dappco.re/go/core/io"
 	"dappco.re/go/core/scm/repos"
-	"github.com/spf13/cobra"
 )
 
-// addPkgListCommand adds the 'pkg list' command.
-func addPkgListCommand(parent *cobra.Command) {
-	listCmd := &cobra.Command{
-		Use:   "list",
-		Short: i18n.T("cmd.pkg.list.short"),
-		Long:  i18n.T("cmd.pkg.list.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPkgList()
-		},
+func pkgListAction(_ core.Options) core.Result {
+	if err := runPkgList(); err != nil {
+		return core.Result{Value: err, OK: false}
 	}
-
-	parent.AddCommand(listCmd)
+	return core.Result{OK: true}
 }
 
 func runPkgList() error {
@@ -62,9 +54,9 @@ func runPkgList() error {
 			missing++
 		}
 
-		status := successStyle.Render("✓")
+		status := successStyle.Render("ok")
 		if !exists {
-			status = dimStyle.Render("○")
+			status = dimStyle.Render("o")
 		}
 
 		description := repo.Description
@@ -89,25 +81,20 @@ func runPkgList() error {
 	return nil
 }
 
-var updateAll bool
-
-// addPkgUpdateCommand adds the 'pkg update' command.
-func addPkgUpdateCommand(parent *cobra.Command) {
-	updateCmd := &cobra.Command{
-		Use:   "update [packages...]",
-		Short: i18n.T("cmd.pkg.update.short"),
-		Long:  i18n.T("cmd.pkg.update.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if !updateAll && len(args) == 0 {
-				return cli.Err(i18n.T("cmd.pkg.error.specify_package"))
-			}
-			return runPkgUpdate(args, updateAll)
-		},
+func pkgUpdateAction(opts core.Options) core.Result {
+	all := opts.Bool("all")
+	pkg := opts.String("_arg")
+	var packages []string
+	if pkg != "" {
+		packages = append(packages, pkg)
 	}
-
-	updateCmd.Flags().BoolVar(&updateAll, "all", false, i18n.T("cmd.pkg.update.flag.all"))
-
-	parent.AddCommand(updateCmd)
+	if !all && len(packages) == 0 {
+		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.specify_package")), OK: false}
+	}
+	if err := runPkgUpdate(packages, all); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 func runPkgUpdate(packages []string, all bool) error {
@@ -145,17 +132,17 @@ func runPkgUpdate(packages []string, all bool) error {
 		repoPath := core.Path(basePath, name)
 
 		if _, err := coreio.Local.List(core.Path(repoPath, ".git")); err != nil {
-			cli.Println("  %s %s (%s)", dimStyle.Render("○"), name, i18n.T("cmd.pkg.update.not_installed"))
+			cli.Println("  %s %s (%s)", dimStyle.Render("o"), name, i18n.T("cmd.pkg.update.not_installed"))
 			skipped++
 			continue
 		}
 
-		cli.Print("  %s %s... ", dimStyle.Render("↓"), name)
+		cli.Print("  %s %s... ", dimStyle.Render("v"), name)
 
 		proc := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
 		output, err := proc.CombinedOutput()
 		if err != nil {
-			cli.Println("%s", errorStyle.Render("✗"))
+			cli.Println("%s", errorStyle.Render("x"))
 			cli.Println("      %s", core.Trim(string(output)))
 			failed++
 			continue
@@ -164,7 +151,7 @@ func runPkgUpdate(packages []string, all bool) error {
 		if core.Contains(string(output), "Already up to date") {
 			cli.Println("%s", dimStyle.Render(i18n.T("common.status.up_to_date")))
 		} else {
-			cli.Println("%s", successStyle.Render("✓"))
+			cli.Println("%s", successStyle.Render("ok"))
 		}
 		updated++
 	}
@@ -176,18 +163,11 @@ func runPkgUpdate(packages []string, all bool) error {
 	return nil
 }
 
-// addPkgOutdatedCommand adds the 'pkg outdated' command.
-func addPkgOutdatedCommand(parent *cobra.Command) {
-	outdatedCmd := &cobra.Command{
-		Use:   "outdated",
-		Short: i18n.T("cmd.pkg.outdated.short"),
-		Long:  i18n.T("cmd.pkg.outdated.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPkgOutdated()
-		},
+func pkgOutdatedAction(_ core.Options) core.Result {
+	if err := runPkgOutdated(); err != nil {
+		return core.Result{Value: err, OK: false}
 	}
-
-	parent.AddCommand(outdatedCmd)
+	return core.Result{OK: true}
 }
 
 func runPkgOutdated() error {
@@ -234,12 +214,14 @@ func runPkgOutdated() error {
 		commitCount := core.Trim(string(output))
 		if commitCount != "0" {
 			cli.Println("  %s %s (%s)",
-				errorStyle.Render("↓"), repoNameStyle.Render(repo.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": commitCount}))
+				errorStyle.Render("v"), repoNameStyle.Render(repo.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": commitCount}))
 			outdated++
 		} else {
 			upToDate++
 		}
 	}
+
+	_ = notInstalled
 
 	cli.Blank()
 	if outdated == 0 {

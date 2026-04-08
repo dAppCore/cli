@@ -1,29 +1,38 @@
 package config
 
 import (
+	"dappco.re/go/core"
 	"dappco.re/go/core/cli/pkg/cli"
 )
 
-func addSetCommand(parent *cli.Command) {
-	cmd := cli.NewCommand("set", "Set a configuration value", "", func(cmd *cli.Command, args []string) error {
-		key := args[0]
-		value := args[1]
+// configSetAction handles 'config set --key=<key> --value=<value>'.
+// Also accepts positional form via _arg for backwards compatibility when
+// only one arg is passed (interpreted as key, value read from --value).
+func configSetAction(opts core.Options) core.Result {
+	key := opts.String("key")
+	value := opts.String("value")
 
-		configuration, err := loadConfig()
-		if err != nil {
-			return err
-		}
+	// Fallback: first positional arg as key if --key not provided.
+	if key == "" {
+		key = opts.String("_arg")
+	}
 
-		if err := configuration.Set(key, value); err != nil {
-			return cli.Wrap(err, "failed to set config value")
-		}
+	if key == "" {
+		return core.Result{Value: cli.Err("requires --key and --value arguments (e.g. config set --key=dev.editor --value=vim)"), OK: false}
+	}
+	if value == "" {
+		return core.Result{Value: cli.Err("requires --value argument (e.g. config set --key=%s --value=<value>)", key), OK: false}
+	}
 
-		cli.Success(key + " = " + value)
-		return nil
-	})
+	configuration, err := loadConfig()
+	if err != nil {
+		return core.Result{Value: err, OK: false}
+	}
 
-	cli.WithArgs(cmd, cli.ExactArgs(2))
-	cli.WithExample(cmd, "core config set dev.editor vim")
+	if err := configuration.Set(key, value); err != nil {
+		return core.Result{Value: cli.Wrap(err, "failed to set config value"), OK: false}
+	}
 
-	parent.AddCommand(cmd)
+	cli.Success(key + " = " + value)
+	return core.Result{OK: true}
 }

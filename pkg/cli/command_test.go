@@ -1,73 +1,73 @@
 package cli
 
-import "testing"
+import (
+	"testing"
+
+	"dappco.re/go/core"
+)
 
 func TestCommand_Good(t *testing.T) {
-	// NewCommand creates a command with RunE.
-	called := false
-	cmd := NewCommand("build", "Build the project", "", func(cmd *Command, args []string) error {
-		called = true
-		return nil
+	// RegisterCommand registers a command on Core.
+	c := core.New()
+	RegisterCommand(c, "build", core.Command{
+		Description: "Build the project",
+		Action: func(_ core.Options) core.Result {
+			return core.Result{OK: true}
+		},
 	})
-	if cmd == nil {
-		t.Fatal("NewCommand: returned nil")
-	}
-	if cmd.Use != "build" {
-		t.Errorf("NewCommand: Use=%q, expected 'build'", cmd.Use)
-	}
-	if cmd.RunE == nil {
-		t.Fatal("NewCommand: RunE is nil")
-	}
-	_ = called
 
-	// NewGroup creates a command with no RunE.
-	groupCmd := NewGroup("dev", "Development commands", "")
-	if groupCmd.RunE != nil {
-		t.Error("NewGroup: RunE should be nil")
+	r := c.Command("build")
+	if !r.OK {
+		t.Fatal("RegisterCommand: command not found after registration")
 	}
 
-	// NewRun creates a command with Run.
-	runCmd := NewRun("version", "Show version", "", func(cmd *Command, args []string) {})
-	if runCmd.Run == nil {
-		t.Fatal("NewRun: Run is nil")
+	cmd := r.Value.(*core.Command)
+	if cmd.Name != "build" {
+		t.Errorf("RegisterCommand: Name=%q, expected 'build'", cmd.Name)
 	}
 }
 
 func TestCommand_Bad(t *testing.T) {
-	// NewCommand with empty long string should not set Long.
-	cmd := NewCommand("test", "Short desc", "", func(cmd *Command, args []string) error {
-		return nil
-	})
-	if cmd.Long != "" {
-		t.Errorf("NewCommand: Long should be empty, got %q", cmd.Long)
+	// RequireArgs with no args should return error message.
+	opts := core.NewOptions()
+	msg := RequireArgs(opts, 1)
+	if msg == "" {
+		t.Error("RequireArgs: should return error message when no args present")
 	}
 
-	// Flag helpers with empty short should not add short flag.
-	var value string
-	StringFlag(cmd, &value, "output", "", "default", "Output path")
-	if cmd.Flags().Lookup("output") == nil {
-		t.Error("StringFlag: flag 'output' not registered")
+	// RequireArgs with args should return empty.
+	opts.Set("_arg", "value")
+	msg = RequireArgs(opts, 1)
+	if msg != "" {
+		t.Errorf("RequireArgs: should return empty string when args present, got %q", msg)
 	}
 }
 
 func TestCommand_Ugly(t *testing.T) {
-	// WithArgs and WithExample are chainable.
-	cmd := NewCommand("deploy", "Deploy", "Long desc", func(cmd *Command, args []string) error {
-		return nil
-	})
-	result := WithExample(cmd, "core deploy production")
-	if result != cmd {
-		t.Error("WithExample: should return the same command")
-	}
-	if cmd.Example != "core deploy production" {
-		t.Errorf("WithExample: Example=%q", cmd.Example)
+	// RequireExactArgs with 0 and no arg should pass.
+	opts := core.NewOptions()
+	msg := RequireExactArgs(opts, 0)
+	if msg != "" {
+		t.Errorf("RequireExactArgs(0): expected empty, got %q", msg)
 	}
 
-	// ExactArgs, NoArgs, MinimumNArgs, MaximumNArgs, ArbitraryArgs should not panic.
-	_ = ExactArgs(1)
-	_ = NoArgs()
-	_ = MinimumNArgs(1)
-	_ = MaximumNArgs(5)
-	_ = ArbitraryArgs()
-	_ = RangeArgs(1, 3)
+	// RequireExactArgs with 0 but arg present should fail.
+	opts.Set("_arg", "unexpected")
+	msg = RequireExactArgs(opts, 0)
+	if msg == "" {
+		t.Error("RequireExactArgs(0): should fail when args present")
+	}
+
+	// Path-based nested commands work.
+	c := core.New()
+	RegisterCommand(c, "deploy/to/homelab", core.Command{
+		Description: "Deploy to homelab",
+		Action: func(_ core.Options) core.Result {
+			return core.Result{OK: true}
+		},
+	})
+	r := c.Command("deploy/to/homelab")
+	if !r.OK {
+		t.Error("RegisterCommand: nested path command not found")
+	}
 }

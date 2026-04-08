@@ -15,28 +15,18 @@ import (
 	"dappco.re/go/core/i18n"
 	coreio "dappco.re/go/core/io"
 	"dappco.re/go/core/scm/repos"
-	"github.com/spf13/cobra"
 )
 
-var removeForce bool
-
-func addPkgRemoveCommand(parent *cobra.Command) {
-	removeCmd := &cobra.Command{
-		Use:   "remove <package>",
-		Short: "Remove a package (with safety checks)",
-		Long: `Removes a package directory after verifying it has no uncommitted
-changes or unpushed branches. Use --force to skip safety checks.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
-			}
-			return runPkgRemove(args[0], removeForce)
-		},
+func pkgRemoveAction(opts core.Options) core.Result {
+	name := opts.String("_arg")
+	if name == "" {
+		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
 	}
-
-	removeCmd.Flags().BoolVar(&removeForce, "force", false, "Skip safety checks (dangerous)")
-
-	parent.AddCommand(removeCmd)
+	force := opts.Bool("force")
+	if err := runPkgRemove(name, force); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 func runPkgRemove(name string, force bool) error {
@@ -70,7 +60,7 @@ func runPkgRemove(name string, force bool) error {
 		if blocked {
 			cli.Println("%s Cannot remove %s:", errorStyle.Render("Blocked:"), repoNameStyle.Render(name))
 			for _, reason := range reasons {
-				cli.Println("  %s %s", errorStyle.Render("·"), reason)
+				cli.Println("  %s %s", errorStyle.Render("*"), reason)
 			}
 			cli.Println("\nResolve the issues above or use --force to override.")
 			return cli.Err("package has unresolved changes")

@@ -3,6 +3,8 @@ package cli
 import "testing"
 
 func TestRuntime_Good(t *testing.T) {
+	resetGlobals(t)
+
 	// Init with valid options should succeed.
 	err := Init(Options{
 		AppName: "test-cli",
@@ -11,18 +13,11 @@ func TestRuntime_Good(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Init: unexpected error: %v", err)
 	}
-	defer Shutdown()
 
 	// Core() returns non-nil after Init.
 	coreInstance := Core()
 	if coreInstance == nil {
 		t.Error("Core(): returned nil after Init")
-	}
-
-	// RootCmd() returns non-nil after Init.
-	rootCommand := RootCmd()
-	if rootCommand == nil {
-		t.Error("RootCmd(): returned nil after Init")
 	}
 
 	// Context() returns non-nil after Init.
@@ -45,10 +40,11 @@ func TestRuntime_Bad(t *testing.T) {
 }
 
 func TestRuntime_Ugly(t *testing.T) {
+	resetGlobals(t)
+
 	// Once is idempotent: calling Init twice should succeed.
 	err := Init(Options{AppName: "test-ugly"})
 	if err != nil {
 		t.Fatalf("Init (second call): unexpected error: %v", err)
 	}
-	defer Shutdown()
 }
