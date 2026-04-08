@@ -1,8 +1,7 @@
 package cli
 
 import (
-	"fmt"
-
+	"dappco.re/go/core"
 	"dappco.re/go/core/log"
 )
 
@@ -46,5 +45,5 @@ func LogSecurity(msg string, keyvals ...any) { log.Security(msg, keyvals...) }
 //
 //	cli.LogSecurityf("login attempt from %s", username)
 func LogSecurityf(format string, args ...any) {
-	log.Security(fmt.Sprintf(format, args...))
+	log.Security(core.Sprintf(format, args...))
 }

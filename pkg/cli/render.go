@@ -3,41 +3,24 @@ package cli
 import (
 	"fmt"
 	"strings"
+
+	"dappco.re/go/core"
 )
 
 // RenderStyle controls how layouts are rendered.
-//
-//	cli.UseRenderBoxed()
-//	frame := cli.NewFrame("HCF")
-//	fmt.Print(frame.String())
 type RenderStyle int
 
-// Render style constants for layout output.
 const (
-	// RenderFlat uses no borders or decorations.
 	RenderFlat RenderStyle = iota
-	// RenderSimple uses --- separators between sections.
 	RenderSimple
-	// RenderBoxed uses Unicode box drawing characters.
 	RenderBoxed
 )
 
 var currentRenderStyle = RenderFlat
 
-// UseRenderFlat sets the render style to flat (no borders).
-//
-//	cli.UseRenderFlat()
-func UseRenderFlat() { currentRenderStyle = RenderFlat }
-
-// UseRenderSimple sets the render style to simple (--- separators).
-//
-//	cli.UseRenderSimple()
+func UseRenderFlat()   { currentRenderStyle = RenderFlat }
 func UseRenderSimple() { currentRenderStyle = RenderSimple }
-
-// UseRenderBoxed sets the render style to boxed (Unicode box drawing).
-//
-//	cli.UseRenderBoxed()
-func UseRenderBoxed() { currentRenderStyle = RenderBoxed }
+func UseRenderBoxed()  { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
@@ -85,7 +68,7 @@ func (c *Composite) renderSeparator(sb *strings.Builder, depth int) {
 func (c *Composite) renderSlot(sb *strings.Builder, slot *Slot, depth int) {
 	indent := strings.Repeat("  ", depth)
 	for _, block := range slot.blocks {
-		for _, line := range strings.Split(block.Render(), "\n") {
+		for _, line := range core.Split(block.Render(), "\n") {
 			if line != "" {
 				sb.WriteString(indent + line + "\n")
 			}

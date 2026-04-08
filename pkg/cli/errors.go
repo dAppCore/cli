@@ -1,10 +1,9 @@
 package cli
 
 import (
-	"errors"
-	"fmt"
 	"os"
 
+	"dappco.re/go/core"
 	"dappco.re/go/core/i18n"
 )
 
@@ -15,7 +14,7 @@ import (
 // Err creates a new error from a format string.
 // This is a direct replacement for fmt.Errorf.
 func Err(format string, args ...any) error {
-	return fmt.Errorf(format, args...)
+	return core.E("cli", core.Sprintf(format, args...), nil)
 }
 
 // Wrap wraps an error with a message.
@@ -26,7 +25,7 @@ func Wrap(err error, msg string) error {
 	if err == nil {
 		return nil
 	}
-	return fmt.Errorf("%s: %w", msg, err)
+	return core.E("cli", msg, err)
 }
 
 // WrapVerb wraps an error using i18n grammar for "Failed to verb subject".
@@ -39,7 +38,7 @@ func WrapVerb(err error, verb, subject string) error {
 		return nil
 	}
 	msg := i18n.ActionFailed(verb, subject)
-	return fmt.Errorf("%s: %w", msg, err)
+	return core.E("cli", msg, err)
 }
 
 // WrapAction wraps an error using i18n grammar for "Failed to verb".
@@ -52,7 +51,7 @@ func WrapAction(err error, verb string) error {
 		return nil
 	}
 	msg := i18n.ActionFailed(verb, "")
-	return fmt.Errorf("%s: %w", msg, err)
+	return core.E("cli", msg, err)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,19 +61,19 @@ func WrapAction(err error, verb string) error {
 // Is reports whether any error in err's tree matches target.
 // This is a re-export of errors.Is for convenience.
 func Is(err, target error) bool {
-	return errors.Is(err, target)
+	return core.Is(err, target)
 }
 
 // As finds the first error in err's tree that matches target.
 // This is a re-export of errors.As for convenience.
 func As(err error, target any) bool {
-	return errors.As(err, target)
+	return core.As(err, target)
 }
 
 // Join returns an error that wraps the given errors.
 // This is a re-export of errors.Join for convenience.
 func Join(errs ...error) error {
-	return errors.Join(errs...)
+	return core.ErrorJoin(errs...)
 }
 
 // ExitError represents an error that should cause the CLI to exit with a specific code.
@@ -120,7 +119,7 @@ func Exit(code int, err error) error {
 func Fatal(err error) {
 	if err != nil {
 		LogError("Fatal error", "err", err)
-		fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
+		core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
 		os.Exit(1)
 	}
 }
@@ -129,9 +128,9 @@ func Fatal(err error) {
 //
 // Deprecated: return an error from the command instead.
 func Fatalf(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	msg := core.Sprintf(format, args...)
 	LogError("Fatal error", "msg", msg)
-	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+msg))
+	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+msg))
 	os.Exit(1)
 }
 
@@ -146,8 +145,8 @@ func FatalWrap(err error, msg string) {
 		return
 	}
 	LogError("Fatal error", "msg", msg, "err", err)
-	fullMsg := fmt.Sprintf("%s: %v", msg, err)
-	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
+	fullMsg := core.Sprintf("%s: %v", msg, err)
+	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
 	os.Exit(1)
 }
 
@@ -163,7 +162,7 @@ func FatalWrapVerb(err error, verb, subject string) {
 	}
 	msg := i18n.ActionFailed(verb, subject)
 	LogError("Fatal error", "msg", msg, "err", err, "verb", verb, "subject", subject)
-	fullMsg := fmt.Sprintf("%s: %v", msg, err)
-	fmt.Fprintln(stderrWriter(), ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
+	fullMsg := core.Sprintf("%s: %v", msg, err)
+	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
 	os.Exit(1)
 }

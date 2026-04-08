@@ -2,18 +2,16 @@ package cli
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"dappco.re/go/core"
 )
 
 // DaemonOptions configures a background process helper.
@@ -68,7 +66,7 @@ var (
 			return false
 		}
 		err = proc.Signal(syscall.Signal(0))
-		return err == nil || errors.Is(err, syscall.EPERM)
+		return err == nil || core.Is(err, syscall.EPERM)
 	}
 	processSignal = func(pid int, sig syscall.Signal) error {
 		proc, err := os.FindProcess(pid)
@@ -188,9 +186,9 @@ func StopPIDFile(pidFile string, timeout time.Duration) error {
 		return err
 	}
 
-	pid, err := parsePID(strings.TrimSpace(string(rawPID)))
+	pid, err := parsePID(core.Trim(string(rawPID)))
 	if err != nil {
-		return fmt.Errorf("parse pid file %q: %w", pidFile, err)
+		return core.E("StopPIDFile", core.Sprintf("parse pid file %q", pidFile), err)
 	}
 
 	if err := processSignal(pid, syscall.SIGTERM); err != nil && !isProcessGone(err) {
@@ -213,7 +211,7 @@ func StopPIDFile(pidFile string, timeout time.Duration) error {
 		}
 
 		if processAlive(pid) {
-			return fmt.Errorf("process %d did not exit after SIGKILL", pid)
+			return core.E("StopPIDFile", core.Sprintf("process %d did not exit after SIGKILL", pid), nil)
 		}
 	}
 
@@ -222,20 +220,20 @@ func StopPIDFile(pidFile string, timeout time.Duration) error {
 
 func parsePID(raw string) (int, error) {
 	if raw == "" {
-		return 0, fmt.Errorf("empty pid")
+		return 0, core.NewError("empty pid")
 	}
 	pid, err := strconv.Atoi(raw)
 	if err != nil {
 		return 0, err
 	}
 	if pid <= 0 {
-		return 0, fmt.Errorf("invalid pid %d", pid)
+		return 0, core.E("parsePID", core.Sprintf("invalid pid %d", pid), nil)
 	}
 	return pid, nil
 }
 
 func isProcessGone(err error) bool {
-	return errors.Is(err, os.ErrProcessDone) || errors.Is(err, syscall.ESRCH)
+	return core.Is(err, os.ErrProcessDone) || core.Is(err, syscall.ESRCH)
 }
 
 func (d *Daemon) writePIDFile() error {
@@ -243,10 +241,10 @@ func (d *Daemon) writePIDFile() error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(d.opts.PIDFile), 0o755); err != nil {
+	if err := os.MkdirAll(core.PathDir(d.opts.PIDFile), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(d.opts.PIDFile, []byte(strconv.Itoa(os.Getpid())+"\n"), 0o644)
+	return os.WriteFile(d.opts.PIDFile, []byte(core.Sprintf("%d", os.Getpid())+"\n"), 0o644)
 }
 
 func (d *Daemon) removePIDFile() error {
@@ -318,5 +316,5 @@ func isClosedServerError(err error) bool {
 }
 
 func isListenerClosedError(err error) bool {
-	return err == nil || errors.Is(err, net.ErrClosed)
+	return err == nil || core.Is(err, net.ErrClosed)
 }

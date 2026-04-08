@@ -2,14 +2,13 @@ package cli
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
+
+	"dappco.re/go/core"
 )
 
-// newReader wraps stdin in a bufio.Reader if it isn't one already.
 func newReader() *bufio.Reader {
 	if br, ok := stdinReader().(*bufio.Reader); ok {
 		return br
@@ -29,9 +28,9 @@ func Prompt(label, defaultVal string) (string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	input = strings.TrimSpace(input)
+	input = core.Trim(input)
 	if err != nil {
-		if !errors.Is(err, io.EOF) {
+		if !core.Is(err, io.EOF) {
 			return "", err
 		}
 		if input == "" {
@@ -53,7 +52,7 @@ func Select(label string, options []string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Fprintln(stderrWriter(), compileGlyphs(label))
+	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
 		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
@@ -61,15 +60,15 @@ func Select(label string, options []string) (string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	if err != nil && strings.TrimSpace(input) == "" {
+	if err != nil && core.Trim(input) == "" {
 		promptHint("No input received. Selection cancelled.")
 		return "", Wrap(err, "selection cancelled")
 	}
 
-	trimmed := strings.TrimSpace(input)
+	trimmed := core.Trim(input)
 	n, err := strconv.Atoi(trimmed)
 	if err != nil || n < 1 || n > len(options) {
-		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(options)))
+		promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(options)))
 		return "", Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
 	}
 	return options[n-1], nil
@@ -81,7 +80,7 @@ func MultiSelect(label string, options []string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	fmt.Fprintln(stderrWriter(), compileGlyphs(label))
+	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
 		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
 	}
@@ -89,17 +88,17 @@ func MultiSelect(label string, options []string) ([]string, error) {
 
 	r := newReader()
 	input, err := r.ReadString('\n')
-	trimmed := strings.TrimSpace(input)
+	trimmed := core.Trim(input)
 	if err != nil && trimmed == "" {
 		return []string{}, nil
 	}
-	if err != nil && !errors.Is(err, io.EOF) {
+	if err != nil && !core.Is(err, io.EOF) {
 		return nil, err
 	}
 
 	selected, parseErr := parseMultiSelection(trimmed, len(options))
 	if parseErr != nil {
-		return nil, Wrap(parseErr, fmt.Sprintf("invalid selection %q", trimmed))
+		return nil, Wrap(parseErr, core.Sprintf("invalid selection %q", trimmed))
 	}
 
 	selectedOptions := make([]string, 0, len(selected))

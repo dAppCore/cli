@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"dappco.re/go/core"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -75,14 +76,14 @@ func (s *Stream) Write(text string) {
 
 	for _, r := range text {
 		if r == '\n' {
-			fmt.Fprintln(s.out)
+			core.Print(s.out, "")
 			s.col = 0
 			continue
 		}
 
 		rw := runewidth.RuneWidth(r)
 		if rw > 0 && s.col > 0 && s.col+rw > s.wrap {
-			fmt.Fprintln(s.out)
+			core.Print(s.out, "")
 			s.col = 0
 		}
 
@@ -113,7 +114,7 @@ func (s *Stream) Done() {
 	s.once.Do(func() {
 		s.mu.Lock()
 		if s.col > 0 {
-			fmt.Fprintln(s.out) // ensure trailing newline
+			core.Print(s.out, "") // ensure trailing newline
 		}
 		s.mu.Unlock()
 		close(s.done)

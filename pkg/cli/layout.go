@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"fmt"
 	"iter"
+
+	"dappco.re/go/core"
 )
 
 // Region represents one of the 5 HLCRF regions.
@@ -91,7 +92,7 @@ func ParseVariant(variant string) (*Composite, error) {
 	for i < len(variant) {
 		r := Region(variant[i])
 		if !isValidRegion(r) {
-			return nil, fmt.Errorf("invalid region: %c", r)
+			return nil, core.E("ParseVariant", core.Sprintf("invalid region: %c", r), nil)
 		}
 
 		slot := &Slot{region: r, path: string(r)}
@@ -101,7 +102,7 @@ func ParseVariant(variant string) (*Composite, error) {
 		if i < len(variant) && variant[i] == '[' {
 			end := findMatchingBracket(variant, i)
 			if end == -1 {
-				return nil, fmt.Errorf("unmatched bracket at %d", i)
+				return nil, core.E("ParseVariant", core.Sprintf("unmatched bracket at %d", i), nil)
 			}
 			nested, err := ParseVariant(variant[i+1 : end])
 			if err != nil {
@@ -168,6 +169,6 @@ func toRenderable(item any) Renderable {
 	case string:
 		return StringBlock(v)
 	default:
-		return StringBlock(fmt.Sprint(v))
+		return StringBlock(core.Sprint(v))
 	}
 }
