@@ -95,7 +95,7 @@ func optionalChecks() []check {
 //
 //	ok, version := runCheck(check{command: "git", args: []string{"--version"}})
 func runCheck(toolCheck check) (bool, string) {
-	proc := exec.Command(toolCheck.command, toolCheck.args...)
+	proc := exec.Command(toolCheck.command, toolCheck.args...) // TODO: migrate to c.Process()
 	output, err := proc.CombinedOutput()
 	if err != nil {
 		return false, ""

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io"
 	"iter"
 	"os"
@@ -154,7 +153,7 @@ func (tr *TaskTracker) waitStatic() {
 			if state == taskFailed {
 				icon = Glyph(":cross:")
 			}
-			fmt.Fprintf(tr.out, "%s %-20s %s\n", icon, name, status)
+			core.Print(tr.out, "%s %-20s %s", icon, name, status)
 		}
 		if allDone {
 			return
@@ -187,7 +186,7 @@ func (tr *TaskTracker) waitLive() {
 		count := len(tr.tasks)
 		tr.mu.Unlock()
 
-		fmt.Fprintf(tr.out, "\033[%dA", count)
+		io.WriteString(tr.out, core.Sprintf("\033[%dA", count))
 		for i := range count {
 			tr.renderLine(i, frame)
 		}
@@ -230,7 +229,7 @@ func (tr *TaskTracker) renderLine(idx, frame int) {
 		styledStatus = DimStyle.Render(status)
 	}
 
-	fmt.Fprintf(tr.out, "\033[2K%s %s %s\n", icon, Pad(name, nameW), styledStatus)
+	core.Print(tr.out, "\033[2K%s %s %s", icon, Pad(name, nameW), styledStatus)
 }
 
 func (tr *TaskTracker) nameWidth() int {
@@ -299,7 +298,7 @@ func (tr *TaskTracker) String() string {
 		case taskRunning:
 			icon = Glyph(":spinner:")
 		}
-		fmt.Fprintf(&sb, "%s %s %s\n", icon, Pad(name, nameW), status)
+		core.Print(&sb, "%s %s %s", icon, Pad(name, nameW), status)
 	}
 	return sb.String()
 }

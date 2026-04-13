@@ -35,7 +35,7 @@ func checkGitHubSSH() bool {
 // checkGitHubCLI checks if the GitHub CLI is authenticated.
 // Returns true when 'gh auth status' output contains "Logged in to".
 func checkGitHubCLI() bool {
-	proc := exec.Command("gh", "auth", "status")
+	proc := exec.Command("gh", "auth", "status") // TODO: migrate to c.Process()
 	output, _ := proc.CombinedOutput()
 	return core.Contains(string(output), "Logged in to")
 }

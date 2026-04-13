@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"fmt"
+	"io"
 	"strings"
 
 	"dappco.re/go/core"
@@ -24,7 +24,7 @@ func UseRenderBoxed()  { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
-	fmt.Fprint(stdoutWriter(), c.String())
+	io.WriteString(stdoutWriter(), c.String())
 }
 
 // String returns the rendered layout.

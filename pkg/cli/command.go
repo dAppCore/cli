@@ -34,7 +34,7 @@ func RegisterCommand(c *core.Core, path string, cmd core.Command) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Arg Helpers (replace cobra.ExactArgs etc.)
+// Arg Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 // RequireArgs validates that at least n positional arguments are present in opts.

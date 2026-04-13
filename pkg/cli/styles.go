@@ -2,7 +2,7 @@
 package cli
 
 import (
-	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -216,7 +216,7 @@ func (t *Table) String() string {
 }
 
 func (t *Table) Render() {
-	fmt.Fprint(stdoutWriter(), t.String())
+	io.WriteString(stdoutWriter(), t.String())
 }
 
 func (t *Table) colCount() int {

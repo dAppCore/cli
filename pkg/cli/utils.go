@@ -2,8 +2,9 @@ package cli
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -14,7 +15,7 @@ import (
 )
 
 func GhAuthenticated() bool {
-	cmd := exec.Command("gh", "auth", "status")
+	cmd := exec.Command("gh", "auth", "status") // TODO: migrate to c.Process()
 	output, _ := cmd.CombinedOutput()
 	authenticated := core.Contains(string(output), "Logged in")
 	if authenticated {
@@ -77,7 +78,7 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 	reader := newReader()
 
 	for {
-		fmt.Fprintf(stderrWriter(), "%s %s", prompt, suffix)
+		io.WriteString(stderrWriter(), core.Sprintf("%s %s", prompt, suffix))
 
 		var response string
 		var readErr error
@@ -178,9 +179,9 @@ func Question(prompt string, opts ...QuestionOption) string {
 	reader := newReader()
 	for {
 		if cfg.defaultValue != "" {
-			fmt.Fprintf(stderrWriter(), "%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
+			io.WriteString(stderrWriter(), core.Sprintf("%s [%s] ", prompt, compileGlyphs(cfg.defaultValue)))
 		} else {
-			fmt.Fprintf(stderrWriter(), "%s ", prompt)
+			io.WriteString(stderrWriter(), core.Sprintf("%s ", prompt))
 		}
 		response, err := reader.ReadString('\n')
 		response = core.Trim(response)
@@ -261,9 +262,9 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
 		if cfg.filter {
-			fmt.Fprintf(stderrWriter(), "Enter number [1-%d] or filter: ", len(visible))
+			io.WriteString(stderrWriter(), core.Sprintf("Enter number [1-%d] or filter: ", len(visible)))
 		} else {
-			fmt.Fprintf(stderrWriter(), "Enter number [1-%d]: ", len(visible))
+			io.WriteString(stderrWriter(), core.Sprintf("Enter number [1-%d]: ", len(visible)))
 		}
 		response, err := reader.ReadString('\n')
 		response = core.Trim(response)
@@ -290,8 +291,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
-		var n int
-		if _, err := fmt.Sscanf(response, "%d", &n); err == nil {
+		if n, err := strconv.Atoi(response); err == nil {
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
@@ -336,9 +336,9 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
 		if cfg.filter {
-			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
+			io.WriteString(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
 		} else {
-			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+			io.WriteString(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
 		}
 		response, _ := reader.ReadString('\n')
 		response = core.Trim(response)
@@ -374,7 +374,7 @@ func renderChoices[T any](prompt string, items []T, visible []int, displayFn fun
 		if defaultN >= 0 && idx == defaultN {
 			marker = "*"
 		}
-		fmt.Fprintf(stderrWriter(), "  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
+		core.Print(stderrWriter(), "  %s%d. %s", marker, i+1, compileGlyphs(displayFn(items[idx])))
 	}
 	if filter {
 		core.Print(stderrWriter(), "  (type to filter the list)")
@@ -434,11 +434,12 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 			if len(rangeParts) != 2 {
 				return nil, Err("invalid range: %s", part)
 			}
-			var start, end int
-			if _, err := fmt.Sscanf(rangeParts[0], "%d", &start); err != nil {
+			start, err := strconv.Atoi(rangeParts[0])
+			if err != nil {
 				return nil, Err("invalid range start: %s", rangeParts[0])
 			}
-			if _, err := fmt.Sscanf(rangeParts[1], "%d", &end); err != nil {
+			end, err := strconv.Atoi(rangeParts[1])
+			if err != nil {
 				return nil, Err("invalid range end: %s", rangeParts[1])
 			}
 			if start < 1 || start > maxItems || end < 1 || end > maxItems || start > end {
@@ -448,8 +449,8 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 				selected[i-1] = true
 			}
 		} else {
-			var n int
-			if _, err := fmt.Sscanf(part, "%d", &n); err != nil {
+			n, err := strconv.Atoi(part)
+			if err != nil {
 				return nil, Err("invalid number: %s", part)
 			}
 			if n < 1 || n > maxItems {
@@ -483,7 +484,7 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 		if ref != "" {
 			args = append(args, "--", "--branch", ref, "--single-branch")
 		}
-		cmd := exec.CommandContext(ctx, "gh", args...)
+		cmd := exec.CommandContext(ctx, "gh", args...) // TODO: migrate to c.Process()
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			return nil
@@ -498,7 +499,7 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 		args = append(args, "--branch", ref, "--single-branch")
 	}
 	args = append(args, core.Sprintf("git@github.com:%s/%s.git", org, repo), path)
-	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd := exec.CommandContext(ctx, "git", args...) // TODO: migrate to c.Process()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return core.NewError(core.Trim(string(output)))

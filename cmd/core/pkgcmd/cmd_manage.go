@@ -139,7 +139,7 @@ func runPkgUpdate(packages []string, all bool) error {
 
 		cli.Print("  %s %s... ", dimStyle.Render("v"), name)
 
-		proc := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
+		proc := exec.Command("git", "-C", repoPath, "pull", "--ff-only") // TODO: migrate to c.Process()
 		output, err := proc.CombinedOutput()
 		if err != nil {
 			cli.Println("%s", errorStyle.Render("x"))
@@ -202,10 +202,10 @@ func runPkgOutdated() error {
 		}
 
 		// Fetch updates silently.
-		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run()
+		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run() // TODO: migrate to c.Process()
 
 		// Check commit count behind upstream.
-		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}")
+		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}") // TODO: migrate to c.Process()
 		output, err := proc.Output()
 		if err != nil {
 			continue

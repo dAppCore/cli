@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"fmt"
+	"io"
 	"iter"
 	"strings"
 )
@@ -58,7 +58,7 @@ func (n *TreeNode) String() string {
 }
 
 func (n *TreeNode) Render() {
-	fmt.Fprint(stdoutWriter(), n.String())
+	io.WriteString(stdoutWriter(), n.String())
 }
 
 func (n *TreeNode) renderLabel() string {

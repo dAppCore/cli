@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 
 	"dappco.re/go/core"
 	"dappco.re/go/core/i18n"
@@ -21,7 +22,7 @@ func Echo(key string, args ...any) {
 // Print outputs formatted text (no newline).
 // Glyph shortcodes like :check: are converted.
 func Print(format string, args ...any) {
-	fmt.Fprint(stdoutWriter(), compileGlyphs(core.Sprintf(format, args...)))
+	io.WriteString(stdoutWriter(), compileGlyphs(core.Sprintf(format, args...)))
 }
 
 // Println outputs formatted text with newline.
@@ -113,15 +114,15 @@ func Dim(msg string) {
 func Progress(verb string, current, total int, item ...string) {
 	msg := compileGlyphs(i18n.Progress(verb))
 	if len(item) > 0 && item[0] != "" {
-		fmt.Fprintf(stderrWriter(), "\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0]))
+		io.WriteString(stderrWriter(), core.Sprintf("\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0])))
 	} else {
-		fmt.Fprintf(stderrWriter(), "\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total)
+		io.WriteString(stderrWriter(), core.Sprintf("\033[2K\r%s %d/%d", DimStyle.Render(msg), current, total))
 	}
 }
 
 // ProgressDone clears the progress line.
 func ProgressDone() {
-	fmt.Fprint(stderrWriter(), "\033[2K\r")
+	io.WriteString(stderrWriter(), "\033[2K\r")
 }
 
 // Label prints a "Label: value" line.

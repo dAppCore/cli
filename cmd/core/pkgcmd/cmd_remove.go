@@ -85,7 +85,7 @@ func runPkgRemove(name string, force bool) error {
 //	if blocked { fmt.Println(reasons) }
 func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	// Check for uncommitted changes (staged, unstaged, untracked).
-	proc := exec.Command("git", "-C", repoPath, "status", "--porcelain")
+	proc := exec.Command("git", "-C", repoPath, "status", "--porcelain") // TODO: migrate to c.Process()
 	output, err := proc.Output()
 	if err == nil && core.Trim(string(output)) != "" {
 		lines := core.Split(core.Trim(string(output)), "\n")
@@ -94,7 +94,7 @@ func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	}
 
 	// Check for unpushed commits on current branch.
-	proc = exec.Command("git", "-C", repoPath, "log", "--oneline", "@{u}..HEAD")
+	proc = exec.Command("git", "-C", repoPath, "log", "--oneline", "@{u}..HEAD") // TODO: migrate to c.Process()
 	output, err = proc.Output()
 	if err == nil && core.Trim(string(output)) != "" {
 		lines := core.Split(core.Trim(string(output)), "\n")
@@ -103,7 +103,7 @@ func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	}
 
 	// Check all local branches for unpushed work.
-	proc = exec.Command("git", "-C", repoPath, "branch", "--no-merged", "origin/HEAD")
+	proc = exec.Command("git", "-C", repoPath, "branch", "--no-merged", "origin/HEAD") // TODO: migrate to c.Process()
 	output, _ = proc.Output()
 	if trimmedOutput := core.Trim(string(output)); trimmedOutput != "" {
 		branches := core.Split(trimmedOutput, "\n")
@@ -123,7 +123,7 @@ func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	}
 
 	// Check for stashed changes.
-	proc = exec.Command("git", "-C", repoPath, "stash", "list")
+	proc = exec.Command("git", "-C", repoPath, "stash", "list") // TODO: migrate to c.Process()
 	output, err = proc.Output()
 	if err == nil && core.Trim(string(output)) != "" {
 		lines := core.Split(core.Trim(string(output)), "\n")

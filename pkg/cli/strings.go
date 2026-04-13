@@ -1,19 +1,19 @@
 package cli
 
-import "fmt"
+import "dappco.re/go/core"
 
 // Sprintf formats a string using a format template.
 //
 //	msg := cli.Sprintf("Hello, %s! You have %d messages.", name, count)
 func Sprintf(format string, args ...any) string {
-	return fmt.Sprintf(format, args...)
+	return core.Sprintf(format, args...)
 }
 
 // Sprint formats using default formats without a format string.
 //
 //	label := cli.Sprint("count:", count)
 func Sprint(args ...any) string {
-	return fmt.Sprint(args...)
+	return core.Sprint(args...)
 }
 
 // Styled returns text with a style applied.
@@ -31,9 +31,9 @@ func Styled(style *AnsiStyle, text string) string {
 //	header := cli.Styledf(cli.HeaderStyle, "%s v%s", name, version)
 func Styledf(style *AnsiStyle, format string, args ...any) string {
 	if style == nil {
-		return compileGlyphs(fmt.Sprintf(format, args...))
+		return compileGlyphs(core.Sprintf(format, args...))
 	}
-	return style.Render(compileGlyphs(fmt.Sprintf(format, args...)))
+	return style.Render(compileGlyphs(core.Sprintf(format, args...)))
 }
 
 // SuccessStr returns a success-styled string without printing it.

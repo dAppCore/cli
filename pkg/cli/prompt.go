@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 
@@ -21,9 +20,9 @@ func Prompt(label, defaultVal string) (string, error) {
 	label = compileGlyphs(label)
 	defaultVal = compileGlyphs(defaultVal)
 	if defaultVal != "" {
-		fmt.Fprintf(stderrWriter(), "%s [%s]: ", label, defaultVal)
+		io.WriteString(stderrWriter(), core.Sprintf("%s [%s]: ", label, defaultVal))
 	} else {
-		fmt.Fprintf(stderrWriter(), "%s: ", label)
+		io.WriteString(stderrWriter(), core.Sprintf("%s: ", label))
 	}
 
 	r := newReader()
@@ -54,9 +53,9 @@ func Select(label string, options []string) (string, error) {
 
 	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
+		core.Print(stderrWriter(), "  %d. %s", i+1, compileGlyphs(opt))
 	}
-	fmt.Fprintf(stderrWriter(), "Choose [1-%d]: ", len(options))
+	io.WriteString(stderrWriter(), core.Sprintf("Choose [1-%d]: ", len(options)))
 
 	r := newReader()
 	input, err := r.ReadString('\n')
@@ -82,9 +81,9 @@ func MultiSelect(label string, options []string) ([]string, error) {
 
 	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
-		fmt.Fprintf(stderrWriter(), "  %d. %s\n", i+1, compileGlyphs(opt))
+		core.Print(stderrWriter(), "  %d. %s", i+1, compileGlyphs(opt))
 	}
-	fmt.Fprintf(stderrWriter(), "Choose (space-separated) [1-%d]: ", len(options))
+	io.WriteString(stderrWriter(), core.Sprintf("Choose (space-separated) [1-%d]: ", len(options)))
 
 	r := newReader()
 	input, err := r.ReadString('\n')

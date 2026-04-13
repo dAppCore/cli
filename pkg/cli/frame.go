@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -340,7 +339,7 @@ func (f *Frame) updateFocusedLocked(msg tea.Msg) tea.Cmd {
 // Run renders the frame and blocks.
 func (f *Frame) Run() {
 	if !f.isTTY() {
-		fmt.Fprint(f.out, f.String())
+		io.WriteString(f.out, f.String())
 		return
 	}
 	f.runLive()

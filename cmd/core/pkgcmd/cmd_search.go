@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
 	"dappco.re/go/core/cache"
+	"dappco.re/go/core/cli/pkg/cli"
 	"dappco.re/go/core/i18n"
 	coreio "dappco.re/go/core/io"
 	"dappco.re/go/core/scm/repos"
@@ -84,6 +84,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 		cli.Print("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
 
+		// TODO: migrate to c.Process()
 		proc := exec.Command("gh", "repo", "list", org,
 			"--json", "name,description,visibility,updatedAt,primaryLanguage",
 			"--limit", cli.Sprintf("%d", limit))

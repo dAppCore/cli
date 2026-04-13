@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -64,7 +63,7 @@ func (s *Stream) Write(text string) {
 	defer s.mu.Unlock()
 
 	if s.wrap <= 0 {
-		fmt.Fprint(s.out, text)
+		io.WriteString(s.out, text)
 		// Track visible width across newlines for Done() trailing-newline logic.
 		if idx := strings.LastIndex(text, "\n"); idx >= 0 {
 			s.col = runewidth.StringWidth(text[idx+1:])
@@ -87,7 +86,7 @@ func (s *Stream) Write(text string) {
 			s.col = 0
 		}
 
-		fmt.Fprint(s.out, string(r))
+		io.WriteString(s.out, string(r))
 		s.col += rw
 	}
 }
@@ -149,7 +148,7 @@ func (s *Stream) CapturedOK() (string, bool) {
 	if sb, ok := s.out.(*strings.Builder); ok {
 		return sb.String(), true
 	}
-	if st, ok := s.out.(fmt.Stringer); ok {
+	if st, ok := s.out.(interface{ String() string }); ok {
 		return st.String(), true
 	}
 	return "", false
