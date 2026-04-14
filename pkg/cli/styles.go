@@ -3,7 +3,6 @@ package cli
 
 import (
 	"io"
-	"strings"
 	"time"
 
 	"dappco.re/go/core"
@@ -87,7 +86,7 @@ func Pad(s string, width int) string {
 	if displayWidth(s) >= width {
 		return s
 	}
-	return s + strings.Repeat(" ", width-displayWidth(s))
+	return s + Repeat(" ", width-displayWidth(s))
 }
 
 func displayWidth(s string) int {
@@ -102,10 +101,8 @@ func truncateByWidth(s string, max int) string {
 	if displayWidth(plain) <= max {
 		return plain
 	}
-	var (
-		width int
-		out   strings.Builder
-	)
+	var width int
+	out := core.NewBuilder()
 	for _, r := range plain {
 		rw := runewidth.RuneWidth(r)
 		if width+rw > max {
@@ -291,7 +288,7 @@ func (t *Table) resolveStyle(col int, value string) *AnsiStyle {
 
 func (t *Table) renderPlain() string {
 	widths := t.columnWidths()
-	var sb strings.Builder
+	sb := core.NewBuilder()
 	sep := t.Style.Separator
 	if len(t.Headers) > 0 {
 		for i, h := range t.Headers {
@@ -330,10 +327,10 @@ func (t *Table) renderBordered() string {
 	b := tableBorderSet(t.borders)
 	widths := t.columnWidths()
 	cols := t.colCount()
-	var sb strings.Builder
+	sb := core.NewBuilder()
 	sb.WriteString(b.tl)
 	for i := range cols {
-		sb.WriteString(strings.Repeat(b.h, widths[i]+2))
+		sb.WriteString(Repeat(b.h, widths[i]+2))
 		if i < cols-1 {
 			sb.WriteString(b.tt)
 		}
@@ -359,7 +356,7 @@ func (t *Table) renderBordered() string {
 		sb.WriteByte('\n')
 		sb.WriteString(b.lt)
 		for i := range cols {
-			sb.WriteString(strings.Repeat(b.h, widths[i]+2))
+			sb.WriteString(Repeat(b.h, widths[i]+2))
 			if i < cols-1 {
 				sb.WriteString(b.x)
 			}
@@ -387,7 +384,7 @@ func (t *Table) renderBordered() string {
 	}
 	sb.WriteString(b.bl)
 	for i := range cols {
-		sb.WriteString(strings.Repeat(b.h, widths[i]+2))
+		sb.WriteString(Repeat(b.h, widths[i]+2))
 		if i < cols-1 {
 			sb.WriteString(b.bt)
 		}

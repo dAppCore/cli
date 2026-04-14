@@ -3,7 +3,8 @@ package cli
 import (
 	"io"
 	"iter"
-	"strings"
+
+	"dappco.re/go/core"
 )
 
 // TreeNode represents a node in a displayable tree structure.
@@ -50,10 +51,10 @@ func (n *TreeNode) Children() iter.Seq[*TreeNode] {
 }
 
 func (n *TreeNode) String() string {
-	var sb strings.Builder
+	sb := core.NewBuilder()
 	sb.WriteString(n.renderLabel())
 	sb.WriteByte('\n')
-	n.writeChildren(&sb, "")
+	n.writeChildren(sb, "")
 	return sb.String()
 }
 
@@ -69,7 +70,7 @@ func (n *TreeNode) renderLabel() string {
 	return label
 }
 
-func (n *TreeNode) writeChildren(sb *strings.Builder, prefix string) {
+func (n *TreeNode) writeChildren(sb io.StringWriter, prefix string) {
 	tee := Glyph(":tee:") + Glyph(":dash:") + Glyph(":dash:") + " "
 	corner := Glyph(":corner:") + Glyph(":dash:") + Glyph(":dash:") + " "
 	pipe := Glyph(":pipe:") + "   "
@@ -82,10 +83,10 @@ func (n *TreeNode) writeChildren(sb *strings.Builder, prefix string) {
 			connector = corner
 			next = "    "
 		}
-		sb.WriteString(prefix)
-		sb.WriteString(connector)
-		sb.WriteString(child.renderLabel())
-		sb.WriteByte('\n')
+		_, _ = sb.WriteString(prefix)
+		_, _ = sb.WriteString(connector)
+		_, _ = sb.WriteString(child.renderLabel())
+		_, _ = sb.WriteString("\n")
 		child.writeChildren(sb, prefix+next)
 	}
 }

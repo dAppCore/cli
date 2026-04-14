@@ -2,7 +2,6 @@ package cli
 
 import (
 	"io"
-	"strings"
 	"sync"
 
 	"dappco.re/go/core"
@@ -65,7 +64,7 @@ func (s *Stream) Write(text string) {
 	if s.wrap <= 0 {
 		io.WriteString(s.out, text)
 		// Track visible width across newlines for Done() trailing-newline logic.
-		if idx := strings.LastIndex(text, "\n"); idx >= 0 {
+		if idx := LastIndex(text, "\n"); idx >= 0 {
 			s.col = runewidth.StringWidth(text[idx+1:])
 		} else {
 			s.col += runewidth.StringWidth(text)
@@ -141,13 +140,11 @@ func (s *Stream) Captured() string {
 }
 
 // CapturedOK returns the stream output and whether the configured writer
-// supports capture.
+// supports capture. Any writer exposing a String() method is detected,
+// which includes *strings.Builder, *bytes.Buffer, and test fixtures.
 func (s *Stream) CapturedOK() (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if sb, ok := s.out.(*strings.Builder); ok {
-		return sb.String(), true
-	}
 	if st, ok := s.out.(interface{ String() string }); ok {
 		return st.String(), true
 	}

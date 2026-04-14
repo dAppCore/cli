@@ -2,7 +2,6 @@ package cli
 
 import (
 	"io"
-	"strings"
 
 	"dappco.re/go/core"
 )
@@ -29,12 +28,12 @@ func (c *Composite) Render() {
 
 // String returns the rendered layout.
 func (c *Composite) String() string {
-	var sb strings.Builder
-	c.renderTo(&sb, 0)
+	sb := core.NewBuilder()
+	c.renderTo(sb, 0)
 	return sb.String()
 }
 
-func (c *Composite) renderTo(sb *strings.Builder, depth int) {
+func (c *Composite) renderTo(sb io.StringWriter, depth int) {
 	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
 
 	var active []Region
@@ -55,22 +54,22 @@ func (c *Composite) renderTo(sb *strings.Builder, depth int) {
 	}
 }
 
-func (c *Composite) renderSeparator(sb *strings.Builder, depth int) {
-	indent := strings.Repeat("  ", depth)
+func (c *Composite) renderSeparator(sb io.StringWriter, depth int) {
+	indent := Repeat("  ", depth)
 	switch currentRenderStyle {
 	case RenderBoxed:
-		sb.WriteString(indent + Glyph(":tee:") + strings.Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
+		_, _ = sb.WriteString(indent + Glyph(":tee:") + Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
 	case RenderSimple:
-		sb.WriteString(indent + strings.Repeat(Glyph(":dash:"), 40) + "\n")
+		_, _ = sb.WriteString(indent + Repeat(Glyph(":dash:"), 40) + "\n")
 	}
 }
 
-func (c *Composite) renderSlot(sb *strings.Builder, slot *Slot, depth int) {
-	indent := strings.Repeat("  ", depth)
+func (c *Composite) renderSlot(sb io.StringWriter, slot *Slot, depth int) {
+	indent := Repeat("  ", depth)
 	for _, block := range slot.blocks {
 		for _, line := range core.Split(block.Render(), "\n") {
 			if line != "" {
-				sb.WriteString(indent + line + "\n")
+				_, _ = sb.WriteString(indent + line + "\n")
 			}
 		}
 	}

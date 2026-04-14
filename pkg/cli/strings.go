@@ -1,6 +1,11 @@
 package cli
 
-import "dappco.re/go/core"
+import (
+	"strconv"
+	"strings"
+
+	"dappco.re/go/core"
+)
 
 // Sprintf formats a string using a format template.
 //
@@ -14,6 +19,46 @@ func Sprintf(format string, args ...any) string {
 //	label := cli.Sprint("count:", count)
 func Sprint(args ...any) string {
 	return core.Sprint(args...)
+}
+
+// Repeat returns a new string consisting of count copies of s.
+// Wraps strings.Repeat so consumer files do not import "strings" directly.
+//
+//	cli.Repeat("-", 10)  // "----------"
+func Repeat(s string, count int) string {
+	if count <= 0 {
+		return ""
+	}
+	return strings.Repeat(s, count)
+}
+
+// LastIndex returns the index of the last instance of substr in s,
+// or -1 if substr is not present.
+// Wraps strings.LastIndex so consumer files do not import "strings" directly.
+//
+//	cli.LastIndex("hello\nworld", "\n")  // 5
+func LastIndex(s, substr string) int {
+	return strings.LastIndex(s, substr)
+}
+
+// Atoi parses a decimal integer from s.
+// Wraps strconv.Atoi so consumer files do not import "strconv" directly.
+//
+//	n, err := cli.Atoi("42")  // 42, nil
+func Atoi(s string) (int, error) {
+	return strconv.Atoi(s)
+}
+
+// ParseHexByte parses a 2-character hex string into a byte value (0-255).
+// Wraps strconv.ParseUint so consumer files do not import "strconv" directly.
+//
+//	r, _ := cli.ParseHexByte("ff")  // 255, nil
+func ParseHexByte(s string) (int, error) {
+	v, err := strconv.ParseUint(s, 16, 8)
+	if err != nil {
+		return 0, err
+	}
+	return int(v), nil
 }
 
 // Styled returns text with a style applied.

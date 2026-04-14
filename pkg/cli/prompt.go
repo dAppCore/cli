@@ -3,7 +3,6 @@ package cli
 import (
 	"bufio"
 	"io"
-	"strconv"
 
 	"dappco.re/go/core"
 )
@@ -65,7 +64,7 @@ func Select(label string, options []string) (string, error) {
 	}
 
 	trimmed := core.Trim(input)
-	n, err := strconv.Atoi(trimmed)
+	n, err := Atoi(trimmed)
 	if err != nil || n < 1 || n > len(options) {
 		promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(options)))
 		return "", Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))

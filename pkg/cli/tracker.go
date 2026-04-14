@@ -4,7 +4,6 @@ import (
 	"io"
 	"iter"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -284,7 +283,7 @@ func (tr *TaskTracker) String() string {
 	tr.mu.Unlock()
 
 	nameW := tr.nameWidth()
-	var sb strings.Builder
+	sb := core.NewBuilder()
 	for _, t := range tasks {
 		name, status, state := t.snapshot()
 		name = compileGlyphs(name)
@@ -298,7 +297,7 @@ func (tr *TaskTracker) String() string {
 		case taskRunning:
 			icon = Glyph(":spinner:")
 		}
-		core.Print(&sb, "%s %s %s", icon, Pad(name, nameW), status)
+		core.Print(sb, "%s %s %s", icon, Pad(name, nameW), status)
 	}
 	return sb.String()
 }

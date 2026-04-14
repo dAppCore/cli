@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io"
 
 	"dappco.re/go/core"
@@ -31,7 +30,9 @@ func Println(format string, args ...any) {
 	core.Print(stdoutWriter(), "%s", compileGlyphs(core.Sprintf(format, args...)))
 }
 
-// Text prints arguments like fmt.Println, but handling glyphs.
+// Text prints arguments space-separated with a trailing newline, handling glyphs.
+//
+//	cli.Text("count:", count)
 func Text(args ...any) {
 	core.Print(stdoutWriter(), "%s", compileGlyphs(core.Sprint(args...)))
 }
@@ -128,11 +129,6 @@ func ProgressDone() {
 // Label prints a "Label: value" line.
 func Label(word, value string) {
 	core.Print(stdoutWriter(), "%s %s", KeyStyle.Render(compileGlyphs(i18n.Label(word))), compileGlyphs(value))
-}
-
-// Scanln reads from stdin.
-func Scanln(a ...any) (int, error) {
-	return fmt.Fscanln(newReader(), a...)
 }
 
 // Task prints a task header: "[label] message"

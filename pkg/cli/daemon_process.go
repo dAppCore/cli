@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -222,7 +221,7 @@ func parsePID(raw string) (int, error) {
 	if raw == "" {
 		return 0, core.NewError("empty pid")
 	}
-	pid, err := strconv.Atoi(raw)
+	pid, err := Atoi(raw)
 	if err != nil {
 		return 0, err
 	}

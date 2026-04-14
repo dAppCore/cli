@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 	"os/exec"
-	"strconv"
-	"strings"
 	"time"
 	"unicode"
 
@@ -291,7 +289,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
-		if n, err := strconv.Atoi(response); err == nil {
+		if n, err := Atoi(response); err == nil {
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
@@ -424,21 +422,18 @@ func looksLikeMultiSelectionInput(input string) bool {
 
 func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	selected := make(map[int]bool)
-	normalized := strings.NewReplacer(",", " ").Replace(input)
-	for part := range strings.FieldsSeq(normalized) {
+	normalized := core.Replace(input, ",", " ")
+	for _, part := range fields(normalized) {
 		if core.Contains(part, "-") {
-			var rangeParts []string
-			for p := range strings.SplitSeq(part, "-") {
-				rangeParts = append(rangeParts, p)
-			}
+			rangeParts := core.Split(part, "-")
 			if len(rangeParts) != 2 {
 				return nil, Err("invalid range: %s", part)
 			}
-			start, err := strconv.Atoi(rangeParts[0])
+			start, err := Atoi(rangeParts[0])
 			if err != nil {
 				return nil, Err("invalid range start: %s", rangeParts[0])
 			}
-			end, err := strconv.Atoi(rangeParts[1])
+			end, err := Atoi(rangeParts[1])
 			if err != nil {
 				return nil, Err("invalid range end: %s", rangeParts[1])
 			}
@@ -449,7 +444,7 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 				selected[i-1] = true
 			}
 		} else {
-			n, err := strconv.Atoi(part)
+			n, err := Atoi(part)
 			if err != nil {
 				return nil, Err("invalid number: %s", part)
 			}
@@ -466,6 +461,27 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 		}
 	}
 	return result, nil
+}
+
+// fields splits a string on whitespace runs, returning non-empty tokens.
+// Equivalent to strings.Fields without importing the stdlib package directly.
+func fields(s string) []string {
+	var parts []string
+	start := -1
+	for i, r := range s {
+		if unicode.IsSpace(r) {
+			if start >= 0 {
+				parts = append(parts, s[start:i])
+				start = -1
+			}
+		} else if start < 0 {
+			start = i
+		}
+	}
+	if start >= 0 {
+		parts = append(parts, s[start:])
+	}
+	return parts
 }
 
 func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOption[T]) []T {
