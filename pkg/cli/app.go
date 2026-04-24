@@ -3,7 +3,6 @@ package cli
 import (
 	"embed"
 	"io/fs"
-	"os"
 	"runtime/debug"
 
 	"dappco.re/go/core"
@@ -131,7 +130,7 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 		I18nSources: extraFS,
 	}); err != nil {
 		Error(err.Error())
-		os.Exit(1)
+		core.Exit(1)
 	}
 	defer Shutdown()
 
@@ -157,6 +156,6 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 			code = exitErr.Code
 		}
 		Error(err.Error())
-		os.Exit(code)
+		c.Exit(code)
 	}
 }

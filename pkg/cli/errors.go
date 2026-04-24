@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"os"
-
 	"dappco.re/go/core"
 	"dappco.re/go/i18n"
 )
@@ -120,7 +118,7 @@ func Fatal(err error) {
 	if err != nil {
 		LogError("Fatal error", "err", err)
 		core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
-		os.Exit(1)
+		core.Exit(1)
 	}
 }
 
@@ -131,7 +129,7 @@ func Fatalf(format string, args ...any) {
 	msg := core.Sprintf(format, args...)
 	LogError("Fatal error", "msg", msg)
 	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+msg))
-	os.Exit(1)
+	core.Exit(1)
 }
 
 // FatalWrap prints a wrapped error message to stderr, logs it, and exits with code 1.
@@ -147,7 +145,7 @@ func FatalWrap(err error, msg string) {
 	LogError("Fatal error", "msg", msg, "err", err)
 	fullMsg := core.Sprintf("%s: %v", msg, err)
 	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
-	os.Exit(1)
+	core.Exit(1)
 }
 
 // FatalWrapVerb prints a wrapped error using i18n grammar to stderr, logs it, and exits with code 1.
@@ -164,5 +162,5 @@ func FatalWrapVerb(err error, verb, subject string) {
 	LogError("Fatal error", "msg", msg, "err", err, "verb", verb, "subject", subject)
 	fullMsg := core.Sprintf("%s: %v", msg, err)
 	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
-	os.Exit(1)
+	core.Exit(1)
 }
