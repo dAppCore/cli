@@ -4,7 +4,7 @@ package cli
 import (
 	"os"
 
-	"golang.org/x/term"
+	"dappco.re/go/core/cli/internal/term"
 )
 
 // Mode represents the CLI execution mode.
