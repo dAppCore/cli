@@ -2,8 +2,8 @@ package config
 
 import (
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
-	"dappco.re/go/core/config"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/config"
 )
 
 // AddConfigCommands registers the 'config' command group and all subcommands.

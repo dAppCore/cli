@@ -3,7 +3,7 @@ package pkgcmd
 
 import (
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 // Style and utility aliases

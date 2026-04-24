@@ -1,12 +1,12 @@
-module dappco.re/go/core/cli
+module dappco.re/go/cli
 
 go 1.26.0
 
 require dappco.re/go/core v0.8.0-alpha.1
 
 require (
-	dappco.re/go/core/i18n v0.2.3
-	dappco.re/go/core/log v0.1.2
+	dappco.re/go/i18n v0.8.0-alpha.1
+	dappco.re/go/log v0.8.0-alpha.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/charmbracelet/x/ansi v0.11.6
@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	dappco.re/go/core/inference v0.3.0 // indirect
+	dappco.re/go/inference v0.8.0-alpha.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect

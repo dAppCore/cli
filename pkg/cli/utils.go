@@ -8,8 +8,8 @@ import (
 	"unicode"
 
 	"dappco.re/go/core"
-	"dappco.re/go/core/i18n"
-	"dappco.re/go/core/log"
+	"dappco.re/go/i18n"
+	"dappco.re/go/log"
 )
 
 func GhAuthenticated() bool {
