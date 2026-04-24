@@ -15,9 +15,12 @@ package cli
 
 import (
 	"context"
+	// Note: os.Signal has no core equivalent yet; keep stdlib for signal handling.
 	"os"
+	// Note: os/signal has no core equivalent yet; keep stdlib for signal handling.
 	"os/signal"
 	"sync"
+	// Note: syscall signal constants have no core equivalent yet.
 	"syscall"
 	"time"
 
@@ -149,7 +152,7 @@ func Execute() error {
 	if cl == nil {
 		return core.E("cli.Execute", "CLI service not available", nil)
 	}
-	result := cl.Run(os.Args[1:]...)
+	result := cl.Run()
 	if !result.OK {
 		if err, ok := result.Value.(error); ok {
 			return err
