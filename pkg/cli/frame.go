@@ -3,7 +3,6 @@ package cli
 import (
 	"io"
 	"os"
-	"sync"
 	"time"
 
 	"dappco.re/go/core"
@@ -33,7 +32,7 @@ type Frame struct {
 	history []Model
 	out     io.Writer
 	done    chan struct{}
-	mu      sync.Mutex
+	mu      core.Mutex
 
 	focused Region
 	keyMap  KeyMap
