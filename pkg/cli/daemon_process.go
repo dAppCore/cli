@@ -2,12 +2,11 @@ package cli
 
 import (
 	"context"
-	"io"
-	"net"
-	"net/http"
-	"os"
-	"sync"
-	"syscall"
+	"io"       // Note: AX-6 — io.Reader/Writer.
+	"net"      // Note: AX-6 — daemon HTTP server boundary.
+	"net/http" // Note: AX-6 — daemon HTTP server boundary.
+	"os"       // Note: AX-6 — process control.
+	"syscall"  // Note: AX-6 — SIGTERM/SIGINT signal handling.
 	"time"
 
 	"dappco.re/go/core"
@@ -49,7 +48,7 @@ type DaemonOptions struct {
 type Daemon struct {
 	opts DaemonOptions
 
-	mu       sync.Mutex
+	mu       core.Mutex
 	listener net.Listener
 	server   *http.Server
 	addr     string
