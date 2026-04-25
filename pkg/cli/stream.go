@@ -1,8 +1,7 @@
 package cli
 
 import (
-	"io"
-	"sync"
+	"io" // Note: AX-6 — io.Writer is the public Stream API surface for output redirection.
 
 	"dappco.re/go/core"
 	"github.com/mattn/go-runewidth"
@@ -40,8 +39,8 @@ type Stream struct {
 	wrap int
 	col  int // current column position (visible characters)
 	done chan struct{}
-	once sync.Once
-	mu   sync.Mutex
+	once core.Once
+	mu   core.Mutex
 }
 
 // NewStream creates a streaming text renderer.
