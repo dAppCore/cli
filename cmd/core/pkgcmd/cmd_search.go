@@ -2,13 +2,13 @@ package pkgcmd
 
 import (
 	"cmp"
-	"os/exec"
+	"context"
 	"slices"
 	"time"
 
-	"dappco.re/go/core"
 	"dappco.re/go/cache"
 	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/core"
 	"dappco.re/go/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
@@ -84,24 +84,29 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 		cli.Print("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
 
-		// TODO: migrate to c.Process()
-		proc := exec.Command("gh", "repo", "list", org,
+		result := cli.Core().Process().Run(context.Background(), "gh",
+			"repo", "list", org,
 			"--json", "name,description,visibility,updatedAt,primaryLanguage",
 			"--limit", cli.Sprintf("%d", limit))
-		output, err := proc.CombinedOutput()
+		output, _ := result.Value.(string)
 
-		if err != nil {
+		if !result.OK {
 			cli.Blank()
-			errorOutput := core.Trim(string(output))
+			errorOutput := core.Trim(output)
+			if errorOutput == "" {
+				if err, ok := result.Value.(error); ok {
+					errorOutput = core.Trim(err.Error())
+				}
+			}
 			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
 				return cli.Err(i18n.T("cmd.pkg.error.auth_failed"))
 			}
 			return cli.Err("%s: %s", i18n.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
 
-		result := core.JSONUnmarshal(output, &ghRepos)
-		if !result.OK {
-			return cli.Wrap(result.Value.(error), i18n.T("i18n.fail.parse", "results"))
+		parseResult := core.JSONUnmarshal([]byte(output), &ghRepos)
+		if !parseResult.OK {
+			return cli.Wrap(parseResult.Value.(error), i18n.T("i18n.fail.parse", "results"))
 		}
 
 		if cacheInstance != nil {
