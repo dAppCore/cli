@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"strconv"
-	"strings"
+	"strconv" // Note: AX-6 — pkg/cli/strings.go is the canonical wrapper layer for strconv stdlib; downstream consumers use cli.Atoi etc.
+	"strings" // Note: AX-6 — pkg/cli/strings.go is the canonical wrapper layer for strings stdlib; downstream consumers use cli.Sprintf etc.
 
 	"dappco.re/go/core"
 )
