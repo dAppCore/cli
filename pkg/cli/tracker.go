@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"io"
+	"io" // Note: AX-6 — io.Writer for tracker output.
 	"iter"
-	"os"
-	"sync"
+	"os" // Note: AX-6 — os.File for tty detection.
 	"time"
 
-	"dappco.re/go/core"
 	"dappco.re/go/cli/internal/term"
+	"dappco.re/go/core"
 )
 
 var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
@@ -28,7 +27,7 @@ type TrackedTask struct {
 	status  string
 	state   taskState
 	tracker *TaskTracker
-	mu      sync.Mutex
+	mu      core.Mutex
 }
 
 func (t *TrackedTask) Update(status string) {
@@ -61,7 +60,7 @@ func (t *TrackedTask) snapshot() (string, string, taskState) {
 type TaskTracker struct {
 	tasks   []*TrackedTask
 	out     io.Writer
-	mu      sync.Mutex
+	mu      core.Mutex
 	started bool
 }
 
