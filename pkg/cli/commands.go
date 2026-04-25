@@ -4,7 +4,6 @@ package cli
 import (
 	"io/fs"
 	"iter"
-	"sync"
 
 	"dappco.re/go/core"
 	"dappco.re/go/i18n"
@@ -42,7 +41,7 @@ type CommandRegistration func(c *core.Core)
 
 var (
 	registeredCommands   []CommandRegistration
-	registeredCommandsMu sync.Mutex
+	registeredCommandsMu core.Mutex
 	commandsAttached     bool
 	registeredLocales    []fs.FS
 )
