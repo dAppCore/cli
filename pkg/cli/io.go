@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"io"
-	"os"
-	"sync"
+	"io" // Note: AX-6 — io.Reader/io.Writer is the public stdin/stdout/stderr interception contract.
+	"os" // Note: AX-6 — os.Stdin/os.Stdout are the structural defaults intercepted by SetStdin/SetStdout.
+
+	"dappco.re/go/core"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 	stdoutOverride io.Writer
 	stderrOverride io.Writer
 
-	ioMu sync.RWMutex
+	ioMu core.RWMutex
 )
 
 // SetStdin overrides the default stdin reader for testing.
