@@ -2,7 +2,6 @@
 package cli
 
 import (
-	"io"
 	"time"
 
 	"dappco.re/go/core"
@@ -213,7 +212,7 @@ func (t *Table) String() string {
 }
 
 func (t *Table) Render() {
-	io.WriteString(stdoutWriter(), t.String())
+	writeString(stdoutWriter(), t.String())
 }
 
 func (t *Table) colCount() int {

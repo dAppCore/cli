@@ -1,0 +1,41 @@
+version: "3"
+
+tasks:
+  default:
+    deps:
+      - test
+
+  test:
+    desc: Run CLI artifact validation tasks.
+    cmds:
+      - task build
+      - task config
+      - task doctor
+      - task pkg
+      - task version
+
+  build:
+    desc: Build the core CLI binary used by artifact tests.
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source _lib/run.sh
+          build_core_binary
+          EOF
+
+  config:
+    cmds:
+      - task -d config test
+
+  doctor:
+    cmds:
+      - task -d doctor test
+
+  pkg:
+    cmds:
+      - task -d pkg test
+
+  version:
+    cmds:
+      - task -d version test

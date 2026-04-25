@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"io" // Note: AX-6 — io.Writer is the public output-injection contract.
-	"os" // Note: AX-6 — *os.File exposes terminal file descriptors for TUI mode.
 	"time"
 
 	"dappco.re/go/cli/internal/term"
@@ -30,7 +28,7 @@ type Frame struct {
 	layout  *Composite
 	models  map[Region]Model
 	history []Model
-	out     io.Writer
+	out     Writer
 	done    chan struct{}
 	mu      core.Mutex
 
@@ -56,7 +54,7 @@ func NewFrame(variant string) *Frame {
 	}
 }
 
-func (f *Frame) WithOutput(out io.Writer) *Frame {
+func (f *Frame) WithOutput(out Writer) *Frame {
 	if out != nil {
 		f.out = out
 	}
@@ -375,15 +373,15 @@ func (f *Frame) String() string {
 }
 
 func (f *Frame) isTTY() bool {
-	if file, ok := f.out.(*os.File); ok {
-		return term.IsTerminal(int(file.Fd()))
+	if fd, ok := writerFileDescriptor(f.out); ok {
+		return term.IsTerminal(fd)
 	}
 	return false
 }
 
 func (f *Frame) termSize() (int, int) {
-	if file, ok := f.out.(*os.File); ok {
-		w, h, err := term.TerminalSize(int(file.Fd()))
+	if fd, ok := writerFileDescriptor(f.out); ok {
+		w, h, err := term.TerminalSize(fd)
 		if err == nil {
 			return w, h
 		}

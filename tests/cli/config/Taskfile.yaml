@@ -1,0 +1,17 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source ../_lib/run.sh
+
+          export DIR_HOME
+          DIR_HOME="$(mktemp -d)"
+
+          run config path
+          assert_exit_code 0
+          assert_output_contains ".core/config.yaml"
+          EOF

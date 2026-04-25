@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"io" // Note: AX-6 — io.Writer is the public Stream API surface for output redirection.
-
 	"dappco.re/go/core"
 	"github.com/mattn/go-runewidth"
 )
@@ -19,7 +17,7 @@ func WithWordWrap(cols int) StreamOption {
 }
 
 // WithStreamOutput sets the output writer (default: stdoutWriter()).
-func WithStreamOutput(w io.Writer) StreamOption {
+func WithStreamOutput(w Writer) StreamOption {
 	return func(s *Stream) { s.out = w }
 }
 
@@ -35,7 +33,7 @@ func WithStreamOutput(w io.Writer) StreamOption {
 //	}()
 //	stream.Wait()
 type Stream struct {
-	out  io.Writer
+	out  Writer
 	wrap int
 	col  int // current column position (visible characters)
 	done chan struct{}
@@ -61,7 +59,7 @@ func (s *Stream) Write(text string) {
 	defer s.mu.Unlock()
 
 	if s.wrap <= 0 {
-		io.WriteString(s.out, text)
+		writeString(s.out, text)
 		// Track visible width across newlines for Done() trailing-newline logic.
 		if idx := LastIndex(text, "\n"); idx >= 0 {
 			s.col = runewidth.StringWidth(text[idx+1:])
@@ -84,20 +82,20 @@ func (s *Stream) Write(text string) {
 			s.col = 0
 		}
 
-		io.WriteString(s.out, string(r))
+		writeString(s.out, string(r))
 		s.col += rw
 	}
 }
 
 // WriteFrom reads from r and streams all content until EOF.
-func (s *Stream) WriteFrom(r io.Reader) error {
+func (s *Stream) WriteFrom(r Reader) error {
 	buf := make([]byte, 256)
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
 			s.Write(string(buf[:n]))
 		}
-		if err == io.EOF {
+		if isEOF(err) {
 			return nil
 		}
 		if err != nil {

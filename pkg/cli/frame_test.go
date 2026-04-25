@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFrame_Good(t *testing.T) {
+func TestCli_Frame_Good(t *testing.T) {
 	t.Run("static render HCF", func(t *testing.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
@@ -138,7 +138,7 @@ func TestFrame_Good(t *testing.T) {
 	})
 }
 
-func TestFrame_Bad(t *testing.T) {
+func TestCli_Frame_Bad(t *testing.T) {
 	t.Run("empty frame", func(t *testing.T) {
 		f := NewFrame("HCF")
 		f.out = &bytes.Buffer{}
@@ -276,7 +276,7 @@ func TestFrameFocus_Good(t *testing.T) {
 
 	t.Run("Focus ignores invalid region", func(t *testing.T) {
 		f := NewFrame("HCF")
-		f.Focus(RegionLeft) // Left not in "HCF"
+		f.Focus(RegionLeft)                         // Left not in "HCF"
 		assert.Equal(t, RegionContent, f.Focused()) // unchanged
 	})
 
@@ -551,7 +551,7 @@ func TestFrameMessageRouting_Good(t *testing.T) {
 	})
 }
 
-func TestFrame_Ugly(t *testing.T) {
+func TestCli_Frame_Ugly(t *testing.T) {
 	t.Run("navigate with nil model does not panic", func(t *testing.T) {
 		f := NewFrame("HCF")
 		f.out = &bytes.Buffer{}
@@ -587,4 +587,3 @@ func TestFrame_Ugly(t *testing.T) {
 		})
 	})
 }
-

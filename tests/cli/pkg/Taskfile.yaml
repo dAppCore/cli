@@ -1,0 +1,14 @@
+version: "3"
+
+tasks:
+  default:
+    deps:
+      - test
+
+  test:
+    deps:
+      - search
+
+  search:
+    cmds:
+      - task -d search test
