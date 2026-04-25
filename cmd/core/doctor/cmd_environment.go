@@ -1,15 +1,16 @@
 package doctor
 
 import (
-	"os"
-	"os/exec"
+	"os" // Note: AX-6 — os.UserHomeDir; released core has no home-directory primitive.
 
-	"dappco.re/go/core"
 	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/core"
 	"dappco.re/go/i18n"
 	io "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
+
+var environmentFS = (&core.Fs{}).New("/")
 
 // checkGitHubSSH checks if SSH keys exist for GitHub access.
 // Returns true if any standard SSH key file exists in ~/.ssh/.
@@ -24,7 +25,7 @@ func checkGitHubSSH() bool {
 
 	for _, keyName := range keyPatterns {
 		keyPath := core.Path(sshDirectory, keyName)
-		if _, err := os.Stat(keyPath); err == nil {
+		if environmentFS.Stat(keyPath).OK {
 			return true
 		}
 	}
@@ -33,11 +34,12 @@ func checkGitHubSSH() bool {
 }
 
 // checkGitHubCLI checks if the GitHub CLI is authenticated.
-// Returns true when 'gh auth status' output contains "Logged in to".
+// Returns true when GitHub CLI reports an authenticated session.
 func checkGitHubCLI() bool {
-	proc := exec.Command("gh", "auth", "status") // TODO: migrate to c.Process()
-	output, _ := proc.CombinedOutput()
-	return core.Contains(string(output), "Logged in to")
+	if !(core.App{}).Find("gh", "GitHub CLI").OK {
+		return false
+	}
+	return cli.GhAuthenticated()
 }
 
 // checkWorkspace checks for repos.yaml and counts cloned repos.
@@ -65,7 +67,7 @@ func checkWorkspace() {
 			var cloned int
 			for _, repo := range allRepos {
 				repoPath := core.Path(basePath, repo.Name)
-				if _, err := os.Stat(core.Path(repoPath, ".git")); err == nil {
+				if environmentFS.Stat(core.Path(repoPath, ".git")).OK {
 					cloned++
 				}
 			}
