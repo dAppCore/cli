@@ -2,10 +2,9 @@ package cli
 
 import (
 	"context"
-	"io"
-	"os/exec"
+	"io" // Note: AX-6 - io.Reader/io.Writer stream IO contract for prompt writes and interception.
 	"time"
-	"unicode"
+	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
 	"dappco.re/go/core"
 	"dappco.re/go/i18n"
@@ -13,15 +12,54 @@ import (
 )
 
 func GhAuthenticated() bool {
-	cmd := exec.Command("gh", "auth", "status") // TODO: migrate to c.Process()
-	output, _ := cmd.CombinedOutput()
-	authenticated := core.Contains(string(output), "Logged in")
+	output, _ := runProcessOutput(context.Background(), "gh", "auth", "status")
+	authenticated := core.Contains(output, "Logged in")
 	if authenticated {
 		LogWarn("GitHub CLI authenticated", "user", log.Username())
 	} else {
 		LogWarn("GitHub CLI not authenticated", "user", log.Username())
 	}
 	return authenticated
+}
+
+func processCore() *core.Core {
+	if instance != nil && instance.core != nil {
+		return instance.core
+	}
+	return core.New()
+}
+
+func runProcessOutput(ctx context.Context, command string, args ...string) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	result := processCore().Process().Run(ctx, command, args...)
+	output := processOutput(result.Value)
+	if result.OK {
+		return output, nil
+	}
+	if err, ok := result.Value.(error); ok {
+		return output, err
+	}
+	if output != "" {
+		return output, core.NewError(output)
+	}
+	return output, core.E("cli.process", core.Concat("process failed: ", command), nil)
+}
+
+func processOutput(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	case error:
+		return v.Error()
+	case nil:
+		return ""
+	default:
+		return core.Sprint(v)
+	}
 }
 
 type ConfirmOption func(*confirmConfig)
@@ -500,12 +538,11 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 		if ref != "" {
 			args = append(args, "--", "--branch", ref, "--single-branch")
 		}
-		cmd := exec.CommandContext(ctx, "gh", args...) // TODO: migrate to c.Process()
-		output, err := cmd.CombinedOutput()
+		output, err := runProcessOutput(ctx, "gh", args...)
 		if err == nil {
 			return nil
 		}
-		errStr := core.Trim(string(output))
+		errStr := core.Trim(output)
 		if core.Contains(errStr, "already exists") {
 			return core.NewError(errStr)
 		}
@@ -515,10 +552,13 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 		args = append(args, "--branch", ref, "--single-branch")
 	}
 	args = append(args, core.Sprintf("git@github.com:%s/%s.git", org, repo), path)
-	cmd := exec.CommandContext(ctx, "git", args...) // TODO: migrate to c.Process()
-	output, err := cmd.CombinedOutput()
+	output, err := runProcessOutput(ctx, "git", args...)
 	if err != nil {
-		return core.NewError(core.Trim(string(output)))
+		errStr := core.Trim(output)
+		if errStr == "" {
+			return err
+		}
+		return core.NewError(errStr)
 	}
 	return nil
 }
