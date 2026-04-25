@@ -1,6 +1,8 @@
-package cli
+package frame
 
-import "dappco.re/go/core"
+import (
+	"strings"
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Built-in Region Components
@@ -14,7 +16,7 @@ type statusLineModel struct {
 
 // StatusLine creates a header/footer bar with a title and key:value pairs.
 //
-//	frame.Header(cli.StatusLine("core dev", "18 repos", "main"))
+//	frame.Header(frame.StatusLine("core dev", "18 repos", "main"))
 func StatusLine(title string, pairs ...string) Model {
 	return &statusLineModel{title: title, pairs: pairs}
 }
@@ -24,7 +26,7 @@ func (s *statusLineModel) View(width, _ int) string {
 	for _, p := range s.pairs {
 		parts = append(parts, DimStyle.Render(compileGlyphs(p)))
 	}
-	line := core.Join("  ", parts...)
+	line := strings.Join(parts, "  ")
 	if width > 0 {
 		line = Truncate(line, width)
 	}
@@ -38,7 +40,7 @@ type keyHintsModel struct {
 
 // KeyHints creates a footer showing keyboard shortcuts.
 //
-//	frame.Footer(cli.KeyHints("↑/↓ navigate", "enter select", "q quit"))
+//	frame.Footer(frame.KeyHints("↑/↓ navigate", "enter select", "q quit"))
 func KeyHints(hints ...string) Model {
 	return &keyHintsModel{hints: hints}
 }
@@ -48,7 +50,7 @@ func (k *keyHintsModel) View(width, _ int) string {
 	for i, h := range k.hints {
 		parts[i] = DimStyle.Render(compileGlyphs(h))
 	}
-	line := core.Join("  ", parts...)
+	line := strings.Join(parts, "  ")
 	if width > 0 {
 		line = Truncate(line, width)
 	}
@@ -62,7 +64,7 @@ type breadcrumbModel struct {
 
 // Breadcrumb creates a navigation breadcrumb bar.
 //
-//	frame.Header(cli.Breadcrumb("core", "dev", "health"))
+//	frame.Header(frame.Breadcrumb("core", "dev", "health"))
 func Breadcrumb(parts ...string) Model {
 	return &breadcrumbModel{parts: parts}
 }
@@ -77,7 +79,7 @@ func (b *breadcrumbModel) View(width, _ int) string {
 			styled[i] = DimStyle.Render(part)
 		}
 	}
-	line := core.Join(DimStyle.Render(" > "), styled...)
+	line := strings.Join(styled, DimStyle.Render(" > "))
 	if width > 0 {
 		line = Truncate(line, width)
 	}

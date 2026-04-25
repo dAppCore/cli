@@ -1,10 +1,11 @@
-package cli
+package frame
 
 import (
+	"fmt"
+	"strings"
+	"sync"
 	"time"
 
-	"dappco.re/go/cli/internal/term"
-	"dappco.re/go/core"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
@@ -30,7 +31,7 @@ type Frame struct {
 	history []Model
 	out     Writer
 	done    chan struct{}
-	mu      core.Mutex
+	mu      sync.Mutex
 
 	focused Region
 	keyMap  KeyMap
@@ -125,7 +126,7 @@ func (f *Frame) Focused() Region {
 func (f *Frame) Focus(r Region) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if _, exists := f.layout.regions[r]; exists {
+	if layoutHasRegion(f.layout, r) {
 		f.focused = r
 	}
 }
@@ -134,7 +135,7 @@ func (f *Frame) buildFocusRing() []Region {
 	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
 	var ring []Region
 	for _, r := range order {
-		if _, exists := f.layout.regions[r]; exists {
+		if layoutHasRegion(f.layout, r) {
 			ring = append(ring, r)
 		}
 	}
@@ -209,12 +210,12 @@ func (f *Frame) viewLocked() string {
 	}
 
 	headerH, footerH := 0, 0
-	if _, ok := f.layout.regions[RegionHeader]; ok {
+	if layoutHasRegion(f.layout, RegionHeader) {
 		if _, ok := f.models[RegionHeader]; ok {
 			headerH = 1
 		}
 	}
-	if _, ok := f.layout.regions[RegionFooter]; ok {
+	if layoutHasRegion(f.layout, RegionFooter) {
 		if _, ok := f.models[RegionFooter]; ok {
 			footerH = 1
 		}
@@ -225,12 +226,12 @@ func (f *Frame) viewLocked() string {
 	footer := f.renderRegionLocked(RegionFooter, w, footerH)
 
 	leftW, rightW := 0, 0
-	if _, ok := f.layout.regions[RegionLeft]; ok {
+	if layoutHasRegion(f.layout, RegionLeft) {
 		if _, ok := f.models[RegionLeft]; ok {
 			leftW = w / 4
 		}
 	}
-	if _, ok := f.layout.regions[RegionRight]; ok {
+	if layoutHasRegion(f.layout, RegionRight) {
 		if _, ok := f.models[RegionRight]; ok {
 			rightW = w / 4
 		}
@@ -296,7 +297,7 @@ func (f *Frame) cycleFocusLocked(dir int) {
 }
 
 func (f *Frame) spatialFocusLocked(target Region) {
-	if _, exists := f.layout.regions[target]; exists {
+	if layoutHasRegion(f.layout, target) {
 		f.focused = target
 	}
 }
@@ -366,7 +367,7 @@ func (f *Frame) String() string {
 		return ""
 	}
 	view = ansi.Strip(view)
-	if !core.HasSuffix(view, "\n") {
+	if !strings.HasSuffix(view, "\n") {
 		view += "\n"
 	}
 	return view
@@ -374,14 +375,14 @@ func (f *Frame) String() string {
 
 func (f *Frame) isTTY() bool {
 	if fd, ok := writerFileDescriptor(f.out); ok {
-		return term.IsTerminal(fd)
+		return isTerminal(fd)
 	}
 	return false
 }
 
 func (f *Frame) termSize() (int, int) {
 	if fd, ok := writerFileDescriptor(f.out); ok {
-		w, h, err := term.TerminalSize(fd)
+		w, h, err := terminalSize(fd)
 		if err == nil {
 			return w, h
 		}
@@ -401,6 +402,6 @@ func (f *Frame) runLive() {
 	f.program = p
 
 	if _, err := p.Run(); err != nil {
-		Error(err.Error())
+		_, _ = fmt.Fprintln(stderrWriter(), err.Error())
 	}
 }

@@ -1,4 +1,4 @@
-package cli
+package frame
 
 import tea "github.com/charmbracelet/bubbletea"
 
@@ -26,8 +26,8 @@ type modelAdapter struct {
 	m Model
 }
 
-func (a *modelAdapter) View(w, h int) string                  { return a.m.View(w, h) }
-func (a *modelAdapter) Init() tea.Cmd                         { return nil }
+func (a *modelAdapter) View(w, h int) string                 { return a.m.View(w, h) }
+func (a *modelAdapter) Init() tea.Cmd                        { return nil }
 func (a *modelAdapter) Update(tea.Msg) (FrameModel, tea.Cmd) { return a, nil }
 
 // KeyMap defines key bindings for Frame navigation.
