@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"sync"
 
 	"dappco.re/go/core"
 )
@@ -18,7 +17,7 @@ const (
 
 var (
 	colorEnabled        = true
-	colorEnabledMu      sync.RWMutex
+	colorEnabledMu      core.RWMutex
 	asciiDisabledColors bool
 )
 
