@@ -3,34 +3,104 @@ version: "3"
 tasks:
   default:
     deps:
-      - test
+      - all
 
   test:
     desc: Run CLI artifact validation tasks.
     cmds:
+      - task all
+
+  all:
+    desc: Build the CLI artifact and run every AX-10 CLI test.
+    cmds:
       - task build
-      - task config
-      - task doctor
+      - task test:help
+      - task test:version
+      - task test:doctor
+      - task test:config-show
+      - task test:_lib
       - task pkg
-      - task version
 
   build:
-    desc: Build the core CLI binary used by artifact tests.
+    desc: Build the CLI binary used by artifact tests.
     cmds:
       - |
           bash <<'EOF'
           set -euo pipefail
           source _lib/run.sh
           build_core_binary
+          [[ -x "$CORE_CLI_BIN" ]] || { printf 'expected executable: %s\n' "$CORE_CLI_BIN" >&2; exit 1; }
+          EOF
+
+  test:help:
+    desc: Assert --help produces usage output and a non-zero CLI status.
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source _lib/run.sh
+
+          set +e
+          actual="$(cli --help 2>&1)"
+          status=$?
+          set -e
+
+          [[ "$status" -ne 0 ]] || { printf 'expected cli --help to exit non-zero\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Usage"* || "$actual" == *"commands:"* ]] || { printf 'expected usage output\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          EOF
+
+  test:version:
+    desc: Assert the version command emits a SemVer-compatible string.
+    cmds:
+      - task -d version test
+
+  test:doctor:
+    desc: Assert doctor emits system-check output.
+    cmds:
+      - task -d doctor test
+
+  test:config-show:
+    desc: Assert config commands can show, set, list, and get values.
+    cmds:
+      - task -d config test
+
+  test:_lib:
+    desc: Assert the shared CLI runner can invoke top-level command paths.
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source _lib/run.sh
+
+          set +e
+          actual="$(cli config 2>&1)"
+          status=$?
+          set -e
+          [[ "$status" -ne 0 ]] || { printf 'expected cli config to exit non-zero\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *'command "config" is not executable'* ]] || { printf 'expected config parent-command error\noutput:\n%s\n' "$actual" >&2; exit 1; }
+
+          set +e
+          actual="$(cli pkg 2>&1)"
+          status=$?
+          set -e
+          [[ "$status" -ne 0 ]] || { printf 'expected cli pkg to exit non-zero\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *'command "pkg" is not executable'* ]] || { printf 'expected pkg parent-command error\noutput:\n%s\n' "$actual" >&2; exit 1; }
+
+          actual="$(cli help 2>&1)"
+          [[ "$actual" == *"Help Topics"* || "$actual" == *"HELP TOPICS"* ]] || { printf 'expected help topic listing\noutput:\n%s\n' "$actual" >&2; exit 1; }
           EOF
 
   config:
     cmds:
-      - task -d config test
+      - task test:config-show
 
   doctor:
     cmds:
-      - task -d doctor test
+      - task test:doctor
+
+  help:
+    cmds:
+      - task test:help
 
   pkg:
     cmds:
@@ -38,4 +108,4 @@ tasks:
 
   version:
     cmds:
-      - task -d version test
+      - task test:version

@@ -8,6 +8,56 @@ tasks:
           set -euo pipefail
           source ../_lib/run.sh
 
-          run doctor
-          assert_exit_code 0
+          build_core_binary
+
+          tmp="$(mktemp -d)"
+          fakebin="$tmp/bin"
+          home="$tmp/home"
+          mkdir -p "$fakebin" "$home/.ssh"
+          touch "$home/.ssh/id_ed25519"
+
+          cat >"$fakebin/git" <<'SH'
+          #!/usr/bin/env bash
+          echo "git version 2.42.0"
+          SH
+          cat >"$fakebin/go" <<'SH'
+          #!/usr/bin/env bash
+          echo "go version go1.26.0 darwin/arm64"
+          SH
+          cat >"$fakebin/gh" <<'SH'
+          #!/usr/bin/env bash
+          if [[ "${1:-}" == "auth" && "${2:-}" == "status" ]]; then
+            echo "Logged in to github.com as ax10"
+            exit 0
+          fi
+          echo "gh version 2.60.0"
+          SH
+          cat >"$fakebin/php" <<'SH'
+          #!/usr/bin/env bash
+          echo "PHP 8.3.0"
+          SH
+          cat >"$fakebin/composer" <<'SH'
+          #!/usr/bin/env bash
+          echo "Composer version 2.7.0"
+          SH
+          cat >"$fakebin/node" <<'SH'
+          #!/usr/bin/env bash
+          echo "v22.0.0"
+          SH
+          chmod +x "$fakebin"/*
+
+          export HOME="$home"
+          export DIR_HOME="$home"
+          export PATH="$fakebin:$PATH"
+
+          set +e
+          actual="$(cli doctor 2>&1)"
+          status=$?
+          set -e
+
+          [[ "$status" -eq 0 ]] || { printf 'expected cli doctor exit 0, got %s\noutput:\n%s\n' "$status" "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Checking development environment"* ]] || { printf 'expected doctor checking banner\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Required tools:"* ]] || { printf 'expected required-tools section\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"GitHub integration:"* ]] || { printf 'expected GitHub integration section\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Environment is ready"* ]] || { printf 'expected ready summary\noutput:\n%s\n' "$actual" >&2; exit 1; }
           EOF
