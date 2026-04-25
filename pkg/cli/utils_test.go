@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -85,4 +86,64 @@ func TestGhAuthenticated_Bad(t *testing.T) {
 func TestGhAuthenticated_Ugly(t *testing.T) {
 	// GitClone with a non-existent path should return an error without panicking.
 	_ = strings.Contains // ensure strings is importable in this package context
+}
+
+func TestGhRepoCloneArgs_Good(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want []string
+	}{
+		{
+			name: "without ref",
+			want: []string{"repo", "clone", "--", "https://github.com/org/repo.git", "-target"},
+		},
+		{
+			name: "with ref",
+			ref:  "feature",
+			want: []string{
+				"repo", "clone", "--", "https://github.com/org/repo.git", "-target",
+				"--", "--branch", "feature", "--single-branch",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ghRepoCloneArgs("https://github.com/org/repo.git", "-target", tt.ref)
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("ghRepoCloneArgs: got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGitCloneArgs_Good(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want []string
+	}{
+		{
+			name: "without ref",
+			want: []string{"clone", "--", "git@github.com:org/repo.git", "-target"},
+		},
+		{
+			name: "with ref",
+			ref:  "feature",
+			want: []string{
+				"clone", "--branch", "feature", "--single-branch",
+				"--", "git@github.com:org/repo.git", "-target",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := gitCloneArgs("git@github.com:org/repo.git", "-target", tt.ref)
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("gitCloneArgs: got %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

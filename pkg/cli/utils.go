@@ -534,10 +534,7 @@ func GitClone(ctx context.Context, org, repo, path string) error {
 func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 	if GhAuthenticated() {
 		httpsURL := core.Sprintf("https://github.com/%s/%s.git", org, repo)
-		args := []string{"repo", "clone", httpsURL, path}
-		if ref != "" {
-			args = append(args, "--", "--branch", ref, "--single-branch")
-		}
+		args := ghRepoCloneArgs(httpsURL, path, ref)
 		output, err := runProcessOutput(ctx, "gh", args...)
 		if err == nil {
 			return nil
@@ -547,11 +544,7 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 			return core.NewError(errStr)
 		}
 	}
-	args := []string{"clone"}
-	if ref != "" {
-		args = append(args, "--branch", ref, "--single-branch")
-	}
-	args = append(args, core.Sprintf("git@github.com:%s/%s.git", org, repo), path)
+	args := gitCloneArgs(core.Sprintf("git@github.com:%s/%s.git", org, repo), path, ref)
 	output, err := runProcessOutput(ctx, "git", args...)
 	if err != nil {
 		errStr := core.Trim(output)
@@ -561,4 +554,21 @@ func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 		return core.NewError(errStr)
 	}
 	return nil
+}
+
+func ghRepoCloneArgs(repoURL, path, ref string) []string {
+	args := []string{"repo", "clone", "--", repoURL, path}
+	if ref != "" {
+		args = append(args, "--", "--branch", ref, "--single-branch")
+	}
+	return args
+}
+
+func gitCloneArgs(repoURL, path, ref string) []string {
+	args := []string{"clone"}
+	if ref != "" {
+		args = append(args, "--branch", ref, "--single-branch")
+	}
+	args = append(args, "--", repoURL, path)
+	return args
 }
