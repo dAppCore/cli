@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"io"
 	"iter"
 
 	"dappco.re/go/core"
@@ -59,7 +58,7 @@ func (n *TreeNode) String() string {
 }
 
 func (n *TreeNode) Render() {
-	io.WriteString(stdoutWriter(), n.String())
+	writeString(stdoutWriter(), n.String())
 }
 
 func (n *TreeNode) renderLabel() string {
@@ -70,7 +69,7 @@ func (n *TreeNode) renderLabel() string {
 	return label
 }
 
-func (n *TreeNode) writeChildren(sb io.StringWriter, prefix string) {
+func (n *TreeNode) writeChildren(sb stringWriter, prefix string) {
 	tee := Glyph(":tee:") + Glyph(":dash:") + Glyph(":dash:") + " "
 	corner := Glyph(":corner:") + Glyph(":dash:") + Glyph(":dash:") + " "
 	pipe := Glyph(":pipe:") + "   "

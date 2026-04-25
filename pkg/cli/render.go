@@ -1,10 +1,6 @@
 package cli
 
-import (
-	"io"
-
-	"dappco.re/go/core"
-)
+import "dappco.re/go/core"
 
 // RenderStyle controls how layouts are rendered.
 type RenderStyle int
@@ -17,13 +13,17 @@ const (
 
 var currentRenderStyle = RenderFlat
 
+type stringWriter interface {
+	WriteString(string) (int, error)
+}
+
 func UseRenderFlat()   { currentRenderStyle = RenderFlat }
 func UseRenderSimple() { currentRenderStyle = RenderSimple }
 func UseRenderBoxed()  { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
-	io.WriteString(stdoutWriter(), c.String())
+	writeString(stdoutWriter(), c.String())
 }
 
 // String returns the rendered layout.
@@ -33,7 +33,7 @@ func (c *Composite) String() string {
 	return sb.String()
 }
 
-func (c *Composite) renderTo(sb io.StringWriter, depth int) {
+func (c *Composite) renderTo(sb stringWriter, depth int) {
 	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
 
 	var active []Region
@@ -54,7 +54,7 @@ func (c *Composite) renderTo(sb io.StringWriter, depth int) {
 	}
 }
 
-func (c *Composite) renderSeparator(sb io.StringWriter, depth int) {
+func (c *Composite) renderSeparator(sb stringWriter, depth int) {
 	indent := Repeat("  ", depth)
 	switch currentRenderStyle {
 	case RenderBoxed:
@@ -64,7 +64,7 @@ func (c *Composite) renderSeparator(sb io.StringWriter, depth int) {
 	}
 }
 
-func (c *Composite) renderSlot(sb io.StringWriter, slot *Slot, depth int) {
+func (c *Composite) renderSlot(sb stringWriter, slot *Slot, depth int) {
 	indent := Repeat("  ", depth)
 	for _, block := range slot.blocks {
 		for _, line := range core.Split(block.Render(), "\n") {
