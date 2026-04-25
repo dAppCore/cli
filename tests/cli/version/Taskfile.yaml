@@ -1,0 +1,20 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source ../_lib/run.sh
+
+          run version
+          assert_exit_code 0
+
+          if ! grep -Eq '(^|[^[:alnum:].-])v?[0-9]+\.[0-9]+\.[0-9]+([^[:alnum:].-]|$)' "$RUN_OUTPUT"; then
+            printf 'expected SemVer output matching vN.N.N or N.N.N\n' >&2
+            printf 'output:\n' >&2
+            cat "$RUN_OUTPUT" >&2
+            exit 1
+          fi
+          EOF

@@ -1,0 +1,13 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source ../../_lib/run.sh
+
+          run pkg search core
+          assert_exit_code 0
+          EOF
