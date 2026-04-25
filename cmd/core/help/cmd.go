@@ -2,8 +2,8 @@ package help
 
 import (
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
-	"dappco.re/go/core/help"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/help"
 )
 
 // AddHelpCommands registers the help command and subcommands.

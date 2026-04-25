@@ -3,8 +3,8 @@ package doctor
 import (
 	"runtime"
 
-	"dappco.re/go/core/cli/pkg/cli"
-	"dappco.re/go/core/i18n"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/i18n"
 )
 
 // printInstallInstructions prints operating-system-specific installation instructions.

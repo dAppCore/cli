@@ -3,14 +3,13 @@ package cli
 import (
 	"io"
 	"os"
-	"sync"
 	"time"
 
 	"dappco.re/go/core"
+	"dappco.re/go/cli/internal/term"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
-	"golang.org/x/term"
 )
 
 // Model is the interface for components that slot into Frame regions.
@@ -33,7 +32,7 @@ type Frame struct {
 	history []Model
 	out     io.Writer
 	done    chan struct{}
-	mu      sync.Mutex
+	mu      core.Mutex
 
 	focused Region
 	keyMap  KeyMap
@@ -384,7 +383,7 @@ func (f *Frame) isTTY() bool {
 
 func (f *Frame) termSize() (int, int) {
 	if file, ok := f.out.(*os.File); ok {
-		w, h, err := term.GetSize(int(file.Fd()))
+		w, h, err := term.TerminalSize(int(file.Fd()))
 		if err == nil {
 			return w, h
 		}

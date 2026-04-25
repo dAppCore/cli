@@ -11,10 +11,10 @@ import (
 	"os/exec"
 
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
-	"dappco.re/go/core/i18n"
-	coreio "dappco.re/go/core/io"
-	"dappco.re/go/core/scm/repos"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/i18n"
+	coreio "dappco.re/go/io"
+	"dappco.re/go/scm/repos"
 )
 
 func pkgRemoveAction(opts core.Options) core.Result {

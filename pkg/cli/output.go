@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"dappco.re/go/core"
-	"dappco.re/go/core/i18n"
+	"dappco.re/go/i18n"
 )
 
 // Blank prints an empty line.

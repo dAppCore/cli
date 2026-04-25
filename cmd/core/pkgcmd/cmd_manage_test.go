@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"dappco.re/go/core/cache"
+	"dappco.re/go/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

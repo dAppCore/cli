@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"dappco.re/go/core"
-	"golang.org/x/term"
+	"dappco.re/go/cli/internal/term"
 )
 
 var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}

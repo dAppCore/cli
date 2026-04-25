@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"dappco.re/go/core/cli/pkg/cli"
-	gohelp "dappco.re/go/core/help"
+	"dappco.re/go/cli/pkg/cli"
+	gohelp "dappco.re/go/help"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

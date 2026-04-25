@@ -2,7 +2,7 @@ package config
 
 import (
 	"dappco.re/go/core"
-	"dappco.re/go/core/cli/pkg/cli"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 func configPathAction(_ core.Options) core.Result {
