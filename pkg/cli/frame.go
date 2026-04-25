@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"io"
-	"os"
+	"io" // Note: AX-6 — io.Writer is the public output-injection contract.
+	"os" // Note: AX-6 — *os.File exposes terminal file descriptors for TUI mode.
 	"time"
 
-	"dappco.re/go/core"
 	"dappco.re/go/cli/internal/term"
+	"dappco.re/go/core"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
@@ -338,7 +338,7 @@ func (f *Frame) updateFocusedLocked(msg tea.Msg) tea.Cmd {
 // Run renders the frame and blocks.
 func (f *Frame) Run() {
 	if !f.isTTY() {
-		io.WriteString(f.out, f.String())
+		_, _ = f.out.Write([]byte(f.String()))
 		return
 	}
 	f.runLive()
