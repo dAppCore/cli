@@ -1,9 +1,10 @@
 package doctor
 
 import (
-	"os/exec"
+	"context"
 
 	"dappco.re/go/core"
+	"dappco.re/go/core/process"
 	"dappco.re/go/i18n"
 )
 
@@ -95,14 +96,25 @@ func optionalChecks() []check {
 //
 //	ok, version := runCheck(check{command: "git", args: []string{"--version"}})
 func runCheck(toolCheck check) (bool, string) {
-	proc := exec.Command(toolCheck.command, toolCheck.args...) // TODO: migrate to c.Process()
-	output, err := proc.CombinedOutput()
-	if err != nil {
+	ctx := context.Background()
+	processCore := core.New(core.WithService(process.Register))
+	if startup := processCore.ServiceStartup(ctx, nil); !startup.OK {
+		return false, ""
+	}
+	defer processCore.ServiceShutdown(context.Background())
+
+	result := processCore.Process().Run(ctx, toolCheck.command, toolCheck.args...)
+	if !result.OK {
+		return false, ""
+	}
+
+	output, ok := result.Value.(string)
+	if !ok {
 		return false, ""
 	}
 
 	// Extract first line as version info.
-	lines := core.Split(core.Trim(string(output)), "\n")
+	lines := core.Split(core.Trim(output), "\n")
 	if len(lines) > 0 {
 		return true, core.Trim(lines[0])
 	}
