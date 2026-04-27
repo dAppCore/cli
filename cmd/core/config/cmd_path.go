@@ -1,21 +1,16 @@
 package config
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"dappco.re/go/core"
+	"dappco.re/go/cli/pkg/cli"
 )
 
-func addPathCommand(parent *cli.Command) {
-	cmd := cli.NewCommand("path", "Show the configuration file path", "", func(cmd *cli.Command, args []string) error {
-		configuration, err := loadConfig()
-		if err != nil {
-			return err
-		}
+func configPathAction(_ core.Options) core.Result {
+	configuration, err := loadConfig()
+	if err != nil {
+		return core.Result{Value: err, OK: false}
+	}
 
-		cli.Println("%s", configuration.Path())
-		return nil
-	})
-
-	cli.WithArgs(cmd, cli.NoArgs())
-
-	parent.AddCommand(cmd)
+	cli.Println("%s", configuration.Path())
+	return core.Result{OK: true}
 }

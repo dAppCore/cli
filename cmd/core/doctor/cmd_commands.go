@@ -11,15 +11,15 @@
 package doctor
 
 import (
-	"forge.lthn.ai/core/go-i18n"
-	"github.com/spf13/cobra"
+	"dappco.re/go/core"
 )
 
 // AddDoctorCommands registers the 'doctor' command and all subcommands.
 //
-//	doctor.AddDoctorCommands(rootCmd)
-func AddDoctorCommands(root *cobra.Command) {
-	doctorCmd.Short = i18n.T("cmd.doctor.short")
-	doctorCmd.Long = i18n.T("cmd.doctor.long")
-	root.AddCommand(doctorCmd)
+//	doctor.AddDoctorCommands(c)
+func AddDoctorCommands(c *core.Core) {
+	c.Command("doctor", core.Command{
+		Description: "Check development environment health",
+		Action:      doctorAction,
+	})
 }

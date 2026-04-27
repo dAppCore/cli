@@ -2,15 +2,12 @@ package cli
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
-	"os"
 	"runtime/debug"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go-log"
-	"github.com/spf13/cobra"
+	"dappco.re/go/i18n"
+	"dappco.re/go/log"
 )
 
 //go:embed locales/*.json
@@ -22,10 +19,10 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X forge.lthn.ai/core/cli/pkg/cli.AppVersion=1.2.0 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildCommit=df94c24 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildDate=2026-02-06 \
-//	  -X forge.lthn.ai/core/cli/pkg/cli.BuildPreRelease=dev.8"
+//	go build -ldflags="-X dappco.re/go/core/cli/pkg/cli.AppVersion=1.2.0 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildCommit=df94c24 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildDate=2026-02-06 \
+//	  -X dappco.re/go/core/cli/pkg/cli.BuildPreRelease=dev.8"
 var (
 	AppVersion      = "0.0.0"
 	BuildCommit     = "unknown"
@@ -36,14 +33,15 @@ var (
 // SemVer returns the full SemVer 2.0.0 version string.
 //
 // Examples:
-//   // Release only:
-//   // AppVersion=1.2.0 -> 1.2.0
-//   cli.AppVersion = "1.2.0"
-//   fmt.Println(cli.SemVer())
 //
-//   // Pre-release + commit + date:
-//   // AppVersion=1.2.0, BuildPreRelease=dev.8, BuildCommit=df94c24, BuildDate=20260206
-//   // -> 1.2.0-dev.8+df94c24.20260206
+//	// Release only:
+//	// AppVersion=1.2.0 -> 1.2.0
+//	cli.AppVersion = "1.2.0"
+//	fmt.Println(cli.SemVer())
+//
+//	// Pre-release + commit + date:
+//	// AppVersion=1.2.0, BuildPreRelease=dev.8, BuildCommit=df94c24, BuildDate=20260206
+//	// -> 1.2.0-dev.8+df94c24.20260206
 func SemVer() string {
 	v := AppVersion
 	if BuildPreRelease != "" {
@@ -58,7 +56,7 @@ func SemVer() string {
 	return v
 }
 
-// WithAppName sets the application name used in help text and shell completion.
+// WithAppName sets the application name used in help text.
 // Call before Main for variant binaries (e.g. "lem", "devops").
 //
 //	cli.WithAppName("lem")
@@ -73,9 +71,10 @@ type LocaleSource = i18n.FSSource
 // WithLocales returns a locale source for use with MainWithLocales.
 //
 // Example:
-//   fs := embed.FS{}
-//   locales := cli.WithLocales(fs, "locales")
-//   cli.MainWithLocales([]cli.LocaleSource{locales})
+//
+//	fs := embed.FS{}
+//	locales := cli.WithLocales(fs, "locales")
+//	cli.MainWithLocales([]cli.LocaleSource{locales})
 func WithLocales(fsys fs.FS, dir string) LocaleSource {
 	return LocaleSource{FS: fsys, Dir: dir}
 }
@@ -83,16 +82,18 @@ func WithLocales(fsys fs.FS, dir string) LocaleSource {
 // CommandSetup is a function that registers commands on the CLI after init.
 //
 // Example:
-//   cli.Main(
-//     cli.WithCommands("doctor", doctor.AddDoctorCommands),
-//   )
+//
+//	cli.Main(
+//	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
+//	)
 type CommandSetup func(c *core.Core)
 
 // Main initialises and runs the CLI with the framework's built-in translations.
 //
 // Example:
-//   cli.WithAppName("core")
-//   cli.Main(config.AddConfigCommands)
+//
+//	cli.WithAppName("core")
+//	cli.Main(config.AddConfigCommands)
 func Main(commands ...CommandSetup) {
 	MainWithLocales(nil, commands...)
 }
@@ -100,15 +101,16 @@ func Main(commands ...CommandSetup) {
 // MainWithLocales initialises and runs the CLI with additional translation sources.
 //
 // Example:
-//   locales := []cli.LocaleSource{cli.WithLocales(embeddedLocales, "locales")}
-//   cli.MainWithLocales(locales, doctor.AddDoctorCommands)
+//
+//	locales := []cli.LocaleSource{cli.WithLocales(embeddedLocales, "locales")}
+//	cli.MainWithLocales(locales, doctor.AddDoctorCommands)
 func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("recovered from panic", "error", r, "stack", string(debug.Stack()))
 			Shutdown()
-			Fatal(fmt.Errorf("panic: %v", r))
+			Fatal(core.E("Main", core.Sprintf("panic: %v", r), nil))
 		}
 	}()
 
@@ -128,17 +130,24 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 		I18nSources: extraFS,
 	}); err != nil {
 		Error(err.Error())
-		os.Exit(1)
+		core.Exit(1)
 	}
 	defer Shutdown()
 
-	// Run command setup functions
-	for _, setup := range commands {
-		setup(Core())
+	c := Core()
+
+	// Set banner on the CLI
+	cl := c.Cli()
+	if cl != nil {
+		cl.SetBanner(func(_ *core.Cli) string {
+			return core.Concat(AppName, " ", SemVer())
+		})
 	}
 
-	// Add completion command to the CLI's root
-	RootCmd().AddCommand(newCompletionCmd())
+	// Run command setup functions
+	for _, setup := range commands {
+		setup(c)
+	}
 
 	if err := Execute(); err != nil {
 		code := 1
@@ -147,67 +156,6 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 			code = exitErr.Code
 		}
 		Error(err.Error())
-		os.Exit(code)
-	}
-}
-
-// newCompletionCmd creates the shell completion command using the current AppName.
-func newCompletionCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "completion [bash|zsh|fish|powershell]",
-		Short: "Generate shell completion script",
-		Long: fmt.Sprintf(`Generate shell completion script for the specified shell.
-
-To load completions:
-
-Bash:
-  $ source <(%s completion bash)
-
-  # To load completions for each session, execute once:
-  # Linux:
-  $ %s completion bash > /etc/bash_completion.d/%s
-  # macOS:
-  $ %s completion bash > $(brew --prefix)/etc/bash_completion.d/%s
-
-Zsh:
-  # If shell completion is not already enabled in your environment,
-  # you will need to enable it. You can execute the following once:
-  $ echo "autoload -U compinit; compinit" >> ~/.zshrc
-
-  # To load completions for each session, execute once:
-  $ %s completion zsh > "${fpath[1]}/_%s"
-
-  # You will need to start a new shell for this setup to take effect.
-
-Fish:
-  $ %s completion fish | source
-
-  # To load completions for each session, execute once:
-  $ %s completion fish > ~/.config/fish/completions/%s.fish
-
-PowerShell:
-  PS> %s completion powershell | Out-String | Invoke-Expression
-
-  # To load completions for every new session, run:
-  PS> %s completion powershell > %s.ps1
-  # and source this file from your PowerShell profile.
-`, AppName, AppName, AppName, AppName, AppName,
-			AppName, AppName, AppName, AppName, AppName,
-			AppName, AppName, AppName),
-		DisableFlagsInUseLine: true,
-		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		Run: func(cmd *cobra.Command, args []string) {
-			switch args[0] {
-			case "bash":
-				_ = cmd.Root().GenBashCompletion(stdoutWriter())
-			case "zsh":
-				_ = cmd.Root().GenZshCompletion(stdoutWriter())
-			case "fish":
-				_ = cmd.Root().GenFishCompletion(stdoutWriter(), true)
-			case "powershell":
-				_ = cmd.Root().GenPowerShellCompletionWithDesc(stdoutWriter())
-			}
-		},
+		c.Exit(code)
 	}
 }

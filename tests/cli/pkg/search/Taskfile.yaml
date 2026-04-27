@@ -1,0 +1,48 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source ../../_lib/run.sh
+
+          workspace="$(mktemp -d)"
+          mkdir -p "$workspace/.core/cache/github/host-uk"
+
+          cat >"$workspace/.core/repos.yaml" <<'YAML'
+          version: 1
+          base_path: packages
+          repos: {}
+          YAML
+
+          cat >"$workspace/.core/cache/github/host-uk/repos.json" <<'JSON'
+          {
+            "data": [
+              {
+                "name": "core-cli",
+                "full_name": "host-uk/core-cli",
+                "description": "Core CLI package",
+                "visibility": "public",
+                "updated_at": "2026-04-25T00:00:00Z",
+                "language": "Go"
+              }
+            ],
+            "cached_at": "2026-04-25T00:00:00Z",
+            "expires_at": "2999-01-01T00:00:00Z"
+          }
+          JSON
+
+          export CORE_REPOS="$workspace/.core/repos.yaml"
+
+          set +e
+          actual="$(cli pkg search --org=host-uk --pattern=core-* 2>&1)"
+          status=$?
+          set -e
+
+          [[ "$status" -eq 0 ]] || { printf 'expected pkg search exit 0, got %s\noutput:\n%s\n' "$status" "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Cached"* ]] || { printf 'expected pkg search to use seeded cache\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"Found 1 repositories"* ]] || { printf 'expected pkg search result count\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          [[ "$actual" == *"core-cli"* ]] || { printf 'expected pkg search result name\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          EOF

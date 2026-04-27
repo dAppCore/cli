@@ -1,56 +1,56 @@
 package help
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-help"
+	"dappco.re/go/core"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/help"
 )
 
 // AddHelpCommands registers the help command and subcommands.
 //
-//	help.AddHelpCommands(rootCmd)
-func AddHelpCommands(root *cli.Command) {
-	var searchFlag string
+//	help.AddHelpCommands(c)
+func AddHelpCommands(c *core.Core) {
+	c.Command("help", core.Command{
+		Description: "Display help documentation",
+		Action:      helpAction,
+	})
+}
 
-	helpCmd := &cli.Command{
-		Use:   "help [topic]",
-		Short: "Display help documentation",
-		Run: func(cmd *cli.Command, args []string) {
-			catalog := help.DefaultCatalog()
+func helpAction(opts core.Options) core.Result {
+	catalog := help.DefaultCatalog()
+	search := opts.String("search")
 
-			if searchFlag != "" {
-				results := catalog.Search(searchFlag)
-				if len(results) == 0 {
-					cli.Println("No topics found.")
-					return
-				}
-				cli.Println("Search Results:")
-				for _, result := range results {
-					cli.Println("  %s - %s", result.Topic.ID, result.Topic.Title)
-				}
-				return
-			}
-
-			if len(args) == 0 {
-				topics := catalog.List()
-				cli.Println("Available Help Topics:")
-				for _, topic := range topics {
-					cli.Println("  %s - %s", topic.ID, topic.Title)
-				}
-				return
-			}
-
-			topic, err := catalog.Get(args[0])
-			if err != nil {
-				cli.Errorf("Error: %v", err)
-				return
-			}
-
-			renderTopic(topic)
-		},
+	if search != "" {
+		results := catalog.Search(search)
+		if len(results) == 0 {
+			cli.Println("No topics found.")
+			return core.Result{OK: true}
+		}
+		cli.Println("Search Results:")
+		for _, result := range results {
+			cli.Println("  %s - %s", result.Topic.ID, result.Topic.Title)
+		}
+		return core.Result{OK: true}
 	}
 
-	helpCmd.Flags().StringVarP(&searchFlag, "search", "s", "", "Search help topics")
-	root.AddCommand(helpCmd)
+	// Check for topic argument
+	topicID := opts.String("_arg")
+	if topicID == "" {
+		topics := catalog.List()
+		cli.Println("Available Help Topics:")
+		for _, topic := range topics {
+			cli.Println("  %s - %s", topic.ID, topic.Title)
+		}
+		return core.Result{OK: true}
+	}
+
+	topic, err := catalog.Get(topicID)
+	if err != nil {
+		return core.Result{Value: cli.Err("Error: %v", err), OK: false}
+	}
+
+	renderTopic(topic)
+	return core.Result{OK: true}
 }
 
 func renderTopic(topic *help.Topic) {

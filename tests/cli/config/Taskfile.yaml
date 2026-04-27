@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - |
+          bash <<'EOF'
+          set -euo pipefail
+          source ../_lib/run.sh
+
+          export DIR_HOME
+          DIR_HOME="$(mktemp -d)"
+
+          actual="$(cli config path 2>&1)"
+          [[ "$actual" == *".core/config.yaml"* ]] || { printf 'expected config path output\noutput:\n%s\n' "$actual" >&2; exit 1; }
+
+          actual="$(cli config set --key=dev.editor --value=vim 2>&1)"
+          [[ "$actual" == *"dev.editor = vim"* ]] || { printf 'expected config set confirmation\noutput:\n%s\n' "$actual" >&2; exit 1; }
+
+          export CORE_CONFIG_DEV_EDITOR=nano
+
+          actual="$(cli config get dev.editor 2>&1)"
+          [[ "$actual" == *"nano"* ]] || { printf 'expected config get to read env-backed value\noutput:\n%s\n' "$actual" >&2; exit 1; }
+
+          actual="$(cli config list 2>&1)"
+          [[ "$actual" == *"dev.editor:"* && "$actual" == *"nano"* ]] || { printf 'expected config list to show env-backed value\noutput:\n%s\n' "$actual" >&2; exit 1; }
+          EOF

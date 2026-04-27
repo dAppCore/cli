@@ -2,38 +2,66 @@ package cli
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"os/exec"
-	"strings"
+	"io" // Note: AX-6 - io.Reader/io.Writer stream IO contract for prompt writes and interception.
 	"time"
-	"unicode"
+	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
-	"forge.lthn.ai/core/go-i18n"
-	"forge.lthn.ai/core/go-log"
+	"dappco.re/go/core"
+	"dappco.re/go/i18n"
+	"dappco.re/go/log"
 )
 
-// GhAuthenticated checks if the GitHub CLI is authenticated.
-// Returns true if 'gh auth status' indicates a logged-in user.
 func GhAuthenticated() bool {
-	cmd := exec.Command("gh", "auth", "status")
-	output, _ := cmd.CombinedOutput()
-	authenticated := strings.Contains(string(output), "Logged in")
-
+	output, _ := runProcessOutput(context.Background(), "gh", "auth", "status")
+	authenticated := core.Contains(output, "Logged in")
 	if authenticated {
 		LogWarn("GitHub CLI authenticated", "user", log.Username())
 	} else {
 		LogWarn("GitHub CLI not authenticated", "user", log.Username())
 	}
-
 	return authenticated
 }
 
-// ConfirmOption configures Confirm behaviour.
-//
-//	if cli.Confirm("Proceed?", cli.DefaultYes()) {
-//	    cli.Success("continuing")
-//	}
+func processCore() *core.Core {
+	if instance != nil && instance.core != nil {
+		return instance.core
+	}
+	return core.New()
+}
+
+func runProcessOutput(ctx context.Context, command string, args ...string) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	result := processCore().Process().Run(ctx, command, args...)
+	output := processOutput(result.Value)
+	if result.OK {
+		return output, nil
+	}
+	if err, ok := result.Value.(error); ok {
+		return output, err
+	}
+	if output != "" {
+		return output, core.NewError(output)
+	}
+	return output, core.E("cli.process", core.Concat("process failed: ", command), nil)
+}
+
+func processOutput(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	case error:
+		return v.Error()
+	case nil:
+		return ""
+	default:
+		return core.Sprint(v)
+	}
+}
+
 type ConfirmOption func(*confirmConfig)
 
 type confirmConfig struct {
@@ -43,50 +71,25 @@ type confirmConfig struct {
 }
 
 func promptHint(msg string) {
-	fmt.Fprintln(stderrWriter(), DimStyle.Render(compileGlyphs(msg)))
+	core.Print(stderrWriter(), "%s", DimStyle.Render(compileGlyphs(msg)))
 }
 
 func promptWarning(msg string) {
-	fmt.Fprintln(stderrWriter(), WarningStyle.Render(compileGlyphs(msg)))
+	core.Print(stderrWriter(), "%s", WarningStyle.Render(compileGlyphs(msg)))
 }
 
-// DefaultYes sets the default response to "yes" (pressing Enter confirms).
 func DefaultYes() ConfirmOption {
-	return func(c *confirmConfig) {
-		c.defaultYes = true
-	}
+	return func(c *confirmConfig) { c.defaultYes = true }
 }
 
-// Required prevents empty responses; user must explicitly type y/n.
 func Required() ConfirmOption {
-	return func(c *confirmConfig) {
-		c.required = true
-	}
+	return func(c *confirmConfig) { c.required = true }
 }
 
-// Timeout sets a timeout after which the default response is auto-selected.
-// If no default is set (not Required and not DefaultYes), defaults to "no".
-//
-//	Confirm("Continue?", Timeout(30*time.Second))  // Auto-no after 30s
-//	Confirm("Continue?", DefaultYes(), Timeout(10*time.Second))  // Auto-yes after 10s
 func Timeout(d time.Duration) ConfirmOption {
-	return func(c *confirmConfig) {
-		c.timeout = d
-	}
+	return func(c *confirmConfig) { c.timeout = d }
 }
 
-// Confirm prompts the user for yes/no confirmation.
-// Returns true if the user enters "y" or "yes" (case-insensitive).
-//
-// Basic usage:
-//
-//	if Confirm("Delete file?") { ... }
-//
-// With options:
-//
-//	if Confirm("Save changes?", DefaultYes()) { ... }
-//	if Confirm("Dangerous!", Required()) { ... }
-//	if Confirm("Auto-continue?", Timeout(30*time.Second)) { ... }
 func Confirm(prompt string, opts ...ConfirmOption) bool {
 	cfg := &confirmConfig{}
 	for _, opt := range opts {
@@ -95,7 +98,6 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 
 	prompt = compileGlyphs(prompt)
 
-	// Build the prompt suffix
 	var suffix string
 	if cfg.required {
 		suffix = "[y/n] "
@@ -105,21 +107,19 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 		suffix = "[y/N] "
 	}
 
-	// Add timeout indicator if set
 	if cfg.timeout > 0 {
-		suffix = fmt.Sprintf("%s(auto in %s) ", suffix, cfg.timeout.Round(time.Second))
+		suffix = core.Sprintf("%s(auto in %s) ", suffix, cfg.timeout.Round(time.Second))
 	}
 
 	reader := newReader()
 
 	for {
-		fmt.Fprintf(stderrWriter(), "%s %s", prompt, suffix)
+		io.WriteString(stderrWriter(), core.Sprintf("%s %s", prompt, suffix))
 
 		var response string
 		var readErr error
 
 		if cfg.timeout > 0 {
-			// Use timeout-based reading
 			resultChan := make(chan string, 1)
 			errChan := make(chan error, 1)
 			go func() {
@@ -131,9 +131,9 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 			select {
 			case response = <-resultChan:
 				readErr = <-errChan
-				response = strings.ToLower(strings.TrimSpace(response))
+				response = core.Lower(core.Trim(response))
 			case <-time.After(cfg.timeout):
-				fmt.Fprintln(stderrWriter()) // New line after timeout
+				core.Print(stderrWriter(), "")
 				return cfg.defaultYes
 			}
 		} else {
@@ -143,10 +143,9 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 				return cfg.defaultYes
 			}
 			response = line
-			response = strings.ToLower(strings.TrimSpace(response))
+			response = core.Lower(core.Trim(response))
 		}
 
-		// Handle empty response
 		if response == "" {
 			if readErr == nil && cfg.required {
 				promptHint("Please enter y or n, then press Enter.")
@@ -158,7 +157,6 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 			return cfg.defaultYes
 		}
 
-		// Check for yes/no responses
 		if response == "y" || response == "yes" {
 			return true
 		}
@@ -166,43 +164,28 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 			return false
 		}
 
-		// Invalid response
 		if cfg.required {
 			promptHint("Please enter y or n, then press Enter.")
 			continue
 		}
-
-		// Non-required: treat invalid as default
 		return cfg.defaultYes
 	}
 }
 
-// ConfirmAction prompts for confirmation of an action using grammar composition.
-//
-//	if ConfirmAction("delete", "config.yaml") { ... }
-//	if ConfirmAction("save", "changes", DefaultYes()) { ... }
 func ConfirmAction(verb, subject string, opts ...ConfirmOption) bool {
 	question := i18n.Title(verb) + " " + subject + "?"
 	return Confirm(question, opts...)
 }
 
-// ConfirmDangerousAction prompts for double confirmation of a dangerous action.
-// Shows initial question, then a "Really verb subject?" confirmation.
-//
-//	if ConfirmDangerousAction("delete", "config.yaml") { ... }
 func ConfirmDangerousAction(verb, subject string) bool {
 	question := i18n.Title(verb) + " " + subject + "?"
 	if !Confirm(question, Required()) {
 		return false
 	}
-
 	confirm := "Really " + verb + " " + subject + "?"
 	return Confirm(confirm, Required())
 }
 
-// QuestionOption configures Question behaviour.
-//
-//	name := cli.Question("Project name:", cli.WithDefault("my-app"))
 type QuestionOption func(*questionConfig)
 
 type questionConfig struct {
@@ -211,57 +194,36 @@ type questionConfig struct {
 	validator    func(string) error
 }
 
-// WithDefault sets the default value shown in brackets.
 func WithDefault(value string) QuestionOption {
-	return func(c *questionConfig) {
-		c.defaultValue = value
-	}
+	return func(c *questionConfig) { c.defaultValue = value }
 }
 
-// WithValidator adds a validation function for the response.
 func WithValidator(fn func(string) error) QuestionOption {
-	return func(c *questionConfig) {
-		c.validator = fn
-	}
+	return func(c *questionConfig) { c.validator = fn }
 }
 
-// RequiredInput prevents empty responses.
 func RequiredInput() QuestionOption {
-	return func(c *questionConfig) {
-		c.required = true
-	}
+	return func(c *questionConfig) { c.required = true }
 }
 
-// Question prompts the user for text input.
-//
-//	name := Question("Enter your name:")
-//	name := Question("Enter your name:", WithDefault("Anonymous"))
-//	name := Question("Enter your name:", RequiredInput())
 func Question(prompt string, opts ...QuestionOption) string {
 	cfg := &questionConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
-
 	prompt = compileGlyphs(prompt)
-
 	reader := newReader()
-
 	for {
-		// Build prompt with default
 		if cfg.defaultValue != "" {
-			fmt.Fprintf(stderrWriter(), "%s [%s] ", prompt, compileGlyphs(cfg.defaultValue))
+			io.WriteString(stderrWriter(), core.Sprintf("%s [%s] ", prompt, compileGlyphs(cfg.defaultValue)))
 		} else {
-			fmt.Fprintf(stderrWriter(), "%s ", prompt)
+			io.WriteString(stderrWriter(), core.Sprintf("%s ", prompt))
 		}
-
 		response, err := reader.ReadString('\n')
-		response = strings.TrimSpace(response)
+		response = core.Trim(response)
 		if err != nil && response == "" {
 			return cfg.defaultValue
 		}
-
-		// Handle empty response
 		if response == "" {
 			if cfg.required {
 				promptHint("Please enter a value, then press Enter.")
@@ -269,100 +231,63 @@ func Question(prompt string, opts ...QuestionOption) string {
 			}
 			response = cfg.defaultValue
 		}
-
-		// Validate if validator provided
 		if cfg.validator != nil {
 			if err := cfg.validator(response); err != nil {
-				promptWarning(fmt.Sprintf("Invalid: %v", err))
+				promptWarning(core.Sprintf("Invalid: %v", err))
 				continue
 			}
 		}
-
 		return response
 	}
 }
 
-// QuestionAction prompts for text input using grammar composition.
-//
-//	name := QuestionAction("rename", "old.txt")
 func QuestionAction(verb, subject string, opts ...QuestionOption) string {
 	question := i18n.Title(verb) + " " + subject + "?"
 	return Question(question, opts...)
 }
 
-// ChooseOption configures Choose behaviour.
-//
-//	choice := cli.Choose("Pick one:", items, cli.Display(func(v Item) string {
-//	    return v.Name
-//	}))
 type ChooseOption[T any] func(*chooseConfig[T])
 
 type chooseConfig[T any] struct {
 	displayFn func(T) string
-	defaultN  int  // 0-based index of default selection
-	filter    bool // Enable type-to-filter selection
-	multi     bool // Allow multiple selection
+	defaultN  int
+	filter    bool
+	multi     bool
 }
 
-// WithDisplay sets a custom display function for items.
 func WithDisplay[T any](fn func(T) string) ChooseOption[T] {
-	return func(c *chooseConfig[T]) {
-		c.displayFn = fn
-	}
+	return func(c *chooseConfig[T]) { c.displayFn = fn }
 }
 
-// WithDefaultIndex sets the default selection index (0-based).
 func WithDefaultIndex[T any](idx int) ChooseOption[T] {
-	return func(c *chooseConfig[T]) {
-		c.defaultN = idx
-	}
+	return func(c *chooseConfig[T]) { c.defaultN = idx }
 }
 
-// Filter enables type-to-filter functionality.
-// When enabled, typed text narrows the visible options before selection.
 func Filter[T any]() ChooseOption[T] {
-	return func(c *chooseConfig[T]) {
-		c.filter = true
-	}
+	return func(c *chooseConfig[T]) { c.filter = true }
 }
 
-// Multi allows multiple selections.
-// Use ChooseMulti instead of Choose when this option is needed.
 func Multi[T any]() ChooseOption[T] {
-	return func(c *chooseConfig[T]) {
-		c.multi = true
-	}
+	return func(c *chooseConfig[T]) { c.multi = true }
 }
 
-// Display sets a custom display function for items.
-// Alias for WithDisplay for shorter syntax.
-//
-//	Choose("Select:", items, Display(func(f File) string { return f.Name }))
 func Display[T any](fn func(T) string) ChooseOption[T] {
 	return WithDisplay[T](fn)
 }
 
-// Choose prompts the user to select from a list of items.
-// Returns the selected item. Uses simple numbered selection for terminal compatibility.
-//
-//	choice := Choose("Select a file:", files)
-//	choice := Choose("Select a file:", files, WithDisplay(func(f File) string { return f.Name }))
 func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 	var zero T
 	if len(items) == 0 {
 		return zero
 	}
-
 	cfg := &chooseConfig[T]{
-		displayFn: func(item T) string { return fmt.Sprint(item) },
+		displayFn: func(item T) string { return core.Sprint(item) },
 		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
-
 	prompt = compileGlyphs(prompt)
-
 	reader := newReader()
 	visible := make([]int, len(items))
 	for i := range items {
@@ -372,15 +297,13 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, cfg.defaultN, cfg.filter)
-
 		if cfg.filter {
-			fmt.Fprintf(stderrWriter(), "Enter number [1-%d] or filter: ", len(visible))
+			io.WriteString(stderrWriter(), core.Sprintf("Enter number [1-%d] or filter: ", len(visible)))
 		} else {
-			fmt.Fprintf(stderrWriter(), "Enter number [1-%d]: ", len(visible))
+			io.WriteString(stderrWriter(), core.Sprintf("Enter number [1-%d]: ", len(visible)))
 		}
 		response, err := reader.ReadString('\n')
-		response = strings.TrimSpace(response)
-
+		response = core.Trim(response)
 		if err != nil && response == "" {
 			if idx, ok := defaultVisibleIndex(visible, cfg.defaultN); ok {
 				return items[idx]
@@ -388,7 +311,6 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			var zero T
 			return zero
 		}
-
 		if response == "" {
 			if cfg.filter && len(visible) != len(allVisible) {
 				visible = append([]int(nil), allVisible...)
@@ -402,106 +324,77 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 				promptHint("Default selection is not available in the current list. Narrow the list or choose another number.")
 				continue
 			}
-			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
+			promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
-
-		var n int
-		if _, err := fmt.Sscanf(response, "%d", &n); err == nil {
+		if n, err := Atoi(response); err == nil {
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
-			promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
+			promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
-
 		if cfg.filter {
 			nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 			if len(nextVisible) == 0 {
-				promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
+				promptHint(core.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
 				continue
 			}
 			visible = nextVisible
 			continue
 		}
-
-		promptHint(fmt.Sprintf("Please enter a number between 1 and %d.", len(visible)))
+		promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 	}
 }
 
-// ChooseAction prompts for selection using grammar composition.
-//
-//	file := ChooseAction("select", "file", files)
 func ChooseAction[T any](verb, subject string, items []T, opts ...ChooseOption[T]) T {
 	question := i18n.Title(verb) + " " + subject + ":"
 	return Choose(question, items, opts...)
 }
 
-// ChooseMulti prompts the user to select multiple items from a list.
-// Returns the selected items. Uses space-separated numbers or ranges.
-//
-//	choices := ChooseMulti("Select files:", files)
-//	choices := ChooseMulti("Select files:", files, WithDisplay(func(f File) string { return f.Name }))
-//
-// Input format:
-//   - "1 3 5" - select items 1, 3, and 5
-//   - "1-3" - select items 1, 2, and 3
-//   - "1 3-5" - select items 1, 3, 4, and 5
-//   - "" (empty) - select none
 func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 	if len(items) == 0 {
 		return nil
 	}
-
 	cfg := &chooseConfig[T]{
-		displayFn: func(item T) string { return fmt.Sprint(item) },
+		displayFn: func(item T) string { return core.Sprint(item) },
 		defaultN:  -1,
 	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
-
 	prompt = compileGlyphs(prompt)
-
 	reader := newReader()
 	visible := make([]int, len(items))
 	for i := range items {
 		visible[i] = i
 	}
-
 	for {
 		renderChoices(prompt, items, visible, cfg.displayFn, -1, cfg.filter)
-
 		if cfg.filter {
-			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
+			io.WriteString(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3), or filter text, or empty for none: ")
 		} else {
-			fmt.Fprint(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
+			io.WriteString(stderrWriter(), "Enter numbers (e.g., 1 3 5 or 1-3) or empty for none: ")
 		}
 		response, _ := reader.ReadString('\n')
-		response = strings.TrimSpace(response)
-
-		// Empty response returns no selections.
+		response = core.Trim(response)
 		if response == "" {
 			return nil
 		}
-
-		// Parse the selection.
 		selected, err := parseMultiSelection(response, len(visible))
 		if err != nil {
 			if cfg.filter && !looksLikeMultiSelectionInput(response) {
 				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 				if len(nextVisible) == 0 {
-					promptHint(fmt.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
+					promptHint(core.Sprintf("No matches for %q. Try a shorter search term or clear the filter.", response))
 					continue
 				}
 				visible = nextVisible
 				continue
 			}
-			promptWarning(fmt.Sprintf("Invalid selection %q: enter numbers like 1 3 or 1-3.", response))
+			promptWarning(core.Sprintf("Invalid selection %q: enter numbers like 1 3 or 1-3.", response))
 			continue
 		}
-
-		// Build result
 		result := make([]T, 0, len(selected))
 		for _, idx := range selected {
 			result = append(result, items[visible[idx]])
@@ -511,16 +404,16 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 }
 
 func renderChoices[T any](prompt string, items []T, visible []int, displayFn func(T) string, defaultN int, filter bool) {
-	fmt.Fprintln(stderrWriter(), prompt)
+	core.Print(stderrWriter(), "%s", prompt)
 	for i, idx := range visible {
 		marker := " "
 		if defaultN >= 0 && idx == defaultN {
 			marker = "*"
 		}
-		fmt.Fprintf(stderrWriter(), "  %s%d. %s\n", marker, i+1, compileGlyphs(displayFn(items[idx])))
+		core.Print(stderrWriter(), "  %s%d. %s", marker, i+1, compileGlyphs(displayFn(items[idx])))
 	}
 	if filter {
-		fmt.Fprintln(stderrWriter(), "  (type to filter the list)")
+		core.Print(stderrWriter(), "  (type to filter the list)")
 	}
 }
 
@@ -537,14 +430,13 @@ func defaultVisibleIndex(visible []int, defaultN int) (int, bool) {
 }
 
 func filterVisible[T any](items []T, visible []int, query string, displayFn func(T) string) []int {
-	q := strings.ToLower(strings.TrimSpace(query))
+	q := core.Lower(core.Trim(query))
 	if q == "" {
 		return visible
 	}
-
 	filtered := make([]int, 0, len(visible))
 	for _, idx := range visible {
-		if strings.Contains(strings.ToLower(displayFn(items[idx])), q) {
+		if core.Contains(core.Lower(displayFn(items[idx])), q) {
 			filtered = append(filtered, idx)
 		}
 	}
@@ -566,51 +458,40 @@ func looksLikeMultiSelectionInput(input string) bool {
 	return hasDigit
 }
 
-// parseMultiSelection parses a multi-selection string like "1 3 5", "1,3,5",
-// or "1-3 5".
-// Returns 0-based indices.
 func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	selected := make(map[int]bool)
-
-	normalized := strings.NewReplacer(",", " ").Replace(input)
-
-	for part := range strings.FieldsSeq(normalized) {
-		// Check for range (e.g., "1-3")
-		if strings.Contains(part, "-") {
-			var rangeParts []string
-			for p := range strings.SplitSeq(part, "-") {
-				rangeParts = append(rangeParts, p)
-			}
+	normalized := core.Replace(input, ",", " ")
+	for _, part := range fields(normalized) {
+		if core.Contains(part, "-") {
+			rangeParts := core.Split(part, "-")
 			if len(rangeParts) != 2 {
 				return nil, Err("invalid range: %s", part)
 			}
-			var start, end int
-			if _, err := fmt.Sscanf(rangeParts[0], "%d", &start); err != nil {
+			start, err := Atoi(rangeParts[0])
+			if err != nil {
 				return nil, Err("invalid range start: %s", rangeParts[0])
 			}
-			if _, err := fmt.Sscanf(rangeParts[1], "%d", &end); err != nil {
+			end, err := Atoi(rangeParts[1])
+			if err != nil {
 				return nil, Err("invalid range end: %s", rangeParts[1])
 			}
 			if start < 1 || start > maxItems || end < 1 || end > maxItems || start > end {
 				return nil, Err("range out of bounds: %s", part)
 			}
 			for i := start; i <= end; i++ {
-				selected[i-1] = true // Convert to 0-based
+				selected[i-1] = true
 			}
 		} else {
-			// Single number
-			var n int
-			if _, err := fmt.Sscanf(part, "%d", &n); err != nil {
+			n, err := Atoi(part)
+			if err != nil {
 				return nil, Err("invalid number: %s", part)
 			}
 			if n < 1 || n > maxItems {
 				return nil, Err("number out of range: %d", n)
 			}
-			selected[n-1] = true // Convert to 0-based
+			selected[n-1] = true
 		}
 	}
-
-	// Convert map to sorted slice
 	result := make([]int, 0, len(selected))
 	for i := range maxItems {
 		if selected[i] {
@@ -620,49 +501,74 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 	return result, nil
 }
 
-// ChooseMultiAction prompts for multiple selections using grammar composition.
-//
-//	files := ChooseMultiAction("select", "files", files)
+// fields splits a string on whitespace runs, returning non-empty tokens.
+// Equivalent to strings.Fields without importing the stdlib package directly.
+func fields(s string) []string {
+	var parts []string
+	start := -1
+	for i, r := range s {
+		if unicode.IsSpace(r) {
+			if start >= 0 {
+				parts = append(parts, s[start:i])
+				start = -1
+			}
+		} else if start < 0 {
+			start = i
+		}
+	}
+	if start >= 0 {
+		parts = append(parts, s[start:])
+	}
+	return parts
+}
+
 func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOption[T]) []T {
 	question := i18n.Title(verb) + " " + subject + ":"
 	return ChooseMulti(question, items, opts...)
 }
 
-// GitClone clones a GitHub repository to the specified path.
-// Prefers 'gh repo clone' if authenticated, falls back to SSH.
 func GitClone(ctx context.Context, org, repo, path string) error {
 	return GitCloneRef(ctx, org, repo, path, "")
 }
 
-// GitCloneRef clones a GitHub repository at a specific ref to the specified path.
-// Prefers 'gh repo clone' if authenticated, falls back to SSH.
 func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
 	if GhAuthenticated() {
-		httpsURL := fmt.Sprintf("https://github.com/%s/%s.git", org, repo)
-		args := []string{"repo", "clone", httpsURL, path}
-		if ref != "" {
-			args = append(args, "--", "--branch", ref, "--single-branch")
-		}
-		cmd := exec.CommandContext(ctx, "gh", args...)
-		output, err := cmd.CombinedOutput()
+		httpsURL := core.Sprintf("https://github.com/%s/%s.git", org, repo)
+		args := ghRepoCloneArgs(httpsURL, path, ref)
+		output, err := runProcessOutput(ctx, "gh", args...)
 		if err == nil {
 			return nil
 		}
-		errStr := strings.TrimSpace(string(output))
-		if strings.Contains(errStr, "already exists") {
-			return errors.New(errStr)
+		errStr := core.Trim(output)
+		if core.Contains(errStr, "already exists") {
+			return core.NewError(errStr)
 		}
 	}
-	// Fall back to SSH clone
+	args := gitCloneArgs(core.Sprintf("git@github.com:%s/%s.git", org, repo), path, ref)
+	output, err := runProcessOutput(ctx, "git", args...)
+	if err != nil {
+		errStr := core.Trim(output)
+		if errStr == "" {
+			return err
+		}
+		return core.NewError(errStr)
+	}
+	return nil
+}
+
+func ghRepoCloneArgs(repoURL, path, ref string) []string {
+	args := []string{"repo", "clone", "--", repoURL, path}
+	if ref != "" {
+		args = append(args, "--", "--branch", ref, "--single-branch")
+	}
+	return args
+}
+
+func gitCloneArgs(repoURL, path, ref string) []string {
 	args := []string{"clone"}
 	if ref != "" {
 		args = append(args, "--branch", ref, "--single-branch")
 	}
-	args = append(args, fmt.Sprintf("git@github.com:%s/%s.git", org, repo), path)
-	cmd := exec.CommandContext(ctx, "git", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return errors.New(strings.TrimSpace(string(output)))
-	}
-	return nil
+	args = append(args, "--", repoURL, path)
+	return args
 }

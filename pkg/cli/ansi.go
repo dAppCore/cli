@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"fmt"
 	"os"
-	"strconv"
-	"strings"
-	"sync"
+
+	"dappco.re/go/core"
 )
 
 // ANSI escape codes
@@ -19,7 +17,7 @@ const (
 
 var (
 	colorEnabled        = true
-	colorEnabledMu      sync.RWMutex
+	colorEnabledMu      core.RWMutex
 	asciiDisabledColors bool
 )
 
@@ -147,30 +145,30 @@ func (s *AnsiStyle) Render(text string) string {
 		return text
 	}
 
-	return strings.Join(codes, "") + text + ansiReset
+	return core.Join("", codes...) + text + ansiReset
 }
 
 // fgColorHex converts a hex string to an ANSI foreground color code.
 func fgColorHex(hex string) string {
 	r, g, b := hexToRGB(hex)
-	return fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+	return core.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
 }
 
 // bgColorHex converts a hex string to an ANSI background color code.
 func bgColorHex(hex string) string {
 	r, g, b := hexToRGB(hex)
-	return fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
+	return core.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
 }
 
 // hexToRGB converts a hex string to RGB values.
 func hexToRGB(hex string) (int, int, int) {
-	hex = strings.TrimPrefix(hex, "#")
+	hex = core.TrimPrefix(hex, "#")
 	if len(hex) != 6 {
 		return 255, 255, 255
 	}
 	// Use 8-bit parsing since RGB values are 0-255, avoiding integer overflow on 32-bit systems.
-	r, _ := strconv.ParseUint(hex[0:2], 16, 8)
-	g, _ := strconv.ParseUint(hex[2:4], 16, 8)
-	b, _ := strconv.ParseUint(hex[4:6], 16, 8)
-	return int(r), int(g), int(b)
+	r, _ := ParseHexByte(hex[0:2])
+	g, _ := ParseHexByte(hex[2:4])
+	b, _ := ParseHexByte(hex[4:6])
+	return r, g, b
 }

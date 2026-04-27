@@ -1,0 +1,13 @@
+go 1.26.0
+
+use (
+	.
+	./pkg/cli/frame
+)
+
+replace (
+	dappco.re/go/core => ../go
+	dappco.re/go/i18n => ../go-i18n
+	dappco.re/go/inference => ../go-inference
+	dappco.re/go/log => ../go-log
+)

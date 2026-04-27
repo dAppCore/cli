@@ -4,43 +4,44 @@ package cli
 import (
 	"io/fs"
 	"iter"
-	"sync"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/go-i18n"
-	"github.com/spf13/cobra"
+	"dappco.re/go/i18n"
 )
 
 // WithCommands returns a CommandSetup that registers a command group.
-// The register function receives the root cobra command during Main().
+// The register function receives the Core instance during Main().
 //
 //	cli.Main(
 //	    cli.WithCommands("config", config.AddConfigCommands),
 //	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
 //	)
-func WithCommands(name string, register func(root *Command), localeFS ...fs.FS) CommandSetup {
+func WithCommands(name string, register CommandRegistration, localeFS ...fs.FS) CommandSetup {
 	return func(c *core.Core) {
 		loadLocaleSources(localeSourcesFromFS(localeFS...)...)
-		if root, ok := c.App().Runtime.(*cobra.Command); ok {
-			register(root)
-		}
+		register(c)
 		appendLocales(localeFS...)
 	}
 }
 
-// CommandRegistration is a function that adds commands to the CLI root.
+// CommandRegistration is a function that adds commands to the Core instance.
 //
 // Example:
-//   func addCommands(root *cobra.Command) {
-//   	root.AddCommand(cli.NewRun("ping", "Ping API", "", func(cmd *cli.Command, args []string) {
-//   		cli.Println("pong")
-//   	}))
-//   }
-type CommandRegistration func(root *cobra.Command)
+//
+//	func addCommands(c *core.Core) {
+//	    c.Command("ping", core.Command{
+//	        Description: "Ping API",
+//	        Action: func(opts core.Options) core.Result {
+//	            cli.Println("pong")
+//	            return core.Result{OK: true}
+//	        },
+//	    })
+//	}
+type CommandRegistration func(c *core.Core)
 
 var (
 	registeredCommands   []CommandRegistration
-	registeredCommandsMu sync.Mutex
+	registeredCommandsMu core.Mutex
 	commandsAttached     bool
 	registeredLocales    []fs.FS
 )
@@ -53,16 +54,21 @@ var (
 //	}
 //
 // Example:
-//   cli.RegisterCommands(func(root *cobra.Command) {
-//   	root.AddCommand(cli.NewRun("version", "Show version", "", func(cmd *cli.Command, args []string) {
-//   		cli.Println(cli.SemVer())
-//   	}))
-//   })
+//
+//	cli.RegisterCommands(func(c *core.Core) {
+//	    c.Command("version", core.Command{
+//	        Description: "Show version",
+//	        Action: func(opts core.Options) core.Result {
+//	            cli.Println(cli.SemVer())
+//	            return core.Result{OK: true}
+//	        },
+//	    })
+//	})
 func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 	registeredCommandsMu.Lock()
 	registeredCommands = append(registeredCommands, fn)
-	attached := commandsAttached && instance != nil && instance.root != nil
-	root := instance
+	attached := commandsAttached && instance != nil && instance.core != nil
+	coreInstance := instance
 	registeredCommandsMu.Unlock()
 
 	loadLocaleSources(localeSourcesFromFS(localeFS...)...)
@@ -70,7 +76,7 @@ func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 
 	// If commands already attached (CLI already running), attach immediately
 	if attached {
-		fn(root.root)
+		fn(coreInstance.core)
 	}
 }
 
@@ -118,9 +124,10 @@ func loadLocaleSources(sources ...LocaleSource) {
 // RegisteredLocales returns all locale filesystems registered by command packages.
 //
 // Example:
-//   for _, fs := range cli.RegisteredLocales() {
-//   	_ = fs
-//   }
+//
+//	for _, fs := range cli.RegisteredLocales() {
+//		_ = fs
+//	}
 func RegisteredLocales() []fs.FS {
 	registeredCommandsMu.Lock()
 	defer registeredCommandsMu.Unlock()
@@ -135,9 +142,10 @@ func RegisteredLocales() []fs.FS {
 // RegisteredCommands returns an iterator over the registered command functions.
 //
 // Example:
-//   for attach := range cli.RegisteredCommands() {
-//   	_ = attach
-//   }
+//
+//	for attach := range cli.RegisteredCommands() {
+//		_ = attach
+//	}
 func RegisteredCommands() iter.Seq[CommandRegistration] {
 	return func(yield func(CommandRegistration) bool) {
 		registeredCommandsMu.Lock()
@@ -154,8 +162,8 @@ func RegisteredCommands() iter.Seq[CommandRegistration] {
 }
 
 // attachRegisteredCommands calls all registered command functions.
-// Called by Init() after creating the root command.
-func attachRegisteredCommands(root *cobra.Command) {
+// Called by Init() after creating the Core instance.
+func attachRegisteredCommands(c *core.Core) {
 	registeredCommandsMu.Lock()
 	snapshot := make([]CommandRegistration, len(registeredCommands))
 	copy(snapshot, registeredCommands)
@@ -163,6 +171,6 @@ func attachRegisteredCommands(root *cobra.Command) {
 	registeredCommandsMu.Unlock()
 
 	for _, fn := range snapshot {
-		fn(root)
+		fn(c)
 	}
 }

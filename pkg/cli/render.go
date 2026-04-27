@@ -1,57 +1,39 @@
 package cli
 
-import (
-	"fmt"
-	"strings"
-)
+import "dappco.re/go/core"
 
 // RenderStyle controls how layouts are rendered.
-//
-//	cli.UseRenderBoxed()
-//	frame := cli.NewFrame("HCF")
-//	fmt.Print(frame.String())
 type RenderStyle int
 
-// Render style constants for layout output.
 const (
-	// RenderFlat uses no borders or decorations.
 	RenderFlat RenderStyle = iota
-	// RenderSimple uses --- separators between sections.
 	RenderSimple
-	// RenderBoxed uses Unicode box drawing characters.
 	RenderBoxed
 )
 
 var currentRenderStyle = RenderFlat
 
-// UseRenderFlat sets the render style to flat (no borders).
-//
-//	cli.UseRenderFlat()
-func UseRenderFlat() { currentRenderStyle = RenderFlat }
+type stringWriter interface {
+	WriteString(string) (int, error)
+}
 
-// UseRenderSimple sets the render style to simple (--- separators).
-//
-//	cli.UseRenderSimple()
+func UseRenderFlat()   { currentRenderStyle = RenderFlat }
 func UseRenderSimple() { currentRenderStyle = RenderSimple }
-
-// UseRenderBoxed sets the render style to boxed (Unicode box drawing).
-//
-//	cli.UseRenderBoxed()
-func UseRenderBoxed() { currentRenderStyle = RenderBoxed }
+func UseRenderBoxed()  { currentRenderStyle = RenderBoxed }
 
 // Render outputs the layout to terminal.
 func (c *Composite) Render() {
-	fmt.Fprint(stdoutWriter(), c.String())
+	writeString(stdoutWriter(), c.String())
 }
 
 // String returns the rendered layout.
 func (c *Composite) String() string {
-	var sb strings.Builder
-	c.renderTo(&sb, 0)
+	sb := core.NewBuilder()
+	c.renderTo(sb, 0)
 	return sb.String()
 }
 
-func (c *Composite) renderTo(sb *strings.Builder, depth int) {
+func (c *Composite) renderTo(sb stringWriter, depth int) {
 	order := []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}
 
 	var active []Region
@@ -72,22 +54,22 @@ func (c *Composite) renderTo(sb *strings.Builder, depth int) {
 	}
 }
 
-func (c *Composite) renderSeparator(sb *strings.Builder, depth int) {
-	indent := strings.Repeat("  ", depth)
+func (c *Composite) renderSeparator(sb stringWriter, depth int) {
+	indent := Repeat("  ", depth)
 	switch currentRenderStyle {
 	case RenderBoxed:
-		sb.WriteString(indent + Glyph(":tee:") + strings.Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
+		_, _ = sb.WriteString(indent + Glyph(":tee:") + Repeat(Glyph(":dash:"), 40) + Glyph(":tee:") + "\n")
 	case RenderSimple:
-		sb.WriteString(indent + strings.Repeat(Glyph(":dash:"), 40) + "\n")
+		_, _ = sb.WriteString(indent + Repeat(Glyph(":dash:"), 40) + "\n")
 	}
 }
 
-func (c *Composite) renderSlot(sb *strings.Builder, slot *Slot, depth int) {
-	indent := strings.Repeat("  ", depth)
+func (c *Composite) renderSlot(sb stringWriter, slot *Slot, depth int) {
+	indent := Repeat("  ", depth)
 	for _, block := range slot.blocks {
-		for _, line := range strings.Split(block.Render(), "\n") {
+		for _, line := range core.Split(block.Render(), "\n") {
 			if line != "" {
-				sb.WriteString(indent + line + "\n")
+				_, _ = sb.WriteString(indent + line + "\n")
 			}
 		}
 	}

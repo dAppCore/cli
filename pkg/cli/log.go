@@ -1,9 +1,8 @@
 package cli
 
 import (
-	"fmt"
-
-	"forge.lthn.ai/core/go-log"
+	"dappco.re/go/core"
+	"dappco.re/go/log"
 )
 
 // LogLevel aliases for convenience.
@@ -46,5 +45,5 @@ func LogSecurity(msg string, keyvals ...any) { log.Security(msg, keyvals...) }
 //
 //	cli.LogSecurityf("login attempt from %s", username)
 func LogSecurityf(format string, args ...any) {
-	log.Security(fmt.Sprintf(format, args...))
+	log.Security(core.Sprintf(format, args...))
 }

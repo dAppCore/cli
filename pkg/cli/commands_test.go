@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spf13/cobra"
+	"dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,72 +36,11 @@ func TestRegisterCommands_Good(t *testing.T) {
 	t.Run("registers on startup", func(t *testing.T) {
 		resetGlobals(t)
 
-		RegisterCommands(func(root *cobra.Command) {
-			root.AddCommand(&cobra.Command{Use: "hello", Short: "Say hello"})
-		})
-
-		err := Init(Options{AppName: "test"})
-		require.NoError(t, err)
-
-		// The "hello" command should be on the root.
-		cmd, _, err := RootCmd().Find([]string{"hello"})
-		require.NoError(t, err)
-		assert.Equal(t, "hello", cmd.Use)
-	})
-
-	t.Run("multiple groups compose", func(t *testing.T) {
-		resetGlobals(t)
-
-		RegisterCommands(func(root *cobra.Command) {
-			root.AddCommand(&cobra.Command{Use: "alpha", Short: "Alpha"})
-		})
-		RegisterCommands(func(root *cobra.Command) {
-			root.AddCommand(&cobra.Command{Use: "beta", Short: "Beta"})
-		})
-
-		err := Init(Options{AppName: "test"})
-		require.NoError(t, err)
-
-		for _, name := range []string{"alpha", "beta"} {
-			cmd, _, err := RootCmd().Find([]string{name})
-			require.NoError(t, err)
-			assert.Equal(t, name, cmd.Use)
-		}
-	})
-
-	t.Run("group with subcommands", func(t *testing.T) {
-		resetGlobals(t)
-
-		RegisterCommands(func(root *cobra.Command) {
-			grp := &cobra.Command{Use: "ml", Short: "ML commands"}
-			grp.AddCommand(&cobra.Command{Use: "train", Short: "Train a model"})
-			grp.AddCommand(&cobra.Command{Use: "serve", Short: "Serve a model"})
-			root.AddCommand(grp)
-		})
-
-		err := Init(Options{AppName: "test"})
-		require.NoError(t, err)
-
-		cmd, _, err := RootCmd().Find([]string{"ml", "train"})
-		require.NoError(t, err)
-		assert.Equal(t, "train", cmd.Use)
-
-		cmd, _, err = RootCmd().Find([]string{"ml", "serve"})
-		require.NoError(t, err)
-		assert.Equal(t, "serve", cmd.Use)
-	})
-
-	t.Run("executes registered command", func(t *testing.T) {
-		resetGlobals(t)
-
-		executed := false
-		RegisterCommands(func(root *cobra.Command) {
-			root.AddCommand(&cobra.Command{
-				Use:   "ping",
-				Short: "Ping",
-				RunE: func(_ *cobra.Command, _ []string) error {
-					executed = true
-					return nil
+		RegisterCommands(func(c *core.Core) {
+			c.Command("hello", core.Command{
+				Description: "Say hello",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
 				},
 			})
 		})
@@ -109,9 +48,89 @@ func TestRegisterCommands_Good(t *testing.T) {
 		err := Init(Options{AppName: "test"})
 		require.NoError(t, err)
 
-		RootCmd().SetArgs([]string{"ping"})
-		err = Execute()
+		// The "hello" command should be registered.
+		r := Core().Command("hello")
+		assert.True(t, r.OK, "hello command should be registered")
+	})
+
+	t.Run("multiple groups compose", func(t *testing.T) {
+		resetGlobals(t)
+
+		RegisterCommands(func(c *core.Core) {
+			c.Command("alpha", core.Command{
+				Description: "Alpha",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
+				},
+			})
+		})
+		RegisterCommands(func(c *core.Core) {
+			c.Command("beta", core.Command{
+				Description: "Beta",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
+				},
+			})
+		})
+
+		err := Init(Options{AppName: "test"})
 		require.NoError(t, err)
+
+		for _, name := range []string{"alpha", "beta"} {
+			r := Core().Command(name)
+			assert.True(t, r.OK, name+" command should be registered")
+		}
+	})
+
+	t.Run("nested commands via path", func(t *testing.T) {
+		resetGlobals(t)
+
+		RegisterCommands(func(c *core.Core) {
+			c.Command("ml/train", core.Command{
+				Description: "Train a model",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
+				},
+			})
+			c.Command("ml/serve", core.Command{
+				Description: "Serve a model",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
+				},
+			})
+		})
+
+		err := Init(Options{AppName: "test"})
+		require.NoError(t, err)
+
+		r := Core().Command("ml/train")
+		assert.True(t, r.OK, "ml/train command should be registered")
+
+		r = Core().Command("ml/serve")
+		assert.True(t, r.OK, "ml/serve command should be registered")
+	})
+
+	t.Run("executes registered command", func(t *testing.T) {
+		resetGlobals(t)
+
+		executed := false
+		RegisterCommands(func(c *core.Core) {
+			c.Command("ping", core.Command{
+				Description: "Ping",
+				Action: func(_ core.Options) core.Result {
+					executed = true
+					return core.Result{OK: true}
+				},
+			})
+		})
+
+		err := Init(Options{AppName: "test"})
+		require.NoError(t, err)
+
+		cl := Core().Cli()
+		require.NotNil(t, cl)
+		result := cl.Run("ping")
+		assert.True(t, result.OK, "ping command should execute successfully")
 		assert.True(t, executed, "registered command should have been executed")
 	})
 }
@@ -125,19 +144,23 @@ func TestRegisterCommands_Bad(t *testing.T) {
 		require.NoError(t, err)
 
 		// Register after Init — should attach immediately.
-		RegisterCommands(func(root *cobra.Command) {
-			root.AddCommand(&cobra.Command{Use: "late", Short: "Late arrival"})
+		RegisterCommands(func(c *core.Core) {
+			c.Command("late", core.Command{
+				Description: "Late arrival",
+				Action: func(_ core.Options) core.Result {
+					return core.Result{OK: true}
+				},
+			})
 		})
 
-		cmd, _, err := RootCmd().Find([]string{"late"})
-		require.NoError(t, err)
-		assert.Equal(t, "late", cmd.Use)
+		r := Core().Command("late")
+		assert.True(t, r.OK, "late command should be registered")
 	})
 }
 
 // TestWithAppName_Good tests the app name override.
 func TestWithAppName_Good(t *testing.T) {
-	t.Run("overrides root command use", func(t *testing.T) {
+	t.Run("overrides app name", func(t *testing.T) {
 		resetGlobals(t)
 
 		WithAppName("lem")
@@ -146,7 +169,7 @@ func TestWithAppName_Good(t *testing.T) {
 		err := Init(Options{AppName: AppName})
 		require.NoError(t, err)
 
-		assert.Equal(t, "lem", RootCmd().Use)
+		assert.Equal(t, "lem", Core().App().Name)
 	})
 
 	t.Run("default is core", func(t *testing.T) {
@@ -155,7 +178,7 @@ func TestWithAppName_Good(t *testing.T) {
 		err := Init(Options{AppName: AppName})
 		require.NoError(t, err)
 
-		assert.Equal(t, "core", RootCmd().Use)
+		assert.Equal(t, "core", Core().App().Name)
 	})
 }
 
@@ -180,7 +203,6 @@ func TestRegisterCommands_Ugly(t *testing.T) {
 		resetGlobals(t)
 		err = Init(Options{AppName: "test"})
 		require.NoError(t, err)
-		assert.NotNil(t, RootCmd())
+		assert.NotNil(t, Core())
 	})
 }
-

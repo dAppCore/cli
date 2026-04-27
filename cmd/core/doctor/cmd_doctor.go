@@ -2,9 +2,9 @@
 package doctor
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-i18n"
-	"github.com/spf13/cobra"
+	"dappco.re/go/core"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/i18n"
 )
 
 // Style aliases from shared
@@ -14,18 +14,12 @@ var (
 	dimStyle     = cli.DimStyle
 )
 
-// Flag variable for doctor command
-var doctorVerbose bool
-
-var doctorCmd = &cobra.Command{
-	Use: "doctor",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDoctor(doctorVerbose)
-	},
-}
-
-func init() {
-	doctorCmd.Flags().BoolVar(&doctorVerbose, "verbose", false, i18n.T("cmd.doctor.verbose_flag"))
+func doctorAction(opts core.Options) core.Result {
+	verbose := opts.Bool("verbose")
+	if err := runDoctor(verbose); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 func runDoctor(verbose bool) error {
@@ -98,6 +92,8 @@ func runDoctor(verbose bool) error {
 	}
 
 	cli.Success(i18n.T("cmd.doctor.ready"))
+	_ = passed
+	_ = optional
 	return nil
 }
 

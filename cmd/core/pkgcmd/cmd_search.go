@@ -2,57 +2,39 @@ package pkgcmd
 
 import (
 	"cmp"
-	"os/exec"
+	"context"
 	"slices"
 	"time"
 
+	"dappco.re/go/cache"
+	"dappco.re/go/cli/pkg/cli"
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-cache"
-	"forge.lthn.ai/core/go-i18n"
-	coreio "forge.lthn.ai/core/go-io"
-	"forge.lthn.ai/core/go-scm/repos"
-	"github.com/spf13/cobra"
+	"dappco.re/go/i18n"
+	coreio "dappco.re/go/io"
+	"dappco.re/go/scm/repos"
 )
 
-var (
-	searchOrg     string
-	searchPattern string
-	searchType    string
-	searchLimit   int
-	searchRefresh bool
-)
+func pkgSearchAction(opts core.Options) core.Result {
+	org := opts.String("org")
+	pattern := opts.String("pattern")
+	repoType := opts.String("type")
+	limit := opts.Int("limit")
+	refresh := opts.Bool("refresh")
 
-// addPkgSearchCommand adds the 'pkg search' command.
-func addPkgSearchCommand(parent *cobra.Command) {
-	searchCmd := &cobra.Command{
-		Use:   "search",
-		Short: i18n.T("cmd.pkg.search.short"),
-		Long:  i18n.T("cmd.pkg.search.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			org := searchOrg
-			pattern := searchPattern
-			limit := searchLimit
-			if org == "" {
-				org = "host-uk"
-			}
-			if pattern == "" {
-				pattern = "*"
-			}
-			if limit == 0 {
-				limit = 50
-			}
-			return runPkgSearch(org, pattern, searchType, limit, searchRefresh)
-		},
+	if org == "" {
+		org = "host-uk"
+	}
+	if pattern == "" {
+		pattern = "*"
+	}
+	if limit == 0 {
+		limit = 50
 	}
 
-	searchCmd.Flags().StringVar(&searchOrg, "org", "", i18n.T("cmd.pkg.search.flag.org"))
-	searchCmd.Flags().StringVar(&searchPattern, "pattern", "", i18n.T("cmd.pkg.search.flag.pattern"))
-	searchCmd.Flags().StringVar(&searchType, "type", "", i18n.T("cmd.pkg.search.flag.type"))
-	searchCmd.Flags().IntVar(&searchLimit, "limit", 0, i18n.T("cmd.pkg.search.flag.limit"))
-	searchCmd.Flags().BoolVar(&searchRefresh, "refresh", false, i18n.T("cmd.pkg.search.flag.refresh"))
-
-	parent.AddCommand(searchCmd)
+	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 type ghRepo struct {
@@ -102,30 +84,36 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 		cli.Print("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
 
-		proc := exec.Command("gh", "repo", "list", org,
+		result := cli.Core().Process().Run(context.Background(), "gh",
+			"repo", "list", org,
 			"--json", "name,description,visibility,updatedAt,primaryLanguage",
 			"--limit", cli.Sprintf("%d", limit))
-		output, err := proc.CombinedOutput()
+		output, _ := result.Value.(string)
 
-		if err != nil {
+		if !result.OK {
 			cli.Blank()
-			errorOutput := core.Trim(string(output))
+			errorOutput := core.Trim(output)
+			if errorOutput == "" {
+				if err, ok := result.Value.(error); ok {
+					errorOutput = core.Trim(err.Error())
+				}
+			}
 			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
 				return cli.Err(i18n.T("cmd.pkg.error.auth_failed"))
 			}
 			return cli.Err("%s: %s", i18n.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
 
-		result := core.JSONUnmarshal(output, &ghRepos)
-		if !result.OK {
-			return cli.Wrap(result.Value.(error), i18n.T("i18n.fail.parse", "results"))
+		parseResult := core.JSONUnmarshal([]byte(output), &ghRepos)
+		if !parseResult.OK {
+			return cli.Wrap(parseResult.Value.(error), i18n.T("i18n.fail.parse", "results"))
 		}
 
 		if cacheInstance != nil {
 			_ = cacheInstance.Set(cacheKey, ghRepos)
 		}
 
-		cli.Println("%s", successStyle.Render("✓"))
+		cli.Println("%s", successStyle.Render("ok"))
 	}
 
 	// Filter by glob pattern and type.

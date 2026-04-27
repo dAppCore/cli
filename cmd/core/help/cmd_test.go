@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"forge.lthn.ai/core/cli/pkg/cli"
-	gohelp "forge.lthn.ai/core/go-help"
+	"dappco.re/go/cli/pkg/cli"
+	gohelp "dappco.re/go/help"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

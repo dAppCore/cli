@@ -2,9 +2,8 @@
 package pkgcmd
 
 import (
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-i18n"
-	"github.com/spf13/cobra"
+	"dappco.re/go/core"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 // Style and utility aliases
@@ -15,22 +14,33 @@ var (
 	dimStyle        = cli.DimStyle
 	ghAuthenticated = cli.GhAuthenticated
 	gitClone        = cli.GitClone
-	gitCloneRef     = clonePackageAtRef
+	gitCloneRef     = cli.GitCloneRef
 )
 
 // AddPkgCommands adds the 'pkg' command and subcommands for package management.
-func AddPkgCommands(root *cobra.Command) {
-	pkgCmd := &cobra.Command{
-		Use:   "pkg",
-		Short: i18n.T("cmd.pkg.short"),
-		Long:  i18n.T("cmd.pkg.long"),
-	}
-
-	root.AddCommand(pkgCmd)
-	addPkgSearchCommand(pkgCmd)
-	addPkgInstallCommand(pkgCmd)
-	addPkgListCommand(pkgCmd)
-	addPkgUpdateCommand(pkgCmd)
-	addPkgOutdatedCommand(pkgCmd)
-	addPkgRemoveCommand(pkgCmd)
+func AddPkgCommands(c *core.Core) {
+	c.Command("pkg/search", core.Command{
+		Description: "Search GitHub org for packages",
+		Action:      pkgSearchAction,
+	})
+	c.Command("pkg/install", core.Command{
+		Description: "Install a package from GitHub",
+		Action:      pkgInstallAction,
+	})
+	c.Command("pkg/list", core.Command{
+		Description: "List installed packages",
+		Action:      pkgListAction,
+	})
+	c.Command("pkg/update", core.Command{
+		Description: "Update installed packages",
+		Action:      pkgUpdateAction,
+	})
+	c.Command("pkg/outdated", core.Command{
+		Description: "Check for outdated packages",
+		Action:      pkgOutdatedAction,
+	})
+	c.Command("pkg/remove", core.Command{
+		Description: "Remove a package (with safety checks)",
+		Action:      pkgRemoveAction,
+	})
 }

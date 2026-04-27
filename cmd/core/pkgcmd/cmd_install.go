@@ -5,36 +5,23 @@ import (
 	"os"
 
 	"dappco.re/go/core"
-	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-i18n"
-	coreio "forge.lthn.ai/core/go-io"
-	"forge.lthn.ai/core/go-scm/repos"
-	"github.com/spf13/cobra"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/i18n"
+	coreio "dappco.re/go/io"
+	"dappco.re/go/scm/repos"
 )
 
-var (
-	installTargetDir string
-	installAddToReg  bool
-)
-
-// addPkgInstallCommand adds the 'pkg install' command.
-func addPkgInstallCommand(parent *cobra.Command) {
-	installCmd := &cobra.Command{
-		Use:   "install <org/repo>",
-		Short: i18n.T("cmd.pkg.install.short"),
-		Long:  i18n.T("cmd.pkg.install.long"),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
-			}
-			return runPkgInstall(args[0], installTargetDir, installAddToReg)
-		},
+func pkgInstallAction(opts core.Options) core.Result {
+	repoArg := opts.String("_arg")
+	if repoArg == "" {
+		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
 	}
-
-	installCmd.Flags().StringVar(&installTargetDir, "dir", "", i18n.T("cmd.pkg.install.flag.dir"))
-	installCmd.Flags().BoolVar(&installAddToReg, "add", false, i18n.T("cmd.pkg.install.flag.add"))
-
-	parent.AddCommand(installCmd)
+	targetDir := opts.String("dir")
+	addToReg := opts.Bool("add")
+	if err := runPkgInstall(repoArg, targetDir, addToReg); err != nil {
+		return core.Result{Value: err, OK: false}
+	}
+	return core.Result{OK: true}
 }
 
 func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
@@ -88,16 +75,16 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
 	cli.Print("  %s... ", dimStyle.Render(i18n.T("common.status.cloning")))
 	err := gitClone(ctx, org, repoName, repoPath)
 	if err != nil {
-		cli.Println("%s", errorStyle.Render("✗ "+err.Error()))
+		cli.Println("%s", errorStyle.Render("x "+err.Error()))
 		return err
 	}
-	cli.Println("%s", successStyle.Render("✓"))
+	cli.Println("%s", successStyle.Render("ok"))
 
 	if addToRegistry {
 		if err := addToRegistryFile(org, repoName); err != nil {
-			cli.Println("  %s %s: %s", errorStyle.Render("✗"), i18n.T("cmd.pkg.install.add_to_registry"), err)
+			cli.Println("  %s %s: %s", errorStyle.Render("x"), i18n.T("cmd.pkg.install.add_to_registry"), err)
 		} else {
-			cli.Println("  %s %s", successStyle.Render("✓"), i18n.T("cmd.pkg.install.added_to_registry"))
+			cli.Println("  %s %s", successStyle.Render("ok"), i18n.T("cmd.pkg.install.added_to_registry"))
 		}
 	}
 

@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"bytes"
-	"unicode"
+	"bytes"   // Note: AX-6 — bytes.Buffer provides rune-by-rune parser state for glyph shortcode rendering; core has no NewBuffer wrapper in this release.
+	"unicode" // Note: AX-6 — unicode is structural for rune classification in glyph rendering.
 )
 
 // GlyphTheme defines which symbols to use.

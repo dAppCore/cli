@@ -1,23 +1,27 @@
 package cli
 
 import (
-	"io"
-	"os"
-	"sync"
+	"io" // Note: AX-6 — io.Reader/io.Writer is the public stdin/stdout/stderr interception contract.
+	"os" // Note: AX-6 — os.Stdin/os.Stdout are the structural defaults intercepted by SetStdin/SetStdout.
+
+	"dappco.re/go/core"
 )
 
+type Reader = io.Reader
+type Writer = io.Writer
+
 var (
-	stdin io.Reader = os.Stdin
+	stdin Reader = os.Stdin
 
-	stdoutOverride io.Writer
-	stderrOverride io.Writer
+	stdoutOverride Writer
+	stderrOverride Writer
 
-	ioMu sync.RWMutex
+	ioMu core.RWMutex
 )
 
 // SetStdin overrides the default stdin reader for testing.
 // Pass nil to restore the real os.Stdin reader.
-func SetStdin(r io.Reader) {
+func SetStdin(r Reader) {
 	ioMu.Lock()
 	defer ioMu.Unlock()
 	if r == nil {
@@ -29,7 +33,7 @@ func SetStdin(r io.Reader) {
 
 // SetStdout overrides the default stdout writer.
 // Pass nil to restore writes to os.Stdout.
-func SetStdout(w io.Writer) {
+func SetStdout(w Writer) {
 	ioMu.Lock()
 	defer ioMu.Unlock()
 	stdoutOverride = w
@@ -37,19 +41,19 @@ func SetStdout(w io.Writer) {
 
 // SetStderr overrides the default stderr writer.
 // Pass nil to restore writes to os.Stderr.
-func SetStderr(w io.Writer) {
+func SetStderr(w Writer) {
 	ioMu.Lock()
 	defer ioMu.Unlock()
 	stderrOverride = w
 }
 
-func stdinReader() io.Reader {
+func stdinReader() Reader {
 	ioMu.RLock()
 	defer ioMu.RUnlock()
 	return stdin
 }
 
-func stdoutWriter() io.Writer {
+func stdoutWriter() Writer {
 	ioMu.RLock()
 	defer ioMu.RUnlock()
 	if stdoutOverride != nil {
@@ -58,11 +62,30 @@ func stdoutWriter() io.Writer {
 	return os.Stdout
 }
 
-func stderrWriter() io.Writer {
+func stderrWriter() Writer {
 	ioMu.RLock()
 	defer ioMu.RUnlock()
 	if stderrOverride != nil {
 		return stderrOverride
 	}
 	return os.Stderr
+}
+
+func writeString(w Writer, s string) {
+	if w == nil {
+		return
+	}
+	_, _ = w.Write([]byte(s))
+}
+
+func isEOF(err error) bool {
+	return core.Is(err, io.EOF)
+}
+
+func writerFileDescriptor(w Writer) (int, bool) {
+	file, ok := w.(interface{ Fd() uintptr })
+	if !ok {
+		return 0, false
+	}
+	return int(file.Fd()), true
 }

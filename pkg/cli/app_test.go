@@ -2,17 +2,16 @@ package cli
 
 import (
 	"bytes"
-	"fmt"
 	"runtime/debug"
-	"sync"
 	"testing"
 
+	"dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestPanicRecovery_Good verifies that the panic recovery mechanism
+// TestCli_PanicRecovery_Good verifies that the panic recovery mechanism
 // catches panics and calls the appropriate shutdown and error handling.
-func TestPanicRecovery_Good(t *testing.T) {
+func TestCli_PanicRecovery_Good(t *testing.T) {
 	t.Run("recovery captures panic value and stack", func(t *testing.T) {
 		var recovered any
 		var capturedStack []byte
@@ -34,7 +33,7 @@ func TestPanicRecovery_Good(t *testing.T) {
 		assert.Equal(t, "test panic", recovered)
 		assert.True(t, shutdownCalled, "Shutdown should be called after panic recovery")
 		assert.NotEmpty(t, capturedStack, "Stack trace should be captured")
-		assert.Contains(t, string(capturedStack), "TestPanicRecovery_Good")
+		assert.Contains(t, string(capturedStack), "TestCli_PanicRecovery_Good")
 	})
 
 	t.Run("recovery handles error type panics", func(t *testing.T) {
@@ -47,7 +46,7 @@ func TestPanicRecovery_Good(t *testing.T) {
 				}
 			}()
 
-			panic(fmt.Errorf("error panic"))
+			panic(core.E("", "error panic", nil))
 		}()
 
 		err, ok := recovered.(error)
@@ -72,36 +71,40 @@ func TestPanicRecovery_Good(t *testing.T) {
 	})
 }
 
-// TestPanicRecovery_Bad tests error conditions in panic recovery.
-func TestPanicRecovery_Bad(t *testing.T) {
+// TestCli_PanicRecovery_Bad tests error conditions in panic recovery.
+func TestCli_PanicRecovery_Bad(t *testing.T) {
 	t.Run("recovery handles concurrent panics", func(t *testing.T) {
-		var wg sync.WaitGroup
-		recoveryCount := 0
-		var mu sync.Mutex
+		done := make(chan struct{}, 3)
+		recovered := make(chan struct{}, 3)
 
 		for i := 0; i < 3; i++ {
-			wg.Add(1)
 			go func(id int) {
-				defer wg.Done()
+				defer func() { done <- struct{}{} }()
 				defer func() {
 					if r := recover(); r != nil {
-						mu.Lock()
-						recoveryCount++
-						mu.Unlock()
+						recovered <- struct{}{}
 					}
 				}()
 
-				panic(fmt.Sprintf("panic from goroutine %d", id))
+				panic(core.Sprintf("panic from goroutine %d", id))
 			}(i)
 		}
 
-		wg.Wait()
+		for i := 0; i < 3; i++ {
+			<-done
+		}
+		close(recovered)
+
+		recoveryCount := 0
+		for range recovered {
+			recoveryCount++
+		}
 		assert.Equal(t, 3, recoveryCount, "All goroutine panics should be recovered")
 	})
 }
 
-// TestPanicRecovery_Ugly tests edge cases in panic recovery.
-func TestPanicRecovery_Ugly(t *testing.T) {
+// TestCli_PanicRecovery_Ugly tests edge cases in panic recovery.
+func TestCli_PanicRecovery_Ugly(t *testing.T) {
 	t.Run("recovery handles typed panic values", func(t *testing.T) {
 		type customError struct {
 			code int
@@ -125,8 +128,8 @@ func TestPanicRecovery_Ugly(t *testing.T) {
 	})
 }
 
-// TestMainPanicRecoveryPattern verifies the exact pattern used in Main().
-func TestMainPanicRecoveryPattern(t *testing.T) {
+// TestCli_MainPanicRecoveryPattern_Good verifies the exact pattern used in Main().
+func TestCli_MainPanicRecoveryPattern_Good(t *testing.T) {
 	t.Run("pattern logs error and calls shutdown", func(t *testing.T) {
 		var logBuffer bytes.Buffer
 		var shutdownCalled bool
@@ -134,7 +137,7 @@ func TestMainPanicRecoveryPattern(t *testing.T) {
 
 		// Mock implementations
 		mockLogError := func(msg string, args ...any) {
-			fmt.Fprintf(&logBuffer, msg, args...)
+			logBuffer.WriteString(core.Sprintf(msg, args...))
 		}
 		mockShutdown := func() {
 			shutdownCalled = true
@@ -149,7 +152,7 @@ func TestMainPanicRecoveryPattern(t *testing.T) {
 				if r := recover(); r != nil {
 					mockLogError("recovered from panic: %v", r)
 					mockShutdown()
-					mockFatal(fmt.Errorf("panic: %v", r))
+					mockFatal(core.E("", core.Sprintf("panic: %v", r), nil))
 				}
 			}()
 
