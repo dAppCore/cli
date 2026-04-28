@@ -19,7 +19,7 @@ import (
 	"os/signal" // Note: signal handling exception; paired with os.Signal.
 	"time"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"golang.org/x/sys/unix"
 )
 

@@ -5,9 +5,8 @@ import (
 	"io/fs"
 	"runtime/debug"
 
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
-	"dappco.re/go/log"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 //go:embed locales/*.json
@@ -19,10 +18,10 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X dappco.re/go/core/cli/pkg/cli.AppVersion=1.2.0 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildCommit=df94c24 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildDate=2026-02-06 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildPreRelease=dev.8"
+//	go build -ldflags="-X dappco.re/go/cli/pkg/cli.AppVersion=1.2.0 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildCommit=df94c24 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildDate=2026-02-06 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildPreRelease=dev.8"
 var (
 	AppVersion      = "0.0.0"
 	BuildCommit     = "unknown"
@@ -108,7 +107,7 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("recovered from panic", "error", r, "stack", string(debug.Stack()))
+			core.Error("recovered from panic", "error", r, "stack", string(debug.Stack()))
 			Shutdown()
 			Fatal(core.E("Main", core.Sprintf("panic: %v", r), nil))
 		}

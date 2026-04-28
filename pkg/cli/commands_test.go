@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

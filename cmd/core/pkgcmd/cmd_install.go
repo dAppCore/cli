@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )

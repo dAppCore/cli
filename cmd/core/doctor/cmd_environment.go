@@ -3,9 +3,9 @@ package doctor
 import (
 	"os" // Note: AX-6 — os.UserHomeDir; released core has no home-directory primitive.
 
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	io "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )

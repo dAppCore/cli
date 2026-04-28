@@ -4,7 +4,7 @@ import (
 	"runtime"
 
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // printInstallInstructions prints operating-system-specific installation instructions.

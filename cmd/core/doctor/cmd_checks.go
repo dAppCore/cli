@@ -3,9 +3,9 @@ package doctor
 import (
 	"context"
 
-	"dappco.re/go/core"
-	"dappco.re/go/core/process"
-	"dappco.re/go/i18n"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
+	"dappco.re/go/process"
 )
 
 // check represents a tool check configuration

@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 // ANSI escape codes

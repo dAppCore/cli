@@ -1,7 +1,7 @@
 package help
 
 import (
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	"dappco.re/go/help"
 )

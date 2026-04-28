@@ -6,8 +6,8 @@ import (
 	"os" // Note: AX-6 — os.File for tty detection.
 	"time"
 
+	"dappco.re/go"
 	"dappco.re/go/cli/internal/term"
-	"dappco.re/go/core"
 )
 
 var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}

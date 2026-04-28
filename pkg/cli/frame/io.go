@@ -10,7 +10,7 @@ import (
 type Writer = io.Writer
 
 // TODO(mantis-558): Replace the direct x/term calls below with
-// dappco.re/go/core terminal primitives once core/go exposes them.
+// dappco.re/go terminal primitives once core/go exposes them.
 
 func stdoutWriter() Writer {
 	return os.Stdout

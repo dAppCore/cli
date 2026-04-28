@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 func TestCommand_Good(t *testing.T) {

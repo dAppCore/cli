@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // T translates a key using the CLI's i18n service.

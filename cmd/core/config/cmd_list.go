@@ -3,7 +3,7 @@ package config
 import (
 	"maps"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	"gopkg.in/yaml.v3"
 )
