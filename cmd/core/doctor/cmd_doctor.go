@@ -17,9 +17,9 @@ var (
 func doctorAction(opts core.Options) core.Result {
 	verbose := opts.Bool("verbose")
 	if err := runDoctor(verbose); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runDoctor(verbose bool) error {

@@ -40,7 +40,7 @@ func TestRegisterCommands_Good(t *testing.T) {
 			c.Command("hello", core.Command{
 				Description: "Say hello",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})
@@ -60,7 +60,7 @@ func TestRegisterCommands_Good(t *testing.T) {
 			c.Command("alpha", core.Command{
 				Description: "Alpha",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})
@@ -68,7 +68,7 @@ func TestRegisterCommands_Good(t *testing.T) {
 			c.Command("beta", core.Command{
 				Description: "Beta",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})
@@ -89,13 +89,13 @@ func TestRegisterCommands_Good(t *testing.T) {
 			c.Command("ml/train", core.Command{
 				Description: "Train a model",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 			c.Command("ml/serve", core.Command{
 				Description: "Serve a model",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})
@@ -119,7 +119,7 @@ func TestRegisterCommands_Good(t *testing.T) {
 				Description: "Ping",
 				Action: func(_ core.Options) core.Result {
 					executed = true
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})
@@ -148,7 +148,7 @@ func TestRegisterCommands_Bad(t *testing.T) {
 			c.Command("late", core.Command{
 				Description: "Late arrival",
 				Action: func(_ core.Options) core.Result {
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			})
 		})

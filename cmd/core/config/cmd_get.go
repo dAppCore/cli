@@ -8,19 +8,19 @@ import (
 func configGetAction(opts core.Options) core.Result {
 	key := opts.String("_arg")
 	if key == "" {
-		return core.Result{Value: cli.Err("requires a configuration key argument"), OK: false}
+		return core.Fail(cli.Err("requires a configuration key argument"))
 	}
 
 	configuration, err := loadConfig()
 	if err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
 
 	var value any
 	if err := configuration.Get(key, &value); err != nil {
-		return core.Result{Value: cli.Err("key not found: %s", key), OK: false}
+		return core.Fail(cli.Err("key not found: %s", key))
 	}
 
 	cli.Println("%v", value)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }

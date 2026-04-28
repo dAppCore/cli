@@ -18,21 +18,21 @@ func configSetAction(opts core.Options) core.Result {
 	}
 
 	if key == "" {
-		return core.Result{Value: cli.Err("requires --key and --value arguments (e.g. config set --key=dev.editor --value=vim)"), OK: false}
+		return core.Fail(cli.Err("requires --key and --value arguments (e.g. config set --key=dev.editor --value=vim)"))
 	}
 	if value == "" {
-		return core.Result{Value: cli.Err("requires --value argument (e.g. config set --key=%s --value=<value>)", key), OK: false}
+		return core.Fail(cli.Err("requires --value argument (e.g. config set --key=%s --value=<value>)", key))
 	}
 
 	configuration, err := loadConfig()
 	if err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
 
 	if err := configuration.Set(key, value); err != nil {
-		return core.Result{Value: cli.Wrap(err, "failed to set config value"), OK: false}
+		return core.Fail(cli.Wrap(err, "failed to set config value"))
 	}
 
 	cli.Success(key + " = " + value)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }

@@ -26,7 +26,7 @@ type CommandAction = core.CommandAction
 //	    Description: "List all configuration values",
 //	    Action: func(opts core.Options) core.Result {
 //	        cli.Println("listing...")
-//	        return core.Result{OK: true}
+//	        return core.Ok(nil)
 //	    },
 //	})
 func RegisterCommand(c *core.Core, path string, cmd core.Command) {
@@ -43,7 +43,7 @@ func RegisterCommand(c *core.Core, path string, cmd core.Command) {
 //
 //	func myAction(opts core.Options) core.Result {
 //	    if msg := cli.RequireArgs(opts, 1); msg != "" {
-//	        return core.Result{Value: cli.Err(msg), OK: false}
+//	        return core.Fail(cli.Err(msg))
 //	    }
 //	    key := opts.String("_arg")
 //	    // ...
@@ -63,7 +63,7 @@ func RequireArgs(opts core.Options, n int) string {
 //
 //	func myAction(opts core.Options) core.Result {
 //	    if msg := cli.RequireExactArgs(opts, 1); msg != "" {
-//	        return core.Result{Value: cli.Err(msg), OK: false}
+//	        return core.Fail(cli.Err(msg))
 //	    }
 //	}
 func RequireExactArgs(opts core.Options, n int) string {

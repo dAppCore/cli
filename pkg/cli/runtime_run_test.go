@@ -22,7 +22,7 @@ func TestRun_Good_CancelledContext(t *testing.T) {
 			Description: "Wait for context",
 			Action: func(_ core.Options) core.Result {
 				<-Context().Done()
-				return core.Result{OK: true}
+				return core.Ok(nil)
 			},
 		})
 	})
@@ -47,7 +47,7 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *testing.T) {
 					finishedOnce.Do(func() {
 						close(finished)
 					})
-					return core.Result{OK: true}
+					return core.Ok(nil)
 				},
 			},
 		},

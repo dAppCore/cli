@@ -293,17 +293,17 @@ func (s *signalService) start(ctx context.Context) core.Result {
 		}
 	}()
 
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func (s *signalService) stop() core.Result {
 	s.stopLock.Mutex.Lock()
 	defer s.stopLock.Mutex.Unlock()
 	if s.stopped {
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 	s.stopped = true
 	signal.Stop(s.sigChan)
 	close(s.sigChan)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }

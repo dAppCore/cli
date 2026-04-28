@@ -33,7 +33,7 @@ func WithCommands(name string, register CommandRegistration, localeFS ...fs.FS) 
 //	        Description: "Ping API",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println("pong")
-//	            return core.Result{OK: true}
+//	            return core.Ok(nil)
 //	        },
 //	    })
 //	}
@@ -60,7 +60,7 @@ var (
 //	        Description: "Show version",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println(cli.SemVer())
-//	            return core.Result{OK: true}
+//	            return core.Ok(nil)
 //	        },
 //	    })
 //	})

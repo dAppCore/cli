@@ -12,7 +12,7 @@ func TestCommand_Good(t *testing.T) {
 	RegisterCommand(c, "build", core.Command{
 		Description: "Build the project",
 		Action: func(_ core.Options) core.Result {
-			return core.Result{OK: true}
+			return core.Ok(nil)
 		},
 	})
 
@@ -63,7 +63,7 @@ func TestCommand_Ugly(t *testing.T) {
 	RegisterCommand(c, "deploy/to/homelab", core.Command{
 		Description: "Deploy to homelab",
 		Action: func(_ core.Options) core.Result {
-			return core.Result{OK: true}
+			return core.Ok(nil)
 		},
 	})
 	r := c.Command("deploy/to/homelab")

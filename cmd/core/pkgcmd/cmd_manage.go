@@ -12,9 +12,9 @@ import (
 
 func pkgListAction(_ core.Options) core.Result {
 	if err := runPkgList(); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgList() error {
@@ -89,12 +89,12 @@ func pkgUpdateAction(opts core.Options) core.Result {
 		packages = append(packages, pkg)
 	}
 	if !all && len(packages) == 0 {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.specify_package")), OK: false}
+		return core.Fail(cli.Err(i18n.T("cmd.pkg.error.specify_package")))
 	}
 	if err := runPkgUpdate(packages, all); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgUpdate(packages []string, all bool) error {
@@ -165,9 +165,9 @@ func runPkgUpdate(packages []string, all bool) error {
 
 func pkgOutdatedAction(_ core.Options) core.Result {
 	if err := runPkgOutdated(); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgOutdated() error {

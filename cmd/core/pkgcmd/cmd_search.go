@@ -32,9 +32,9 @@ func pkgSearchAction(opts core.Options) core.Result {
 	}
 
 	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 type ghRepo struct {

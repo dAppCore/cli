@@ -11,20 +11,20 @@ import (
 func configListAction(_ core.Options) core.Result {
 	configuration, err := loadConfig()
 	if err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
 
 	all := maps.Collect(configuration.All())
 	if len(all) == 0 {
 		cli.Dim("No configuration values set")
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 
 	output, err := yaml.Marshal(all)
 	if err != nil {
-		return core.Result{Value: cli.Wrap(err, "failed to format config"), OK: false}
+		return core.Fail(cli.Wrap(err, "failed to format config"))
 	}
 
 	cli.Print("%s", string(output))
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
