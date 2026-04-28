@@ -2,7 +2,7 @@
 package pkgcmd
 
 import (
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 )
 

@@ -3,18 +3,18 @@ package pkgcmd
 import (
 	"os/exec"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
 
 func pkgListAction(_ core.Options) core.Result {
 	if err := runPkgList(); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgList() error {
@@ -89,12 +89,12 @@ func pkgUpdateAction(opts core.Options) core.Result {
 		packages = append(packages, pkg)
 	}
 	if !all && len(packages) == 0 {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.specify_package")), OK: false}
+		return core.Fail(cli.Err(i18n.T("cmd.pkg.error.specify_package")))
 	}
 	if err := runPkgUpdate(packages, all); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgUpdate(packages []string, all bool) error {
@@ -165,9 +165,9 @@ func runPkgUpdate(packages []string, all bool) error {
 
 func pkgOutdatedAction(_ core.Options) core.Result {
 	if err := runPkgOutdated(); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgOutdated() error {
@@ -202,7 +202,9 @@ func runPkgOutdated() error {
 		}
 
 		// Fetch updates silently.
-		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run() // TODO: migrate to c.Process()
+		if err := exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run(); err != nil { // TODO: migrate to c.Process()
+			cli.LogWarn("failed to fetch package updates", "repo", repo.Name, "err", err)
+		}
 
 		// Check commit count behind upstream.
 		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}") // TODO: migrate to c.Process()

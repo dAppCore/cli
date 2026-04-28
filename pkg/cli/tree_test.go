@@ -1,18 +1,14 @@
 package cli
 
-import (
-	"testing"
+import "dappco.re/go"
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestTree_Good(t *testing.T) {
-	t.Run("single root", func(t *testing.T) {
+func TestTree_Good(t *core.T) {
+	t.Run("single root", func(t *core.T) {
 		tree := NewTree("root")
-		assert.Equal(t, "root\n", tree.String())
+		core.AssertEqual(t, "root\n", tree.String())
 	})
 
-	t.Run("flat children", func(t *testing.T) {
+	t.Run("flat children", func(t *core.T) {
 		tree := NewTree("root")
 		tree.Add("alpha")
 		tree.Add("beta")
@@ -22,10 +18,10 @@ func TestTree_Good(t *testing.T) {
 			"├── alpha\n" +
 			"├── beta\n" +
 			"└── gamma\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("nested children", func(t *testing.T) {
+	t.Run("nested children", func(t *core.T) {
 		tree := NewTree("core-php")
 		tree.Add("core-tenant").Add("core-bio")
 		tree.Add("core-admin")
@@ -36,10 +32,10 @@ func TestTree_Good(t *testing.T) {
 			"│   └── core-bio\n" +
 			"├── core-admin\n" +
 			"└── core-api\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("deep nesting", func(t *testing.T) {
+	t.Run("deep nesting", func(t *core.T) {
 		tree := NewTree("a")
 		tree.Add("b").Add("c").Add("d")
 
@@ -47,10 +43,10 @@ func TestTree_Good(t *testing.T) {
 			"└── b\n" +
 			"    └── c\n" +
 			"        └── d\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("mixed depth", func(t *testing.T) {
+	t.Run("mixed depth", func(t *core.T) {
 		tree := NewTree("root")
 		a := tree.Add("a")
 		a.Add("a1")
@@ -62,10 +58,10 @@ func TestTree_Good(t *testing.T) {
 			"│   ├── a1\n" +
 			"│   └── a2\n" +
 			"└── b\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("AddTree composes subtrees", func(t *testing.T) {
+	t.Run("AddTree composes subtrees", func(t *core.T) {
 		sub := NewTree("sub-root")
 		sub.Add("child")
 
@@ -75,10 +71,10 @@ func TestTree_Good(t *testing.T) {
 		expected := "main\n" +
 			"└── sub-root\n" +
 			"    └── child\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("styled nodes", func(t *testing.T) {
+	t.Run("styled nodes", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -89,10 +85,10 @@ func TestTree_Good(t *testing.T) {
 		expected := "root\n" +
 			"├── green\n" +
 			"└── plain\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("WithStyle on root", func(t *testing.T) {
+	t.Run("WithStyle on root", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -101,10 +97,10 @@ func TestTree_Good(t *testing.T) {
 
 		expected := "root\n" +
 			"└── child\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("ASCII theme uses ASCII connectors", func(t *testing.T) {
+	t.Run("ASCII theme uses ASCII connectors", func(t *core.T) {
 		prevTheme := currentTheme
 		prevColor := ColorEnabled()
 		UseASCII()
@@ -123,10 +119,10 @@ func TestTree_Good(t *testing.T) {
 			"|   `-- core-bio\n" +
 			"+-- core-admin\n" +
 			"`-- core-api\n"
-		assert.Equal(t, expected, tree.String())
+		core.AssertEqual(t, expected, tree.String())
 	})
 
-	t.Run("glyph shortcodes render in labels", func(t *testing.T) {
+	t.Run("glyph shortcodes render in labels", func(t *core.T) {
 		restoreThemeAndColors(t)
 		UseASCII()
 
@@ -134,37 +130,37 @@ func TestTree_Good(t *testing.T) {
 		tree.Add(":warn: child")
 
 		out := tree.String()
-		assert.Contains(t, out, "[OK] root")
-		assert.Contains(t, out, "[WARN] child")
+		core.AssertContains(t, out, "[OK] root")
+		core.AssertContains(t, out, "[WARN] child")
 	})
 }
 
-func TestTree_Bad(t *testing.T) {
-	t.Run("empty label", func(t *testing.T) {
+func TestTree_Bad(t *core.T) {
+	t.Run("empty label", func(t *core.T) {
 		tree := NewTree("")
-		assert.Equal(t, "\n", tree.String())
+		core.AssertEqual(t, "\n", tree.String())
 	})
 }
 
-func TestTree_Ugly(t *testing.T) {
-	t.Run("nil style does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+func TestTree_Ugly(t *core.T) {
+	t.Run("nil style does not panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			tree := NewTree("root").WithStyle(nil)
 			tree.Add("child")
 			_ = tree.String()
 		})
 	})
 
-	t.Run("AddStyled with nil style does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+	t.Run("AddStyled with nil style does not panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			tree := NewTree("root")
 			tree.AddStyled("item", nil)
 			_ = tree.String()
 		})
 	})
 
-	t.Run("very deep nesting does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+	t.Run("very deep nesting does not panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			node := NewTree("root")
 			for range 100 {
 				node = node.Add("child")

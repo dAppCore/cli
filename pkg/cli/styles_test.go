@@ -2,14 +2,13 @@ package cli
 
 import (
 	"strings"
-	"testing"
-	"unicode/utf8"
 
-	"github.com/stretchr/testify/assert"
+	"dappco.re/go"
+	"unicode/utf8"
 )
 
-func TestTable_Good(t *testing.T) {
-	t.Run("plain table unchanged", func(t *testing.T) {
+func TestTable_Good(t *core.T) {
+	t.Run("plain table unchanged", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -18,12 +17,12 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("Bob", "25")
 
 		out := tbl.String()
-		assert.Contains(t, out, "NAME")
-		assert.Contains(t, out, "Alice")
-		assert.Contains(t, out, "Bob")
+		core.AssertContains(t, out, "NAME")
+		core.AssertContains(t, out, "Alice")
+		core.AssertContains(t, out, "Bob")
 	})
 
-	t.Run("bordered normal", func(t *testing.T) {
+	t.Run("bordered normal", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -31,16 +30,16 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("x", "y")
 
 		out := tbl.String()
-		assert.True(t, strings.HasPrefix(out, "┌"))
-		assert.Contains(t, out, "┐")
-		assert.Contains(t, out, "│")
-		assert.Contains(t, out, "├")
-		assert.Contains(t, out, "┤")
-		assert.Contains(t, out, "└")
-		assert.Contains(t, out, "┘")
+		core.AssertTrue(t, strings.HasPrefix(out, "┌"))
+		core.AssertContains(t, out, "┐")
+		core.AssertContains(t, out, "│")
+		core.AssertContains(t, out, "├")
+		core.AssertContains(t, out, "┤")
+		core.AssertContains(t, out, "└")
+		core.AssertContains(t, out, "┘")
 	})
 
-	t.Run("bordered rounded", func(t *testing.T) {
+	t.Run("bordered rounded", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -49,13 +48,13 @@ func TestTable_Good(t *testing.T) {
 
 		out := tbl.String()
 		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		assert.True(t, strings.HasPrefix(lines[0], "╭"))
-		assert.True(t, strings.HasSuffix(lines[0], "╮"))
-		assert.True(t, strings.HasPrefix(lines[len(lines)-1], "╰"))
-		assert.True(t, strings.HasSuffix(lines[len(lines)-1], "╯"))
+		core.AssertTrue(t, strings.HasPrefix(lines[0], "╭"))
+		core.AssertTrue(t, strings.HasSuffix(lines[0], "╮"))
+		core.AssertTrue(t, strings.HasPrefix(lines[len(lines)-1], "╰"))
+		core.AssertTrue(t, strings.HasSuffix(lines[len(lines)-1], "╯"))
 	})
 
-	t.Run("bordered heavy", func(t *testing.T) {
+	t.Run("bordered heavy", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -63,12 +62,12 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("v")
 
 		out := tbl.String()
-		assert.Contains(t, out, "┏")
-		assert.Contains(t, out, "┓")
-		assert.Contains(t, out, "┃")
+		core.AssertContains(t, out, "┏")
+		core.AssertContains(t, out, "┓")
+		core.AssertContains(t, out, "┃")
 	})
 
-	t.Run("bordered double", func(t *testing.T) {
+	t.Run("bordered double", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -76,12 +75,12 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("v")
 
 		out := tbl.String()
-		assert.Contains(t, out, "╔")
-		assert.Contains(t, out, "╗")
-		assert.Contains(t, out, "║")
+		core.AssertContains(t, out, "╔")
+		core.AssertContains(t, out, "╗")
+		core.AssertContains(t, out, "║")
 	})
 
-	t.Run("ASCII theme uses ASCII borders", func(t *testing.T) {
+	t.Run("ASCII theme uses ASCII borders", func(t *core.T) {
 		restoreThemeAndColors(t)
 		UseASCII()
 
@@ -89,15 +88,15 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("core", "clean")
 
 		out := tbl.String()
-		assert.Contains(t, out, "+")
-		assert.Contains(t, out, "-")
-		assert.Contains(t, out, "|")
-		assert.NotContains(t, out, "╭")
-		assert.NotContains(t, out, "╮")
-		assert.NotContains(t, out, "│")
+		core.AssertContains(t, out, "+")
+		core.AssertContains(t, out, "-")
+		core.AssertContains(t, out, "|")
+		core.AssertNotContains(t, out, "╭")
+		core.AssertNotContains(t, out, "╮")
+		core.AssertNotContains(t, out, "│")
 	})
 
-	t.Run("bordered structure", func(t *testing.T) {
+	t.Run("bordered structure", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -106,11 +105,12 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("1", "2")
 
 		lines := strings.Split(strings.TrimRight(tbl.String(), "\n"), "\n")
-		// Top border, header, separator, 2 data rows, bottom border = 6 lines
-		assert.Equal(t, 6, len(lines), "expected 6 lines: border, header, sep, 2 rows, border")
+		core.
+			// Top border, header, separator, 2 data rows, bottom border = 6 lines
+			AssertEqual(t, 6, len(lines), "expected 6 lines: border, header, sep, 2 rows, border")
 	})
 
-	t.Run("cell style function", func(t *testing.T) {
+	t.Run("cell style function", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -127,10 +127,10 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("fail")
 
 		_ = tbl.String()
-		assert.True(t, called, "cell style function should be called")
+		core.AssertTrue(t, called, "cell style function should be called")
 	})
 
-	t.Run("cell style with borders", func(t *testing.T) {
+	t.Run("cell style with borders", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -142,11 +142,11 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("core", "ok")
 
 		out := tbl.String()
-		assert.Contains(t, out, "core")
-		assert.Contains(t, out, "ok")
+		core.AssertContains(t, out, "core")
+		core.AssertContains(t, out, "ok")
 	})
 
-	t.Run("glyph shortcodes render in headers and cells", func(t *testing.T) {
+	t.Run("glyph shortcodes render in headers and cells", func(t *core.T) {
 		restoreThemeAndColors(t)
 		UseASCII()
 
@@ -155,11 +155,11 @@ func TestTable_Good(t *testing.T) {
 		tbl.AddRow("core", ":warn:")
 
 		out := tbl.String()
-		assert.Contains(t, out, "[OK] NAME")
-		assert.Contains(t, out, "[WARN]")
+		core.AssertContains(t, out, "[OK] NAME")
+		core.AssertContains(t, out, "[WARN]")
 	})
 
-	t.Run("max width truncates", func(t *testing.T) {
+	t.Run("max width truncates", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -170,11 +170,11 @@ func TestTable_Good(t *testing.T) {
 		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
 		for _, line := range lines {
 			w := utf8.RuneCountInString(line)
-			assert.LessOrEqual(t, w, 25, "line should not exceed max width: %q", line)
+			core.AssertLessOrEqual(t, w, 25, core.Sprintf("line should not exceed max width: %q", line))
 		}
 	})
 
-	t.Run("max width with borders", func(t *testing.T) {
+	t.Run("max width with borders", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -185,16 +185,16 @@ func TestTable_Good(t *testing.T) {
 		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
 		for _, line := range lines {
 			w := utf8.RuneCountInString(line)
-			assert.LessOrEqual(t, w, 20, "bordered line should not exceed max width: %q", line)
+			core.AssertLessOrEqual(t, w, 20, core.Sprintf("bordered line should not exceed max width: %q", line))
 		}
 	})
 
-	t.Run("empty table returns empty", func(t *testing.T) {
+	t.Run("empty table returns empty", func(t *core.T) {
 		tbl := NewTable()
-		assert.Equal(t, "", tbl.String())
+		core.AssertEqual(t, "", tbl.String())
 	})
 
-	t.Run("no headers with borders", func(t *testing.T) {
+	t.Run("no headers with borders", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -202,16 +202,17 @@ func TestTable_Good(t *testing.T) {
 		tbl.Rows = [][]string{{"a", "b"}, {"c", "d"}}
 
 		out := tbl.String()
-		assert.Contains(t, out, "┌")
+		core.AssertContains(t, out, "┌")
 		// No header separator since no headers
 		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		// Top border, 2 data rows, bottom border = 4 lines (no header separator)
-		assert.Equal(t, 4, len(lines))
+		core.
+			// Top border, 2 data rows, bottom border = 4 lines (no header separator)
+			AssertEqual(t, 4, len(lines))
 	})
 }
 
-func TestTable_Bad(t *testing.T) {
-	t.Run("short rows padded", func(t *testing.T) {
+func TestTable_Bad(t *core.T) {
+	t.Run("short rows padded", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -219,20 +220,20 @@ func TestTable_Bad(t *testing.T) {
 		tbl.AddRow("x") // only 1 cell, 3 columns
 
 		out := tbl.String()
-		assert.Contains(t, out, "x")
+		core.AssertContains(t, out, "x")
 	})
 }
 
-func TestTable_Ugly(t *testing.T) {
-	t.Run("no columns no panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+func TestTable_Ugly(t *core.T) {
+	t.Run("no columns no panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			tbl := NewTable()
 			tbl.AddRow()
 			_ = tbl.String()
 		})
 	})
 
-	t.Run("cell style function returning nil does not panic", func(t *testing.T) {
+	t.Run("cell style function returning nil does not panic", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
@@ -240,63 +241,59 @@ func TestTable_Ugly(t *testing.T) {
 			return nil
 		})
 		tbl.AddRow("value")
-
-		assert.NotPanics(t, func() {
+		core.AssertNotPanics(t, func() {
 			_ = tbl.String()
 		})
 	})
 
-	t.Run("max width of 1 does not panic", func(t *testing.T) {
+	t.Run("max width of 1 does not panic", func(t *core.T) {
 		SetColorEnabled(false)
 		defer SetColorEnabled(true)
 
 		tbl := NewTable("HEADER").WithMaxWidth(1)
 		tbl.AddRow("data")
-
-		assert.NotPanics(t, func() {
+		core.AssertNotPanics(t, func() {
 			_ = tbl.String()
 		})
 	})
 }
 
-func TestTruncate_Good(t *testing.T) {
-	assert.Equal(t, "hel...", Truncate("hello world", 6))
-	assert.Equal(t, "hi", Truncate("hi", 6))
-	assert.Equal(t, "he", Truncate("hello", 2))
-	assert.Equal(t, "東", Truncate("東京", 3))
+func TestTruncate_Good(t *core.T) {
+	core.AssertEqual(t, "hel...", Truncate("hello world", 6))
+	core.AssertEqual(t, "hi", Truncate("hi", 6))
+	core.AssertEqual(t, "he", Truncate("hello", 2))
+	core.AssertEqual(t, "東", Truncate("東京", 3))
 }
 
-func TestTruncate_Ugly(t *testing.T) {
-	t.Run("zero max does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+func TestTruncate_Ugly(t *core.T) {
+	t.Run("zero max does not panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			_ = Truncate("hello", 0)
 		})
 	})
 }
 
-func TestPad_Good(t *testing.T) {
-	assert.Equal(t, "hi   ", Pad("hi", 5))
-	assert.Equal(t, "hello", Pad("hello", 3))
-	assert.Equal(t, "東京  ", Pad("東京", 6))
+func TestPad_Good(t *core.T) {
+	core.AssertEqual(t, "hi   ", Pad("hi", 5))
+	core.AssertEqual(t, "hello", Pad("hello", 3))
+	core.AssertEqual(t, "東京  ", Pad("東京", 6))
 }
 
-func TestStyled_Good_NilStyle(t *testing.T) {
+func TestStyled_Good_NilStyle(t *core.T) {
 	restoreThemeAndColors(t)
 	UseASCII()
-
-	assert.Equal(t, "hello [OK]", Styled(nil, "hello :check:"))
+	core.AssertEqual(t, "hello [OK]", Styled(nil, "hello :check:"))
 }
 
-func TestStyledf_Good_NilStyle(t *testing.T) {
+func TestStyledf_Good_NilStyle(t *core.T) {
 	restoreThemeAndColors(t)
 	UseASCII()
-
-	assert.Equal(t, "value: [WARN]", Styledf(nil, "value: %s", ":warn:"))
+	core.AssertEqual(t, "value: [WARN]", Styledf(nil, "value: %s", ":warn:"))
 }
 
-func TestPad_Ugly(t *testing.T) {
-	t.Run("zero width does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() {
+func TestPad_Ugly(t *core.T) {
+	t.Run("zero width does not panic", func(t *core.T) {
+		core.AssertNotPanics(t, func() {
 			_ = Pad("hello", 0)
 		})
 	})

@@ -6,18 +6,17 @@ import (
 	"time"
 	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
-	"dappco.re/go/log"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 func GhAuthenticated() bool {
 	output, _ := runProcessOutput(context.Background(), "gh", "auth", "status")
 	authenticated := core.Contains(output, "Logged in")
 	if authenticated {
-		LogWarn("GitHub CLI authenticated", "user", log.Username())
+		LogWarn("GitHub CLI authenticated", "user", core.Username())
 	} else {
-		LogWarn("GitHub CLI not authenticated", "user", log.Username())
+		LogWarn("GitHub CLI not authenticated", "user", core.Username())
 	}
 	return authenticated
 }

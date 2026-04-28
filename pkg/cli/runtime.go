@@ -19,7 +19,7 @@ import (
 	"os/signal" // Note: signal handling exception; paired with os.Signal.
 	"time"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"golang.org/x/sys/unix"
 )
 
@@ -247,7 +247,9 @@ func Shutdown() {
 		return
 	}
 	instance.cancel()
-	_ = instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx))
+	if r := instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx)); !r.OK {
+		LogWarn("CLI service shutdown failed", "err", r.Error())
+	}
 }
 
 // --- Signal Srv (internal) ---
@@ -293,17 +295,17 @@ func (s *signalService) start(ctx context.Context) core.Result {
 		}
 	}()
 
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func (s *signalService) stop() core.Result {
 	s.stopLock.Mutex.Lock()
 	defer s.stopLock.Mutex.Unlock()
 	if s.stopped {
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 	s.stopped = true
 	signal.Stop(s.sigChan)
 	close(s.sigChan)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }

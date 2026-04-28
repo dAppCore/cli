@@ -9,7 +9,7 @@ import (
 	"syscall"  // Note: AX-6 — SIGTERM/SIGINT signal handling.
 	"time"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 // DaemonOptions configures a background process helper.
@@ -107,7 +107,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	if d.opts.HealthAddr != "" {
 		if err := d.startHealthServer(ctx); err != nil {
-			_ = d.removePIDFile()
+			if cleanupErr := d.removePIDFile(); cleanupErr != nil {
+				LogWarn("failed to remove PID file after daemon startup error", "err", cleanupErr)
+			}
 			return err
 		}
 	}
@@ -292,7 +294,7 @@ func (d *Daemon) startHealthServer(ctx context.Context) error {
 	go func() {
 		err := server.Serve(listener)
 		if err != nil && !isClosedServerError(err) {
-			_ = err
+			LogWarn("daemon health server stopped unexpectedly", "err", err)
 		}
 	}()
 

@@ -3,7 +3,7 @@ package cli
 import (
 	"iter"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 // TreeNode represents a node in a displayable tree structure.

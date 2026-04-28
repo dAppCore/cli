@@ -10,14 +10,12 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"dappco.re/go"
+	"time"
 )
 
-func TestDaemon_StartStop(t *testing.T) {
+func TestDaemon_StartStop(t *core.T) {
 	tmp := t.TempDir()
 	pidFile := filepath.Join(tmp, "daemon.pid")
 	ready := false
@@ -32,69 +30,67 @@ func TestDaemon_StartStop(t *testing.T) {
 			return ready
 		},
 	})
-
-	require.NoError(t, daemon.Start(context.Background()))
+	core.RequireNoError(t, daemon.Start(context.Background()))
 	defer func() {
-		require.NoError(t, daemon.Stop(context.Background()))
+		core.RequireNoError(t, daemon.Stop(context.Background()))
 	}()
 
 	rawPID, err := os.ReadFile(pidFile)
-	require.NoError(t, err)
-	assert.Equal(t, strconv.Itoa(os.Getpid()), strings.TrimSpace(string(rawPID)))
+	core.RequireNoError(t, err)
+	core.AssertEqual(t, strconv.Itoa(os.Getpid()), strings.TrimSpace(string(rawPID)))
 
 	addr := daemon.HealthAddr()
-	require.NotEmpty(t, addr)
+	core.RequireNotEmpty(t, addr)
 
 	client := &http.Client{Timeout: 2 * time.Second}
 
 	resp, err := client.Get("http://" + addr + "/health")
-	require.NoError(t, err)
+	core.RequireNoError(t, err)
 	body, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "ok\n", string(body))
+	core.RequireNoError(t, err)
+	core.AssertEqual(t, http.StatusOK, resp.StatusCode)
+	core.AssertEqual(t, "ok\n", string(body))
 
 	resp, err = client.Get("http://" + addr + "/ready")
-	require.NoError(t, err)
+	core.RequireNoError(t, err)
 	body, err = io.ReadAll(resp.Body)
 	resp.Body.Close()
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	assert.Equal(t, "unhealthy\n", string(body))
+	core.RequireNoError(t, err)
+	core.AssertEqual(t, http.StatusServiceUnavailable, resp.StatusCode)
+	core.AssertEqual(t, "unhealthy\n", string(body))
 
 	ready = true
 
 	resp, err = client.Get("http://" + addr + "/ready")
-	require.NoError(t, err)
+	core.RequireNoError(t, err)
 	body, err = io.ReadAll(resp.Body)
 	resp.Body.Close()
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "ok\n", string(body))
+	core.RequireNoError(t, err)
+	core.AssertEqual(t, http.StatusOK, resp.StatusCode)
+	core.AssertEqual(t, "ok\n", string(body))
 }
 
-func TestDaemon_StopRemovesPIDFile(t *testing.T) {
+func TestDaemon_StopRemovesPIDFile(t *core.T) {
 	tmp := t.TempDir()
 	pidFile := filepath.Join(tmp, "daemon.pid")
 
 	daemon := NewDaemon(DaemonOptions{PIDFile: pidFile})
-	require.NoError(t, daemon.Start(context.Background()))
+	core.RequireNoError(t, daemon.Start(context.Background()))
 
 	_, err := os.Stat(pidFile)
-	require.NoError(t, err)
-
-	require.NoError(t, daemon.Stop(context.Background()))
+	core.RequireNoError(t, err)
+	core.RequireNoError(t, daemon.Stop(context.Background()))
 
 	_, err = os.Stat(pidFile)
-	require.Error(t, err)
-	assert.True(t, os.IsNotExist(err))
+	core.RequireTrue(t, err != nil, "RequireError")
+	core.AssertTrue(t, os.IsNotExist(err))
 }
 
-func TestStopPIDFile_Good(t *testing.T) {
+func TestStopPIDFile_Good(t *core.T) {
 	tmp := t.TempDir()
 	pidFile := filepath.Join(tmp, "daemon.pid")
-	require.NoError(t, os.WriteFile(pidFile, []byte("1234\n"), 0o644))
+	core.RequireNoError(t, os.WriteFile(pidFile, []byte("1234\n"), 0o644))
 
 	originalSignal := processSignal
 	originalAlive := processAlive
@@ -129,22 +125,21 @@ func TestStopPIDFile_Good(t *testing.T) {
 	}
 	processPollInterval = 0
 	processShutdownWait = 0
-
-	require.NoError(t, StopPIDFile(pidFile, time.Second))
+	core.RequireNoError(t, StopPIDFile(pidFile, time.Second))
 
 	mu.Lock()
 	defer mu.Unlock()
-	require.Equal(t, []syscall.Signal{syscall.SIGTERM}, signals)
+	core.RequireTrue(t, core.DeepEqual([]syscall.Signal{syscall.SIGTERM}, signals), core.Sprintf("want=%#v got=%#v", []syscall.Signal{syscall.SIGTERM}, signals))
 
 	_, err := os.Stat(pidFile)
-	require.Error(t, err)
-	assert.True(t, os.IsNotExist(err))
+	core.RequireTrue(t, err != nil, "RequireError")
+	core.AssertTrue(t, os.IsNotExist(err))
 }
 
-func TestStopPIDFile_Bad_Escalates(t *testing.T) {
+func TestStopPIDFile_Bad_Escalates(t *core.T) {
 	tmp := t.TempDir()
 	pidFile := filepath.Join(tmp, "daemon.pid")
-	require.NoError(t, os.WriteFile(pidFile, []byte("4321\n"), 0o644))
+	core.RequireNoError(t, os.WriteFile(pidFile, []byte("4321\n"), 0o644))
 
 	originalSignal := processSignal
 	originalAlive := processAlive
@@ -190,10 +185,9 @@ func TestStopPIDFile_Bad_Escalates(t *testing.T) {
 	}
 	processPollInterval = 10 * time.Millisecond
 	processShutdownWait = 0
-
-	require.NoError(t, StopPIDFile(pidFile, 15*time.Millisecond))
+	core.RequireNoError(t, StopPIDFile(pidFile, 15*time.Millisecond))
 
 	mu.Lock()
 	defer mu.Unlock()
-	require.Equal(t, []syscall.Signal{syscall.SIGTERM, syscall.SIGKILL}, signals)
+	core.RequireTrue(t, core.DeepEqual([]syscall.Signal{syscall.SIGTERM, syscall.SIGKILL}, signals), core.Sprintf("want=%#v got=%#v", []syscall.Signal{syscall.SIGTERM, syscall.SIGKILL}, signals))
 }

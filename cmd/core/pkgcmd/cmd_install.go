@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -14,14 +14,14 @@ import (
 func pkgInstallAction(opts core.Options) core.Result {
 	repoArg := opts.String("_arg")
 	if repoArg == "" {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
+		return core.Fail(cli.Err(i18n.T("cmd.pkg.error.repo_required")))
 	}
 	targetDir := opts.String("dir")
 	addToReg := opts.Bool("add")
 	if err := runPkgInstall(repoArg, targetDir, addToReg); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {

@@ -1,13 +1,11 @@
 package frame
 
 import (
-	"testing"
-
+	"dappco.re/go"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestFrameModel_AdaptModel_Good(t *testing.T) {
+func TestFrameModel_AdaptModel_Good(t *core.T) {
 	// A plain Model is wrapped in a modelAdapter.
 	m := StaticModel("wrapped")
 	adapted := adaptModel(m)
@@ -15,10 +13,10 @@ func TestFrameModel_AdaptModel_Good(t *testing.T) {
 	if adapted == nil {
 		t.Fatal("adaptModel returned nil for a valid Model")
 	}
-	assert.Equal(t, "wrapped", adapted.View(80, 24))
+	core.AssertEqual(t, "wrapped", adapted.View(80, 24))
 }
 
-func TestFrameModel_AdaptModel_Bad(t *testing.T) {
+func TestFrameModel_AdaptModel_Bad(t *core.T) {
 	// A FrameModel passes through unchanged — no double-wrapping.
 	fm := &testFrameModelForAdapter{viewText: "native"}
 	adapted := adaptModel(fm)
@@ -32,40 +30,38 @@ func TestFrameModel_AdaptModel_Bad(t *testing.T) {
 	}
 }
 
-func TestFrameModel_AdaptModel_Ugly(t *testing.T) {
+func TestFrameModel_AdaptModel_Ugly(t *core.T) {
 	// modelAdapter's Init, Update, and View must not panic on edge inputs.
 	m := StaticModel("edge")
 	adapted := adaptModel(m)
-
-	assert.NotPanics(t, func() {
+	core.AssertNotPanics(t, func() {
 		_ = adapted.Init()
 	})
-	assert.NotPanics(t, func() {
+	core.AssertNotPanics(t, func() {
 		_, _ = adapted.Update(nil)
 	})
-	assert.NotPanics(t, func() {
+	core.AssertNotPanics(t, func() {
 		_ = adapted.View(-1, -1)
 	})
-	assert.NotPanics(t, func() {
+	core.AssertNotPanics(t, func() {
 		_ = adapted.View(0, 0)
 	})
 }
 
-func TestFrameModel_DefaultKeyMap_Good(t *testing.T) {
+func TestFrameModel_DefaultKeyMap_Good(t *core.T) {
 	// DefaultKeyMap must return the expected standard bindings.
 	km := DefaultKeyMap()
-
-	assert.Equal(t, tea.KeyTab, km.FocusNext)
-	assert.Equal(t, tea.KeyShiftTab, km.FocusPrev)
-	assert.Equal(t, tea.KeyUp, km.FocusUp)
-	assert.Equal(t, tea.KeyDown, km.FocusDown)
-	assert.Equal(t, tea.KeyLeft, km.FocusLeft)
-	assert.Equal(t, tea.KeyRight, km.FocusRight)
-	assert.Equal(t, tea.KeyEsc, km.Back)
-	assert.Equal(t, tea.KeyCtrlC, km.Quit)
+	core.AssertEqual(t, tea.KeyTab, km.FocusNext)
+	core.AssertEqual(t, tea.KeyShiftTab, km.FocusPrev)
+	core.AssertEqual(t, tea.KeyUp, km.FocusUp)
+	core.AssertEqual(t, tea.KeyDown, km.FocusDown)
+	core.AssertEqual(t, tea.KeyLeft, km.FocusLeft)
+	core.AssertEqual(t, tea.KeyRight, km.FocusRight)
+	core.AssertEqual(t, tea.KeyEsc, km.Back)
+	core.AssertEqual(t, tea.KeyCtrlC, km.Quit)
 }
 
-func TestFrameModel_DefaultKeyMap_Bad(t *testing.T) {
+func TestFrameModel_DefaultKeyMap_Bad(t *core.T) {
 	// The four spatial focus keys must all be distinct from each other.
 	km := DefaultKeyMap()
 	spatial := []tea.KeyType{km.FocusUp, km.FocusDown, km.FocusLeft, km.FocusRight}
@@ -78,13 +74,12 @@ func TestFrameModel_DefaultKeyMap_Bad(t *testing.T) {
 	}
 }
 
-func TestFrameModel_DefaultKeyMap_Ugly(t *testing.T) {
+func TestFrameModel_DefaultKeyMap_Ugly(t *core.T) {
 	// Multiple calls must return identical, independent copies — no shared state.
 	a := DefaultKeyMap()
 	b := DefaultKeyMap()
-
-	// Same values.
-	assert.Equal(t, a, b)
+	core.AssertEqual( // Same values.
+		t, a, b)
 
 	// Mutating one does not affect the other (value semantics).
 	b.Quit = tea.KeyCtrlD

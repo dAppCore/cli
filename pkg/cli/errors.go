@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

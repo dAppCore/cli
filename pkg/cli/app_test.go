@@ -3,16 +3,14 @@ package cli
 import (
 	"bytes"
 	"runtime/debug"
-	"testing"
 
-	"dappco.re/go/core"
-	"github.com/stretchr/testify/assert"
+	"dappco.re/go"
 )
 
 // TestCli_PanicRecovery_Good verifies that the panic recovery mechanism
 // catches panics and calls the appropriate shutdown and error handling.
-func TestCli_PanicRecovery_Good(t *testing.T) {
-	t.Run("recovery captures panic value and stack", func(t *testing.T) {
+func TestCli_PanicRecovery_Good(t *core.T) {
+	t.Run("recovery captures panic value and stack", func(t *core.T) {
 		var recovered any
 		var capturedStack []byte
 		var shutdownCalled bool
@@ -29,14 +27,13 @@ func TestCli_PanicRecovery_Good(t *testing.T) {
 
 			panic("test panic")
 		}()
-
-		assert.Equal(t, "test panic", recovered)
-		assert.True(t, shutdownCalled, "Shutdown should be called after panic recovery")
-		assert.NotEmpty(t, capturedStack, "Stack trace should be captured")
-		assert.Contains(t, string(capturedStack), "TestCli_PanicRecovery_Good")
+		core.AssertEqual(t, "test panic", recovered)
+		core.AssertTrue(t, shutdownCalled, "Shutdown should be called after panic recovery")
+		core.AssertNotEmpty(t, capturedStack, "Stack trace should be captured")
+		core.AssertContains(t, string(capturedStack), "TestCli_PanicRecovery_Good")
 	})
 
-	t.Run("recovery handles error type panics", func(t *testing.T) {
+	t.Run("recovery handles error type panics", func(t *core.T) {
 		var recovered any
 
 		func() {
@@ -50,11 +47,11 @@ func TestCli_PanicRecovery_Good(t *testing.T) {
 		}()
 
 		err, ok := recovered.(error)
-		assert.True(t, ok, "Recovered value should be an error")
-		assert.Equal(t, "error panic", err.Error())
+		core.AssertTrue(t, ok, "Recovered value should be an error")
+		core.AssertEqual(t, "error panic", err.Error())
 	})
 
-	t.Run("recovery handles nil panic gracefully", func(t *testing.T) {
+	t.Run("recovery handles nil panic gracefully", func(t *core.T) {
 		recoveryExecuted := false
 
 		func() {
@@ -66,14 +63,13 @@ func TestCli_PanicRecovery_Good(t *testing.T) {
 
 			// No panic occurs
 		}()
-
-		assert.False(t, recoveryExecuted, "Recovery block should not execute without panic")
+		core.AssertFalse(t, recoveryExecuted, "Recovery block should not execute without panic")
 	})
 }
 
 // TestCli_PanicRecovery_Bad tests error conditions in panic recovery.
-func TestCli_PanicRecovery_Bad(t *testing.T) {
-	t.Run("recovery handles concurrent panics", func(t *testing.T) {
+func TestCli_PanicRecovery_Bad(t *core.T) {
+	t.Run("recovery handles concurrent panics", func(t *core.T) {
 		done := make(chan struct{}, 3)
 		recovered := make(chan struct{}, 3)
 
@@ -99,13 +95,13 @@ func TestCli_PanicRecovery_Bad(t *testing.T) {
 		for range recovered {
 			recoveryCount++
 		}
-		assert.Equal(t, 3, recoveryCount, "All goroutine panics should be recovered")
+		core.AssertEqual(t, 3, recoveryCount, "All goroutine panics should be recovered")
 	})
 }
 
 // TestCli_PanicRecovery_Ugly tests edge cases in panic recovery.
-func TestCli_PanicRecovery_Ugly(t *testing.T) {
-	t.Run("recovery handles typed panic values", func(t *testing.T) {
+func TestCli_PanicRecovery_Ugly(t *core.T) {
+	t.Run("recovery handles typed panic values", func(t *core.T) {
 		type customError struct {
 			code int
 			msg  string
@@ -122,15 +118,15 @@ func TestCli_PanicRecovery_Ugly(t *testing.T) {
 		}()
 
 		ce, ok := recovered.(customError)
-		assert.True(t, ok, "Should recover custom type")
-		assert.Equal(t, 500, ce.code)
-		assert.Equal(t, "internal error", ce.msg)
+		core.AssertTrue(t, ok, "Should recover custom type")
+		core.AssertEqual(t, 500, ce.code)
+		core.AssertEqual(t, "internal error", ce.msg)
 	})
 }
 
 // TestCli_MainPanicRecoveryPattern_Good verifies the exact pattern used in Main().
-func TestCli_MainPanicRecoveryPattern_Good(t *testing.T) {
-	t.Run("pattern logs error and calls shutdown", func(t *testing.T) {
+func TestCli_MainPanicRecoveryPattern_Good(t *core.T) {
+	t.Run("pattern logs error and calls shutdown", func(t *core.T) {
 		var logBuffer bytes.Buffer
 		var shutdownCalled bool
 		var fatalErr error
@@ -158,10 +154,9 @@ func TestCli_MainPanicRecoveryPattern_Good(t *testing.T) {
 
 			panic("simulated crash")
 		}()
-
-		assert.Contains(t, logBuffer.String(), "recovered from panic: simulated crash")
-		assert.True(t, shutdownCalled, "Shutdown must be called on panic")
-		assert.NotNil(t, fatalErr, "Fatal must be called with error")
-		assert.Equal(t, "panic: simulated crash", fatalErr.Error())
+		core.AssertContains(t, logBuffer.String(), "recovered from panic: simulated crash")
+		core.AssertTrue(t, shutdownCalled, "Shutdown must be called on panic")
+		core.AssertNotNil(t, fatalErr, "Fatal must be called with error")
+		core.AssertEqual(t, "panic: simulated crash", fatalErr.Error())
 	})
 }

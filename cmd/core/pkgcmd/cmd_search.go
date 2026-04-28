@@ -6,10 +6,10 @@ import (
 	"slices"
 	"time"
 
+	"dappco.re/go"
 	"dappco.re/go/cache"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -32,9 +32,9 @@ func pkgSearchAction(opts core.Options) core.Result {
 	}
 
 	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 type ghRepo struct {
@@ -110,7 +110,9 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		}
 
 		if cacheInstance != nil {
-			_ = cacheInstance.Set(cacheKey, ghRepos)
+			if err := cacheInstance.Set(cacheKey, ghRepos); err != nil {
+				cli.LogWarn("failed to cache package search results", "err", err)
+			}
 		}
 
 		cli.Println("%s", successStyle.Render("ok"))

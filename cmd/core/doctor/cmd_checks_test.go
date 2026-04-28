@@ -1,22 +1,17 @@
 package doctor
 
-import (
-	"testing"
+import . "dappco.re/go"
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestRequiredChecksIncludesGo(t *testing.T) {
+func TestRequiredChecksIncludesGo(t *T) {
 	checks := requiredChecks()
 
 	var found bool
 	for _, c := range checks {
 		if c.command == "go" {
 			found = true
-			assert.Equal(t, "version", c.versionFlag)
+			AssertEqual(t, "version", c.versionFlag)
 			break
 		}
 	}
-
-	assert.True(t, found, "required checks should include the Go compiler")
+	AssertTrue(t, found, "required checks should include the Go compiler")
 }

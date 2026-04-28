@@ -10,9 +10,9 @@ package pkgcmd
 import (
 	"os/exec"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -20,13 +20,13 @@ import (
 func pkgRemoveAction(opts core.Options) core.Result {
 	name := opts.String("_arg")
 	if name == "" {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
+		return core.Fail(cli.Err(i18n.T("cmd.pkg.error.repo_required")))
 	}
 	force := opts.Bool("force")
 	if err := runPkgRemove(name, force); err != nil {
-		return core.Result{Value: err, OK: false}
+		return core.Fail(err)
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func runPkgRemove(name string, force bool) error {

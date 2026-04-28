@@ -17,10 +17,10 @@ import (
 	_ "dappco.re/go/devops/cmd/docs"
 	_ "dappco.re/go/devops/cmd/gitcmd"
 	_ "dappco.re/go/devops/cmd/setup"
+	_ "dappco.re/go/lint/cmd/qa"
 	_ "dappco.re/go/scm/cmd/collect"
 	_ "dappco.re/go/scm/cmd/forge"
 	_ "dappco.re/go/scm/cmd/gitea"
-	_ "dappco.re/go/lint/cmd/qa"
 )
 
 func main() {

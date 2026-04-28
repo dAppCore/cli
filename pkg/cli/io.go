@@ -4,7 +4,7 @@ import (
 	"io" // Note: AX-6 — io.Reader/io.Writer is the public stdin/stdout/stderr interception contract.
 	"os" // Note: AX-6 — os.Stdin/os.Stdout are the structural defaults intercepted by SetStdin/SetStdout.
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 type Reader = io.Reader
