@@ -2,15 +2,12 @@ package pkgcmd
 
 import (
 	"context"
+	. "dappco.re/go"
 	"os"
 	"path/filepath"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestRunPkgInstall_AllowsRepoShorthand_Good(t *testing.T) {
+func TestRunPkgInstall_AllowsRepoShorthand_Good(t *T) {
 	tmp := t.TempDir()
 	targetDir := filepath.Join(tmp, "packages")
 
@@ -28,16 +25,15 @@ func TestRunPkgInstall_AllowsRepoShorthand_Good(t *testing.T) {
 	}
 
 	err := runPkgInstall("core-api", targetDir, false)
-	require.NoError(t, err)
-
-	assert.Equal(t, "host-uk", gotOrg)
-	assert.Equal(t, "core-api", gotRepo)
-	assert.Equal(t, filepath.Join(targetDir, "core-api"), gotPath)
+	RequireNoError(t, err)
+	AssertEqual(t, "host-uk", gotOrg)
+	AssertEqual(t, "core-api", gotRepo)
+	AssertEqual(t, filepath.Join(targetDir, "core-api"), gotPath)
 	_, err = os.Stat(targetDir)
-	require.NoError(t, err)
+	RequireNoError(t, err)
 }
 
-func TestRunPkgInstall_AllowsExplicitOrgRepo_Good(t *testing.T) {
+func TestRunPkgInstall_AllowsExplicitOrgRepo_Good(t *T) {
 	tmp := t.TempDir()
 	targetDir := filepath.Join(tmp, "packages")
 
@@ -55,38 +51,37 @@ func TestRunPkgInstall_AllowsExplicitOrgRepo_Good(t *testing.T) {
 	}
 
 	err := runPkgInstall("myorg/core-api", targetDir, false)
-	require.NoError(t, err)
-
-	assert.Equal(t, "myorg", gotOrg)
-	assert.Equal(t, "core-api", gotRepo)
-	assert.Equal(t, filepath.Join(targetDir, "core-api"), gotPath)
+	RequireNoError(t, err)
+	AssertEqual(t, "myorg", gotOrg)
+	AssertEqual(t, "core-api", gotRepo)
+	AssertEqual(t, filepath.Join(targetDir, "core-api"), gotPath)
 }
 
-func TestRunPkgInstall_InvalidRepoFormat_Bad(t *testing.T) {
+func TestRunPkgInstall_InvalidRepoFormat_Bad(t *T) {
 	err := runPkgInstall("a/b/c", t.TempDir(), false)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid repo format")
+	RequireTrue(t, err != nil, "RequireError")
+	AssertContains(t, err.Error(), "invalid repo format")
 }
 
-func TestParsePkgInstallSource_Good(t *testing.T) {
-	t.Run("default org and repo", func(t *testing.T) {
+func TestParsePkgInstallSource_Good(t *T) {
+	t.Run("default org and repo", func(t *T) {
 		org, repo, ref, err := parsePkgInstallSource("core-api")
-		require.NoError(t, err)
-		assert.Equal(t, "host-uk", org)
-		assert.Equal(t, "core-api", repo)
-		assert.Empty(t, ref)
+		RequireNoError(t, err)
+		AssertEqual(t, "host-uk", org)
+		AssertEqual(t, "core-api", repo)
+		AssertEmpty(t, ref)
 	})
 
-	t.Run("explicit org and ref", func(t *testing.T) {
+	t.Run("explicit org and ref", func(t *T) {
 		org, repo, ref, err := parsePkgInstallSource("myorg/core-api@v1.2.3")
-		require.NoError(t, err)
-		assert.Equal(t, "myorg", org)
-		assert.Equal(t, "core-api", repo)
-		assert.Equal(t, "v1.2.3", ref)
+		RequireNoError(t, err)
+		AssertEqual(t, "myorg", org)
+		AssertEqual(t, "core-api", repo)
+		AssertEqual(t, "v1.2.3", ref)
 	})
 }
 
-func TestRunPkgInstall_WithRef_UsesRefClone_Good(t *testing.T) {
+func TestRunPkgInstall_WithRef_UsesRefClone_Good(t *T) {
 	tmp := t.TempDir()
 	targetDir := filepath.Join(tmp, "packages")
 
@@ -105,10 +100,9 @@ func TestRunPkgInstall_WithRef_UsesRefClone_Good(t *testing.T) {
 	}
 
 	err := runPkgInstall("myorg/core-api@v1.2.3", targetDir, false)
-	require.NoError(t, err)
-
-	assert.Equal(t, "myorg", gotOrg)
-	assert.Equal(t, "core-api", gotRepo)
-	assert.Equal(t, filepath.Join(targetDir, "core-api"), gotPath)
-	assert.Equal(t, "v1.2.3", gotRef)
+	RequireNoError(t, err)
+	AssertEqual(t, "myorg", gotOrg)
+	AssertEqual(t, "core-api", gotRepo)
+	AssertEqual(t, filepath.Join(targetDir, "core-api"), gotPath)
+	AssertEqual(t, "v1.2.3", gotRef)
 }

@@ -3,18 +3,15 @@ package cli
 import (
 	"context"
 	"sync"
-	"testing"
+
 	"time"
 
 	"dappco.re/go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestRun_Good_CancelledContext(t *testing.T) {
+func TestRun_Good_CancelledContext(t *core.T) {
 	resetGlobals(t)
-
-	require.NoError(t, Init(Options{AppName: "test"}))
+	core.RequireNoError(t, Init(Options{AppName: "test"}))
 
 	// Register a long-running command that waits for context cancellation
 	RegisterCommands(func(c *core.Core) {
@@ -32,12 +29,12 @@ func TestRun_Good_CancelledContext(t *testing.T) {
 	_ = t
 }
 
-func TestRunWithTimeout_Good_ReturnsHelper(t *testing.T) {
+func TestRunWithTimeout_Good_ReturnsHelper(t *core.T) {
 	resetGlobals(t)
 
 	finished := make(chan struct{})
 	var finishedOnce sync.Once
-	require.NoError(t, Init(Options{
+	core.RequireNoError(t, Init(Options{
 		AppName: "test",
 		Services: []core.Service{
 			{
@@ -55,7 +52,7 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *testing.T) {
 
 	start := time.Now()
 	RunWithTimeout(20 * time.Millisecond)()
-	require.Less(t, time.Since(start), 80*time.Millisecond)
+	core.AssertLess(t, time.Since(start), 80*time.Millisecond)
 
 	select {
 	case <-finished:
@@ -64,13 +61,13 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *testing.T) {
 	}
 }
 
-func TestRun_Good_NilContext(t *testing.T) {
+func TestRun_Good_NilContext(t *core.T) {
 	resetGlobals(t)
-	require.NoError(t, Init(Options{AppName: "test"}))
+	core.RequireNoError(t, Init(Options{AppName: "test"}))
 
 	// Run with nil context should not panic
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 	err := Run(ctx)
-	assert.Error(t, err) // Should get context.Canceled
+	core.AssertError(t, err) // Should get context.Canceled
 }

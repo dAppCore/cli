@@ -4,20 +4,18 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"testing"
 
+	. "dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	gohelp "dappco.re/go/help"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func captureOutput(t *testing.T, fn func()) string {
+func captureOutput(t *T, fn func()) string {
 	t.Helper()
 
 	oldOut := os.Stdout
 	r, w, err := os.Pipe()
-	require.NoError(t, err)
+	RequireNoError(t, err)
 	os.Stdout = w
 
 	defer func() {
@@ -25,27 +23,26 @@ func captureOutput(t *testing.T, fn func()) string {
 	}()
 
 	fn()
-
-	require.NoError(t, w.Close())
+	RequireNoError(t, w.Close())
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
+	RequireNoError(t, err)
 	return buf.String()
 }
 
-func newHelpCommand(t *testing.T) *cli.Command {
+func newHelpCommand(t *T) *cli.Command {
 	t.Helper()
 
 	root := &cli.Command{Use: "core"}
 	AddHelpCommands(root)
 
 	cmd, _, err := root.Find([]string{"help"})
-	require.NoError(t, err)
+	RequireNoError(t, err)
 	return cmd
 }
 
-func searchableHelpQuery(t *testing.T) string {
+func searchableHelpQuery(t *T) string {
 	t.Helper()
 
 	catalog := gohelp.DefaultCatalog()
@@ -62,69 +59,67 @@ func searchableHelpQuery(t *testing.T) string {
 	return ""
 }
 
-func TestAddHelpCommands_Good(t *testing.T) {
+func TestAddHelpCommands_Good(t *T) {
 	cmd := newHelpCommand(t)
 
 	topics := gohelp.DefaultCatalog().List()
-	require.NotEmpty(t, topics)
+	RequireNotEmpty(t, topics)
 
 	out := captureOutput(t, func() {
 		err := cmd.RunE(cmd, nil)
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-	assert.Contains(t, out, "AVAILABLE HELP TOPICS")
-	assert.Contains(t, out, topics[0].ID)
-	assert.Contains(t, out, "browse")
-	assert.Contains(t, out, "core help search <topic>")
+	AssertContains(t, out, "AVAILABLE HELP TOPICS")
+	AssertContains(t, out, topics[0].ID)
+	AssertContains(t, out, "browse")
+	AssertContains(t, out, "core help search <topic>")
 }
 
-func TestAddHelpCommands_Good_Serve(t *testing.T) {
+func TestAddHelpCommands_Good_Serve(t *T) {
 	root := &cli.Command{Use: "core"}
 	AddHelpCommands(root)
 
 	cmd, _, err := root.Find([]string{"help", "serve"})
-	require.NoError(t, err)
-	require.NotNil(t, cmd)
+	RequireNoError(t, err)
+	RequireTrue(t, cmd != nil, "RequireNotNil")
 
 	oldStart := startHelpServer
 	defer func() { startHelpServer = oldStart }()
 
 	var gotAddr string
 	startHelpServer = func(catalog *gohelp.Catalog, addr string) error {
-		require.NotNil(t, catalog)
+		RequireTrue(t, catalog != nil, "RequireNotNil")
 		gotAddr = addr
 		return nil
 	}
-
-	require.NoError(t, cmd.Flags().Set("addr", "127.0.0.1:9090"))
+	RequireNoError(t, cmd.Flags().Set("addr", "127.0.0.1:9090"))
 	err = cmd.RunE(cmd, nil)
-	require.NoError(t, err)
-	assert.Equal(t, "127.0.0.1:9090", gotAddr)
+	RequireNoError(t, err)
+	AssertEqual(t, "127.0.0.1:9090", gotAddr)
 }
 
-func TestAddHelpCommands_Good_Search(t *testing.T) {
+func TestAddHelpCommands_Good_Search(t *T) {
 	root := &cli.Command{Use: "core"}
 	AddHelpCommands(root)
 
 	cmd, _, err := root.Find([]string{"help", "search"})
-	require.NoError(t, err)
-	require.NotNil(t, cmd)
+	RequireNoError(t, err)
+	RequireTrue(t, cmd != nil, "RequireNotNil")
 
 	query := searchableHelpQuery(t)
-	require.NoError(t, cmd.Flags().Set("query", query))
+	RequireNoError(t, cmd.Flags().Set("query", query))
 
 	out := captureOutput(t, func() {
 		err := cmd.RunE(cmd, nil)
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "SEARCH RESULTS")
-	assert.Contains(t, out, query)
-	assert.Contains(t, out, "browse")
-	assert.Contains(t, out, "core help search")
+	AssertContains(t, out, "SEARCH RESULTS")
+	AssertContains(t, out, query)
+	AssertContains(t, out, "browse")
+	AssertContains(t, out, "core help search")
 }
 
-func TestRenderSearchResults_Good(t *testing.T) {
+func TestRenderSearchResults_Good(t *T) {
 	out := captureOutput(t, func() {
 		err := renderSearchResults([]*gohelp.SearchResult{
 			{
@@ -135,17 +130,16 @@ func TestRenderSearchResults_Good(t *testing.T) {
 				Snippet: "Core is configured via environment variables.",
 			},
 		}, "config")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "SEARCH RESULTS")
-	assert.Contains(t, out, "config - Configuration")
-	assert.Contains(t, out, "Core is configured via environment variables.")
-	assert.Contains(t, out, "browse")
-	assert.Contains(t, out, "core help search \"config\"")
+	AssertContains(t, out, "SEARCH RESULTS")
+	AssertContains(t, out, "config - Configuration")
+	AssertContains(t, out, "Core is configured via environment variables.")
+	AssertContains(t, out, "browse")
+	AssertContains(t, out, "core help search \"config\"")
 }
 
-func TestRenderTopicList_Good(t *testing.T) {
+func TestRenderTopicList_Good(t *T) {
 	out := captureOutput(t, func() {
 		err := renderTopicList([]*gohelp.Topic{
 			{
@@ -154,17 +148,16 @@ func TestRenderTopicList_Good(t *testing.T) {
 				Content: "# Configuration\n\nCore is configured via environment variables.\n\nMore details follow.",
 			},
 		})
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "AVAILABLE HELP TOPICS")
-	assert.Contains(t, out, "config - Configuration")
-	assert.Contains(t, out, "Core is configured via environment variables.")
-	assert.Contains(t, out, "browse")
-	assert.Contains(t, out, "core help search <topic>")
+	AssertContains(t, out, "AVAILABLE HELP TOPICS")
+	AssertContains(t, out, "config - Configuration")
+	AssertContains(t, out, "Core is configured via environment variables.")
+	AssertContains(t, out, "browse")
+	AssertContains(t, out, "core help search <topic>")
 }
 
-func TestRenderTopic_Good(t *testing.T) {
+func TestRenderTopic_Good(t *T) {
 	out := captureOutput(t, func() {
 		renderTopic(&gohelp.Topic{
 			ID:      "config",
@@ -172,70 +165,66 @@ func TestRenderTopic_Good(t *testing.T) {
 			Content: "Core is configured via environment variables.",
 		})
 	})
-
-	assert.Contains(t, out, "Configuration")
-	assert.Contains(t, out, "Core is configured via environment variables.")
-	assert.Contains(t, out, "browse")
-	assert.Contains(t, out, "core help search \"config\"")
+	AssertContains(t, out, "Configuration")
+	AssertContains(t, out, "Core is configured via environment variables.")
+	AssertContains(t, out, "browse")
+	AssertContains(t, out, "core help search \"config\"")
 }
 
-func TestAddHelpCommands_Bad(t *testing.T) {
-	t.Run("missing search results", func(t *testing.T) {
+func TestAddHelpCommands_Bad(t *T) {
+	t.Run("missing search results", func(t *T) {
 		cmd := newHelpCommand(t)
-		require.NoError(t, cmd.Flags().Set("search", "zzzyyyxxx"))
+		RequireNoError(t, cmd.Flags().Set("search", "zzzyyyxxx"))
 
 		out := captureOutput(t, func() {
 			err := cmd.RunE(cmd, nil)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "no help topics matched")
+			RequireTrue(t, err != nil, "RequireError")
+			AssertContains(t, err.Error(), "no help topics matched")
 		})
-
-		assert.Contains(t, out, "browse")
-		assert.Contains(t, out, "core help")
-		assert.Contains(t, out, "core help search")
+		AssertContains(t, out, "browse")
+		AssertContains(t, out, "core help")
+		AssertContains(t, out, "core help search")
 	})
 
-	t.Run("missing topic without suggestions shows hints", func(t *testing.T) {
+	t.Run("missing topic without suggestions shows hints", func(t *T) {
 		cmd := newHelpCommand(t)
 
 		out := captureOutput(t, func() {
 			err := cmd.RunE(cmd, []string{"definitely-not-a-real-topic"})
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "help topic")
+			RequireTrue(t, err != nil, "RequireError")
+			AssertContains(t, err.Error(), "help topic")
 		})
-
-		assert.Contains(t, out, "browse")
-		assert.Contains(t, out, "core help")
+		AssertContains(t, out, "browse")
+		AssertContains(t, out, "core help")
 	})
 
-	t.Run("missing search query", func(t *testing.T) {
+	t.Run("missing search query", func(t *T) {
 		root := &cli.Command{Use: "core"}
 		AddHelpCommands(root)
 
 		cmd, _, findErr := root.Find([]string{"help", "search"})
-		require.NoError(t, findErr)
-		require.NotNil(t, cmd)
+		RequireNoError(t, findErr)
+		RequireTrue(t, cmd != nil, "RequireNotNil")
 
 		var runErr error
 		out := captureOutput(t, func() {
 			runErr = cmd.RunE(cmd, nil)
 		})
-		require.Error(t, runErr)
-		assert.Contains(t, runErr.Error(), "help search query is required")
-		assert.Contains(t, out, "browse")
-		assert.Contains(t, out, "core help")
+		RequireTrue(t, runErr != nil, "RequireError")
+		AssertContains(t, runErr.Error(), "help search query is required")
+		AssertContains(t, out, "browse")
+		AssertContains(t, out, "core help")
 	})
 
-	t.Run("missing topic shows suggestions when available", func(t *testing.T) {
+	t.Run("missing topic shows suggestions when available", func(t *T) {
 		query := searchableHelpQuery(t)
 
 		cmd := newHelpCommand(t)
 		out := captureOutput(t, func() {
 			err := cmd.RunE(cmd, []string{query})
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "help topic")
+			RequireTrue(t, err != nil, "RequireError")
+			AssertContains(t, err.Error(), "help topic")
 		})
-
-		assert.Contains(t, out, "SEARCH RESULTS")
+		AssertContains(t, out, "SEARCH RESULTS")
 	})
 }

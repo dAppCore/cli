@@ -8,20 +8,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"testing"
+
 	"time"
 
+	. "dappco.re/go"
 	"dappco.re/go/cache"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func capturePkgOutput(t *testing.T, fn func()) string {
+func capturePkgOutput(t *T, fn func()) string {
 	t.Helper()
 
 	oldStdout := os.Stdout
 	r, w, err := os.Pipe()
-	require.NoError(t, err)
+	RequireNoError(t, err)
 	os.Stdout = w
 
 	defer func() {
@@ -29,28 +28,27 @@ func capturePkgOutput(t *testing.T, fn func()) string {
 	}()
 
 	fn()
-
-	require.NoError(t, w.Close())
+	RequireNoError(t, w.Close())
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
+	RequireNoError(t, err)
 	return buf.String()
 }
 
-func withWorkingDir(t *testing.T, dir string) {
+func withWorkingDir(t *T, dir string) {
 	t.Helper()
 
 	oldwd, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(dir))
+	RequireNoError(t, err)
+	RequireNoError(t, os.Chdir(dir))
 
 	t.Cleanup(func() {
-		require.NoError(t, os.Chdir(oldwd))
+		RequireNoError(t, os.Chdir(oldwd))
 	})
 }
 
-func writeTestRegistry(t *testing.T, dir string) {
+func writeTestRegistry(t *T, dir string) {
 	t.Helper()
 
 	registry := strings.TrimSpace(`
@@ -64,30 +62,28 @@ repos:
     type: module
     description: Beta package
 `) + "\n"
-
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(registry), 0644))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "core-alpha", ".git"), 0755))
+	RequireNoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(registry), 0644))
+	RequireNoError(t, os.MkdirAll(filepath.Join(dir, "core-alpha", ".git"), 0755))
 }
 
-func gitCommand(t *testing.T, dir string, args ...string) string {
+func gitCommand(t *T, dir string, args ...string) string {
 	t.Helper()
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "git %v failed: %s", args, string(out))
+	RequireNoError(t, err, Sprintf("git %v failed: %s", args, string(out)))
 	return string(out)
 }
 
-func commitGitRepo(t *testing.T, dir, filename, content, message string) {
+func commitGitRepo(t *T, dir, filename, content, message string) {
 	t.Helper()
-
-	require.NoError(t, os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644))
+	RequireNoError(t, os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644))
 	gitCommand(t, dir, "add", filename)
 	gitCommand(t, dir, "commit", "-m", message)
 }
 
-func setupOutdatedRegistry(t *testing.T) string {
+func setupOutdatedRegistry(t *T) string {
 	t.Helper()
 
 	tmp := t.TempDir()
@@ -96,7 +92,7 @@ func setupOutdatedRegistry(t *testing.T) string {
 	gitCommand(t, tmp, "init", "--bare", remoteDir)
 
 	seedDir := filepath.Join(tmp, "seed")
-	require.NoError(t, os.MkdirAll(seedDir, 0755))
+	RequireNoError(t, os.MkdirAll(seedDir, 0755))
 	gitCommand(t, seedDir, "init")
 	gitCommand(t, seedDir, "config", "user.email", "test@test.com")
 	gitCommand(t, seedDir, "config", "user.name", "Test")
@@ -128,106 +124,103 @@ repos:
     type: module
     description: Missing package
 `) + "\n"
-
-	require.NoError(t, os.WriteFile(filepath.Join(tmp, "repos.yaml"), []byte(registry), 0644))
+	RequireNoError(t, os.WriteFile(filepath.Join(tmp, "repos.yaml"), []byte(registry), 0644))
 	return tmp
 }
 
-func TestRunPkgList_Good(t *testing.T) {
+func TestRunPkgList_Good(t *T) {
 	tmp := t.TempDir()
 	writeTestRegistry(t, tmp)
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgList("table")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "core-alpha")
-	assert.Contains(t, out, "core-beta")
-	assert.Contains(t, out, "core setup")
+	AssertContains(t, out, "core-alpha")
+	AssertContains(t, out, "core-beta")
+	AssertContains(t, out, "core setup")
 }
 
-func TestRunPkgList_JSON(t *testing.T) {
+func TestRunPkgList_JSON(t *T) {
 	tmp := t.TempDir()
 	writeTestRegistry(t, tmp)
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgList("json")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
 
 	var report pkgListReport
-	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
-	assert.Equal(t, "json", report.Format)
-	assert.Equal(t, 2, report.Total)
-	assert.Equal(t, 1, report.Installed)
-	assert.Equal(t, 1, report.Missing)
-	require.Len(t, report.Packages, 2)
-	assert.Equal(t, "core-alpha", report.Packages[0].Name)
-	assert.True(t, report.Packages[0].Installed)
-	assert.Equal(t, filepath.Join(tmp, "core-alpha"), report.Packages[0].Path)
-	assert.Equal(t, "core-beta", report.Packages[1].Name)
-	assert.False(t, report.Packages[1].Installed)
+	RequireNoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
+	AssertEqual(t, "json", report.Format)
+	AssertEqual(t, 2, report.Total)
+	AssertEqual(t, 1, report.Installed)
+	AssertEqual(t, 1, report.Missing)
+	RequireTrue(t, len(report.Packages) == 2, Sprintf("len mismatch want=%#v", 2))
+	AssertEqual(t, "core-alpha", report.Packages[0].Name)
+	AssertTrue(t, report.Packages[0].Installed)
+	AssertEqual(t, filepath.Join(tmp, "core-alpha"), report.Packages[0].Path)
+	AssertEqual(t, "core-beta", report.Packages[1].Name)
+	AssertFalse(t, report.Packages[1].Installed)
 }
 
-func TestRunPkgList_UnsupportedFormat(t *testing.T) {
+func TestRunPkgList_UnsupportedFormat(t *T) {
 	tmp := t.TempDir()
 	writeTestRegistry(t, tmp)
 	withWorkingDir(t, tmp)
 
 	err := runPkgList("yaml")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unsupported format")
+	RequireTrue(t, err != nil, "RequireError")
+	AssertContains(t, err.Error(), "unsupported format")
 }
 
-func TestRunPkgOutdated_JSON(t *testing.T) {
+func TestRunPkgOutdated_JSON(t *T) {
 	tmp := setupOutdatedRegistry(t)
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgOutdated("json")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
 
 	var report pkgOutdatedReport
-	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
-	assert.Equal(t, "json", report.Format)
-	assert.Equal(t, 3, report.Total)
-	assert.Equal(t, 2, report.Installed)
-	assert.Equal(t, 1, report.Missing)
-	assert.Equal(t, 1, report.Outdated)
-	assert.Equal(t, 1, report.UpToDate)
-	require.Len(t, report.Packages, 3)
+	RequireNoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
+	AssertEqual(t, "json", report.Format)
+	AssertEqual(t, 3, report.Total)
+	AssertEqual(t, 2, report.Installed)
+	AssertEqual(t, 1, report.Missing)
+	AssertEqual(t, 1, report.Outdated)
+	AssertEqual(t, 1, report.UpToDate)
+	RequireTrue(t, len(report.Packages) == 3, Sprintf("len mismatch want=%#v", 3))
 
 	var staleFound, freshFound, missingFound bool
 	for _, pkg := range report.Packages {
 		switch pkg.Name {
 		case "core-stale":
 			staleFound = true
-			assert.True(t, pkg.Installed)
-			assert.False(t, pkg.UpToDate)
-			assert.Equal(t, 1, pkg.Behind)
+			AssertTrue(t, pkg.Installed)
+			AssertFalse(t, pkg.UpToDate)
+			AssertEqual(t, 1, pkg.Behind)
 		case "core-fresh":
 			freshFound = true
-			assert.True(t, pkg.Installed)
-			assert.True(t, pkg.UpToDate)
-			assert.Equal(t, 0, pkg.Behind)
+			AssertTrue(t, pkg.Installed)
+			AssertTrue(t, pkg.UpToDate)
+			AssertEqual(t, 0, pkg.Behind)
 		case "core-missing":
 			missingFound = true
-			assert.False(t, pkg.Installed)
-			assert.False(t, pkg.UpToDate)
-			assert.Equal(t, 0, pkg.Behind)
+			AssertFalse(t, pkg.Installed)
+			AssertFalse(t, pkg.UpToDate)
+			AssertEqual(t, 0, pkg.Behind)
 		}
 	}
-
-	assert.True(t, staleFound)
-	assert.True(t, freshFound)
-	assert.True(t, missingFound)
+	AssertTrue(t, staleFound)
+	AssertTrue(t, freshFound)
+	AssertTrue(t, missingFound)
 }
 
-func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
+func TestRenderPkgSearchResults_ShowsMetadata(t *T) {
 	out := capturePkgOutput(t, func() {
 		renderPkgSearchResults([]ghRepo{
 			{
@@ -243,22 +236,21 @@ func TestRenderPkgSearchResults_ShowsMetadata(t *testing.T) {
 			},
 		})
 	})
-
-	assert.Contains(t, out, "host-uk/core-alpha")
-	assert.Contains(t, out, "Alpha package")
-	assert.Contains(t, out, "42 stars")
-	assert.Contains(t, out, "Go")
-	assert.Contains(t, out, "updated 2h ago")
+	AssertContains(t, out, "host-uk/core-alpha")
+	AssertContains(t, out, "Alpha package")
+	AssertContains(t, out, "42 stars")
+	AssertContains(t, out, "Go")
+	AssertContains(t, out, "updated 2h ago")
 }
 
-func TestRunPkgSearch_RespectsLimitWithCachedResults(t *testing.T) {
+func TestRunPkgSearch_RespectsLimitWithCachedResults(t *T) {
 	tmp := t.TempDir()
 	writeTestRegistry(t, tmp)
 	withWorkingDir(t, tmp)
 
 	c, err := cache.New(nil, filepath.Join(tmp, ".core", "cache"), 0)
-	require.NoError(t, err)
-	require.NoError(t, c.Set(cache.GitHubReposKey("host-uk"), []ghRepo{
+	RequireNoError(t, err)
+	RequireNoError(t, c.Set(cache.GitHubReposKey("host-uk"), []ghRepo{
 		{
 			FullName:       "host-uk/core-alpha",
 			Name:           "core-alpha",
@@ -285,66 +277,63 @@ func TestRunPkgSearch_RespectsLimitWithCachedResults(t *testing.T) {
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgSearch("host-uk", "*", "", 1, false, "table")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "core-alpha")
-	assert.NotContains(t, out, "core-beta")
+	AssertContains(t, out, "core-alpha")
+	AssertNotContains(t, out, "core-beta")
 }
 
-func TestRunPkgUpdate_NoArgs_UpdatesAll(t *testing.T) {
+func TestRunPkgUpdate_NoArgs_UpdatesAll(t *T) {
 	tmp := setupOutdatedRegistry(t)
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgUpdate(nil, false, "table")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
-
-	assert.Contains(t, out, "updating")
-	assert.Contains(t, out, "core-fresh")
-	assert.Contains(t, out, "core-stale")
+	AssertContains(t, out, "updating")
+	AssertContains(t, out, "core-fresh")
+	AssertContains(t, out, "core-stale")
 }
 
-func TestRunPkgUpdate_JSON(t *testing.T) {
+func TestRunPkgUpdate_JSON(t *T) {
 	tmp := setupOutdatedRegistry(t)
 	withWorkingDir(t, tmp)
 
 	out := capturePkgOutput(t, func() {
 		err := runPkgUpdate(nil, false, "json")
-		require.NoError(t, err)
+		RequireNoError(t, err)
 	})
 
 	var report pkgUpdateReport
-	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
-	assert.Equal(t, "json", report.Format)
-	assert.Equal(t, 3, report.Total)
-	assert.Equal(t, 2, report.Installed)
-	assert.Equal(t, 1, report.Missing)
-	assert.Equal(t, 1, report.Updated)
-	assert.Equal(t, 1, report.UpToDate)
-	assert.Equal(t, 0, report.Failed)
-	require.Len(t, report.Packages, 3)
+	RequireNoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &report))
+	AssertEqual(t, "json", report.Format)
+	AssertEqual(t, 3, report.Total)
+	AssertEqual(t, 2, report.Installed)
+	AssertEqual(t, 1, report.Missing)
+	AssertEqual(t, 1, report.Updated)
+	AssertEqual(t, 1, report.UpToDate)
+	AssertEqual(t, 0, report.Failed)
+	RequireTrue(t, len(report.Packages) == 3, Sprintf("len mismatch want=%#v", 3))
 
 	var updatedFound, upToDateFound, missingFound bool
 	for _, pkg := range report.Packages {
 		switch pkg.Name {
 		case "core-stale":
 			updatedFound = true
-			assert.True(t, pkg.Installed)
-			assert.Equal(t, "updated", pkg.Status)
+			AssertTrue(t, pkg.Installed)
+			AssertEqual(t, "updated", pkg.Status)
 		case "core-fresh":
 			upToDateFound = true
-			assert.True(t, pkg.Installed)
-			assert.Equal(t, "up_to_date", pkg.Status)
+			AssertTrue(t, pkg.Installed)
+			AssertEqual(t, "up_to_date", pkg.Status)
 		case "core-missing":
 			missingFound = true
-			assert.False(t, pkg.Installed)
-			assert.Equal(t, "missing", pkg.Status)
+			AssertFalse(t, pkg.Installed)
+			AssertEqual(t, "missing", pkg.Status)
 		}
 	}
-
-	assert.True(t, updatedFound)
-	assert.True(t, upToDateFound)
-	assert.True(t, missingFound)
+	AssertTrue(t, updatedFound)
+	AssertTrue(t, upToDateFound)
+	AssertTrue(t, missingFound)
 }
