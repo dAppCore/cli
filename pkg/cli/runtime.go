@@ -247,7 +247,9 @@ func Shutdown() {
 		return
 	}
 	instance.cancel()
-	_ = instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx))
+	if r := instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx)); !r.OK {
+		LogWarn("CLI service shutdown failed", "err", r.Error())
+	}
 }
 
 // --- Signal Srv (internal) ---

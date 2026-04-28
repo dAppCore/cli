@@ -4,7 +4,9 @@ import "dappco.re/go"
 
 func TestDetectMode_Good(t *core.T) {
 	t.Setenv("CORE_DAEMON", "1")
-	core.AssertEqual(t, ModeDaemon, DetectMode())
+	mode := DetectMode()
+	core.AssertEqual(t, ModeDaemon, mode)
+	core.AssertEqual(t, "daemon", mode.String())
 }
 
 func TestDetectMode_Bad(t *core.T) {

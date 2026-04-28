@@ -192,7 +192,9 @@ func TestBreadcrumb_Good(t *core.T) {
 
 func TestStaticModel_Good(t *core.T) {
 	m := StaticModel("hello")
-	core.AssertEqual(t, "hello", m.View(80, 24))
+	out := m.View(80, 24)
+	core.AssertEqual(t, "hello", out)
+	core.AssertContains(t, out, "hello")
 }
 
 func TestFrameModel_Good(t *core.T) {

@@ -202,7 +202,9 @@ func runPkgOutdated() error {
 		}
 
 		// Fetch updates silently.
-		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run() // TODO: migrate to c.Process()
+		if err := exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run(); err != nil { // TODO: migrate to c.Process()
+			cli.LogWarn("failed to fetch package updates", "repo", repo.Name, "err", err)
+		}
 
 		// Check commit count behind upstream.
 		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}") // TODO: migrate to c.Process()

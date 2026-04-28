@@ -85,7 +85,12 @@ func TestGhAuthenticated_Bad(t *testing.T) {
 
 func TestGhAuthenticated_Ugly(t *testing.T) {
 	// GitClone with a non-existent path should return an error without panicking.
-	_ = strings.Contains // ensure strings is importable in this package context
+	if !strings.Contains("github", "git") {
+		t.Fatal("strings.Contains sanity check failed")
+	}
+	if strings.Contains("github", "lab") {
+		t.Fatal("unexpected substring match")
+	}
 }
 
 func TestGhRepoCloneArgs_Good(t *testing.T) {

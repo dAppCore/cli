@@ -110,7 +110,9 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		}
 
 		if cacheInstance != nil {
-			_ = cacheInstance.Set(cacheKey, ghRepos)
+			if err := cacheInstance.Set(cacheKey, ghRepos); err != nil {
+				cli.LogWarn("failed to cache package search results", "err", err)
+			}
 		}
 
 		cli.Println("%s", successStyle.Render("ok"))
