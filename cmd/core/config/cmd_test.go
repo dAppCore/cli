@@ -1,8 +1,10 @@
 package config
 
-import . "dappco.re/go"
+import (
+	. "dappco.re/go"
+)
 
-func TestAX7Config_AddConfigCommands_Good(t *T) {
+func TestCmd_AddConfigCommands_Good(t *T) {
 	c := New()
 	AddConfigCommands(c)
 
@@ -10,14 +12,14 @@ func TestAX7Config_AddConfigCommands_Good(t *T) {
 	AssertTrue(t, c.Command("config/set").OK)
 }
 
-func TestAX7Config_AddConfigCommands_Bad(t *T) {
+func TestCmd_AddConfigCommands_Bad(t *T) {
 	var c *Core
 
 	AssertPanics(t, func() { AddConfigCommands(c) })
 	AssertNil(t, c)
 }
 
-func TestAX7Config_AddConfigCommands_Ugly(t *T) {
+func TestCmd_AddConfigCommands_Ugly(t *T) {
 	c := New()
 	AddConfigCommands(c)
 	AddConfigCommands(c)

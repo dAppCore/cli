@@ -1,10 +1,6 @@
 package cli
 
-import (
-	"os"
-
-	"dappco.re/go"
-)
+import "dappco.re/go"
 
 // ANSI escape codes
 const (
@@ -24,13 +20,13 @@ var (
 func init() {
 	// NO_COLOR standard: https://no-color.org/
 	// If NO_COLOR is set (to any value, including empty), disable colors.
-	if _, exists := os.LookupEnv("NO_COLOR"); exists {
+	if _, exists := core.LookupEnv("NO_COLOR"); exists {
 		colorEnabled = false
 		return
 	}
 
 	// TERM=dumb indicates a terminal without color support.
-	if os.Getenv("TERM") == "dumb" {
+	if core.Getenv("TERM") == "dumb" {
 		colorEnabled = false
 	}
 }
@@ -167,8 +163,11 @@ func hexToRGB(hex string) (int, int, int) {
 		return 255, 255, 255
 	}
 	// Use 8-bit parsing since RGB values are 0-255, avoiding integer overflow on 32-bit systems.
-	r, _ := ParseHexByte(hex[0:2])
-	g, _ := ParseHexByte(hex[2:4])
-	b, _ := ParseHexByte(hex[4:6])
-	return r, g, b
+	r := ParseHexByte(hex[0:2])
+	g := ParseHexByte(hex[2:4])
+	b := ParseHexByte(hex[4:6])
+	if !r.OK || !g.OK || !b.OK {
+		return 255, 255, 255
+	}
+	return r.Value.(int), g.Value.(int), b.Value.(int)
 }

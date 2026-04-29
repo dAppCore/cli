@@ -1,23 +1,21 @@
 package frame
 
 import (
-	"io"
-	"os"
-
+	"dappco.re/go"
 	xterm "golang.org/x/term"
 )
 
-type Writer = io.Writer
+type Writer = core.Writer
 
 // TODO(mantis-558): Replace the direct x/term calls below with
 // dappco.re/go terminal primitives once core/go exposes them.
 
 func stdoutWriter() Writer {
-	return os.Stdout
+	return core.Stdout()
 }
 
 func stderrWriter() Writer {
-	return os.Stderr
+	return core.Stderr()
 }
 
 func writerFileDescriptor(w Writer) (int, bool) {
@@ -32,6 +30,10 @@ func isTerminal(fd int) bool {
 	return xterm.IsTerminal(fd)
 }
 
-func terminalSize(fd int) (w, h int, err error) {
-	return xterm.GetSize(fd)
+func terminalSize(fd int) core.Result {
+	w, h, err := xterm.GetSize(fd)
+	if err != nil {
+		return core.Fail(err)
+	}
+	return core.Ok([]int{w, h})
 }

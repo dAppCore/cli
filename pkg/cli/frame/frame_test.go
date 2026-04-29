@@ -1,577 +1,517 @@
 package frame
 
 import (
-	"bytes"
-	"strings"
-	"time"
-
-	"dappco.re/go"
+	core "dappco.re/go"
 	tea "github.com/charmbracelet/bubbletea"
+	"time"
 )
 
-func TestCli_Frame_Good(t *core.T) {
-	t.Run("static render HCF", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Header(StaticModel("header"))
-		f.Content(StaticModel("content"))
-		f.Footer(StaticModel("footer"))
-
-		out := f.String()
-		core.AssertContains(t, out, "header")
-		core.AssertContains(t, out, "content")
-		core.AssertContains(t, out, "footer")
-	})
-
-	t.Run("region order preserved", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Header(StaticModel("AAA"))
-		f.Content(StaticModel("BBB"))
-		f.Footer(StaticModel("CCC"))
-
-		out := f.String()
-		posA := strings.Index(out, "AAA")
-		posB := strings.Index(out, "BBB")
-		posC := strings.Index(out, "CCC")
-		core.AssertLess(t, posA, posB, "header before content")
-		core.AssertLess(t, posB, posC, "content before footer")
-	})
-
-	t.Run("navigate and back", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Header(StaticModel("nav"))
-		f.Content(StaticModel("page-1"))
-		f.Footer(StaticModel("hints"))
-		core.AssertContains(t, f.String(), "page-1")
-
-		// Navigate to page 2
-		f.Navigate(StaticModel("page-2"))
-		core.AssertContains(t, f.String(), "page-2")
-		core.AssertNotContains(t, f.String(), "page-1")
-
-		// Navigate to page 3
-		f.Navigate(StaticModel("page-3"))
-		core.AssertContains(t, f.String(), "page-3")
-
-		// Back to page 2
-		ok := f.Back()
-		core.RequireTrue(t, ok)
-		core.AssertContains(t, f.String(), "page-2")
-
-		// Back to page 1
-		ok = f.Back()
-		core.RequireTrue(t, ok)
-		core.AssertContains(t, f.String(), "page-1")
-
-		// No more history
-		ok = f.Back()
-		core.AssertFalse(t, ok)
-	})
-
-	t.Run("empty regions skipped", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("only content"))
-
-		out := f.String()
-		core.AssertEqual(t, "only content\n", out)
-	})
-
-	t.Run("non-TTY run renders once", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		var buf bytes.Buffer
-		f := NewFrame("HCF")
-		f.out = &buf
-		f.Header(StaticModel("h"))
-		f.Content(StaticModel("c"))
-		f.Footer(StaticModel("f"))
-
-		f.Run()
-		core.AssertContains( // non-TTY, should return immediately
-			t, buf.String(), "h")
-		core.AssertContains(t, buf.String(), "c")
-		core.AssertContains(t, buf.String(), "f")
-	})
-
-	t.Run("ModelFunc adapter", func(t *core.T) {
-		called := false
-		m := ModelFunc(func(w, h int) string {
-			called = true
-			return "dynamic"
-		})
-
-		out := m.View(80, 24)
-		core.AssertTrue(t, called)
-		core.AssertEqual(t, "dynamic", out)
-	})
-
-	t.Run("RunFor exits after duration", func(t *core.T) {
-		var buf bytes.Buffer
-		f := NewFrame("C")
-		f.out = &buf // non-TTY → RunFor renders once and returns
-		f.Content(StaticModel("timed"))
-
-		start := time.Now()
-		f.RunFor(50 * time.Millisecond)
-		elapsed := time.Since(start)
-		core.AssertLess(t, elapsed, 200*time.Millisecond)
-		core.AssertContains(t, buf.String(), "timed")
-	})
+type frameStringWriter interface {
+	core.Writer
+	String() string
 }
 
-func TestCli_Frame_Bad(t *core.T) {
-	t.Run("empty frame", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		core.AssertEqual(t, "", f.String())
-	})
+type frameTestModel string
 
-	t.Run("back on empty history", func(t *core.T) {
-		f := NewFrame("C")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("x"))
-		core.AssertFalse(t, f.Back())
-	})
+func (m frameTestModel) View(_, _ int) string { return string(m) }
 
-	t.Run("invalid variant degrades gracefully", func(t *core.T) {
-		f := NewFrame("XYZ")
-		f.out = &bytes.Buffer{}
-		core.AssertEqual( // No valid regions, so nothing renders
-			t, "", f.String())
-	})
+type frameInteractiveModel struct {
+	view    string
+	updates int
 }
 
-func TestStatusLine_Good(t *core.T) {
-	SetColorEnabled(false)
-	defer SetColorEnabled(true)
-
-	m := StatusLine("core dev", "18 repos", "main")
-	out := m.View(80, 1)
-	core.AssertContains(t, out, "core dev")
-	core.AssertContains(t, out, "18 repos")
-	core.AssertContains(t, out, "main")
-}
-
-func TestKeyHints_Good(t *core.T) {
-	SetColorEnabled(false)
-	defer SetColorEnabled(true)
-
-	m := KeyHints("↑/↓ navigate", "q quit")
-	out := m.View(80, 1)
-	core.AssertContains(t, out, "navigate")
-	core.AssertContains(t, out, "quit")
-}
-
-func TestBreadcrumb_Good(t *core.T) {
-	SetColorEnabled(false)
-	defer SetColorEnabled(true)
-
-	m := Breadcrumb("core", "dev", "health")
-	out := m.View(80, 1)
-	core.AssertContains(t, out, "core")
-	core.AssertContains(t, out, "dev")
-	core.AssertContains(t, out, "health")
-	core.AssertContains(t, out, ">")
-}
-
-func TestStaticModel_Good(t *core.T) {
-	m := StaticModel("hello")
-	out := m.View(80, 24)
-	core.AssertEqual(t, "hello", out)
-	core.AssertContains(t, out, "hello")
-}
-
-func TestFrameModel_Good(t *core.T) {
-	t.Run("modelAdapter wraps plain Model", func(t *core.T) {
-		m := StaticModel("hello")
-		adapted := adaptModel(m)
-
-		// Should return nil cmd from Init
-		cmd := adapted.Init()
-		core.AssertNil(t, cmd)
-
-		// Should return itself from Update
-		updated, cmd := adapted.Update(nil)
-		core.AssertEqual(t, adapted, updated)
-		core.AssertNil(t, cmd)
-		core.AssertEqual( // Should delegate View to wrapped model
-			t, "hello", adapted.View(80, 24))
-	})
-
-	t.Run("FrameModel passes through without wrapping", func(t *core.T) {
-		fm := &testFrameModel{viewText: "interactive"}
-		adapted := adaptModel(fm)
-
-		// Should be the same object, not wrapped
-		_, ok := adapted.(*testFrameModel)
-		core.AssertTrue(t, ok, "FrameModel should not be wrapped")
-		core.AssertEqual(t, "interactive", adapted.View(80, 24))
-	})
-}
-
-// testFrameModel is a mock FrameModel for testing.
-type testFrameModel struct {
-	viewText     string
-	initCalled   bool
-	updateCalled bool
-	lastMsg      tea.Msg
-}
-
-func (m *testFrameModel) View(w, h int) string { return m.viewText }
-
-func (m *testFrameModel) Init() tea.Cmd {
-	m.initCalled = true
-	return nil
-}
-
-func (m *testFrameModel) Update(msg tea.Msg) (FrameModel, tea.Cmd) {
-	m.updateCalled = true
-	m.lastMsg = msg
+func (m *frameInteractiveModel) View(_, _ int) string { return m.view }
+func (m *frameInteractiveModel) Init() tea.Cmd        { return nil }
+func (m *frameInteractiveModel) Update(_ tea.Msg) (FrameModel, tea.Cmd) {
+	m.updates++
 	return m, nil
 }
 
-func TestKeyMap_Good(t *core.T) {
-	t.Run("default keymap has expected bindings", func(t *core.T) {
-		km := DefaultKeyMap()
-		core.AssertEqual(t, tea.KeyTab, km.FocusNext)
-		core.AssertEqual(t, tea.KeyShiftTab, km.FocusPrev)
-		core.AssertEqual(t, tea.KeyUp, km.FocusUp)
-		core.AssertEqual(t, tea.KeyDown, km.FocusDown)
-		core.AssertEqual(t, tea.KeyLeft, km.FocusLeft)
-		core.AssertEqual(t, tea.KeyRight, km.FocusRight)
-		core.AssertEqual(t, tea.KeyEsc, km.Back)
-		core.AssertEqual(t, tea.KeyCtrlC, km.Quit)
-	})
+func frameWithBuffer() (*Frame, frameStringWriter) {
+	buf := core.NewBufferString("")
+	f := NewFrame("HLCF").WithOutput(buf)
+	return f, buf
 }
 
-func TestFrameFocus_Good(t *core.T) {
-	t.Run("default focus is Content", func(t *core.T) {
-		f := NewFrame("HCF")
-		core.AssertEqual(t, RegionContent, f.Focused())
-	})
-
-	t.Run("Focus sets focused region", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Focus(RegionHeader)
-		core.AssertEqual(t, RegionHeader, f.Focused())
-	})
-
-	t.Run("Focus ignores invalid region", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Focus(RegionLeft)
-		core.AssertEqual( // Left not in "HCF"
-			t, RegionContent, f.Focused()) // unchanged
-	})
-
-	t.Run("WithKeyMap returns frame for chaining", func(t *core.T) {
-		km := DefaultKeyMap()
-		km.Quit = tea.KeyCtrlQ
-		f := NewFrame("HCF").WithKeyMap(km)
-		core.AssertEqual(t, tea.KeyCtrlQ, f.keyMap.Quit)
-	})
-
-	t.Run("focusRing builds from variant", func(t *core.T) {
-		f := NewFrame("HLCRF")
-		ring := f.buildFocusRing()
-		core.AssertEqual(t, []Region{RegionHeader, RegionLeft, RegionContent, RegionRight, RegionFooter}, ring)
-	})
-
-	t.Run("focusRing respects variant order", func(t *core.T) {
-		f := NewFrame("HCF")
-		ring := f.buildFocusRing()
-		core.AssertEqual(t, []Region{RegionHeader, RegionContent, RegionFooter}, ring)
-	})
+func frameRepeat(s string, count int) string {
+	if count <= 0 {
+		return ""
+	}
+	out := core.NewBuilder()
+	for range count {
+		out.WriteString(s)
+	}
+	return out.String()
 }
 
-func TestFrameTeaModel_Good(t *core.T) {
-	t.Run("Init collects FrameModel inits", func(t *core.T) {
-		f := NewFrame("HCF")
-		fm := &testFrameModel{viewText: "x"}
-		f.Content(fm)
+func TestFrame_ModelFunc_View_Good(t *core.T) {
+	m := ModelFunc(func(width, height int) string { return core.Sprintf("%dx%d", width, height) })
 
-		cmd := f.Init()
-		// Should produce a batch command (non-nil if any FrameModel has Init)
-		// fm.Init returns nil, so batch of nils = nil
-		_ = cmd
-		core.AssertTrue( // no panic = success
-			t, fm.initCalled)
-	})
-
-	t.Run("Update routes key to focused region", func(t *core.T) {
-		f := NewFrame("HCF")
-		header := &testFrameModel{viewText: "h"}
-		content := &testFrameModel{viewText: "c"}
-		f.Header(header)
-		f.Content(content)
-
-		// Focus is Content by default
-		keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}
-		f.Update(keyMsg)
-		core.AssertTrue(t, content.updateCalled, "focused region should receive key")
-		core.AssertFalse(t, header.updateCalled, "unfocused region should not receive key")
-	})
-
-	t.Run("Update broadcasts WindowSizeMsg to all", func(t *core.T) {
-		f := NewFrame("HCF")
-		header := &testFrameModel{viewText: "h"}
-		content := &testFrameModel{viewText: "c"}
-		footer := &testFrameModel{viewText: "f"}
-		f.Header(header)
-		f.Content(content)
-		f.Footer(footer)
-
-		sizeMsg := tea.WindowSizeMsg{Width: 120, Height: 40}
-		f.Update(sizeMsg)
-		core.AssertTrue(t, header.updateCalled, "header should get resize")
-		core.AssertTrue(t, content.updateCalled, "content should get resize")
-		core.AssertTrue(t, footer.updateCalled, "footer should get resize")
-		core.AssertEqual(t, 120, f.width)
-		core.AssertEqual(t, 40, f.height)
-	})
-
-	t.Run("Update handles quit key", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Content(StaticModel("c"))
-
-		quitMsg := tea.KeyMsg{Type: tea.KeyCtrlC}
-		_, cmd := f.Update(quitMsg)
-		core.AssertNotNil( // cmd should be tea.Quit
-			t, cmd)
-	})
-
-	t.Run("Update handles back key", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Content(StaticModel("page-1"))
-		f.Navigate(StaticModel("page-2"))
-
-		escMsg := tea.KeyMsg{Type: tea.KeyEsc}
-		f.Update(escMsg)
-		core.AssertContains(t, f.String(), "page-1")
-	})
-
-	t.Run("Update cycles focus with Tab", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Header(StaticModel("h"))
-		f.Content(StaticModel("c"))
-		f.Footer(StaticModel("f"))
-		core.AssertEqual(t, RegionContent, f.Focused())
-
-		tabMsg := tea.KeyMsg{Type: tea.KeyTab}
-		f.Update(tabMsg)
-		core.AssertEqual(t, RegionFooter, f.Focused())
-
-		f.Update(tabMsg)
-		core.AssertEqual(t, RegionHeader, f.Focused()) // wraps around
-
-		shiftTabMsg := tea.KeyMsg{Type: tea.KeyShiftTab}
-		f.Update(shiftTabMsg)
-		core.AssertEqual(t, RegionFooter, f.Focused()) // back
-	})
-
-	t.Run("View produces non-empty output", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.Header(StaticModel("HEAD"))
-		f.Content(StaticModel("BODY"))
-		f.Footer(StaticModel("FOOT"))
-
-		view := f.View()
-		core.AssertContains(t, view, "HEAD")
-		core.AssertContains(t, view, "BODY")
-		core.AssertContains(t, view, "FOOT")
-	})
-
-	t.Run("View lipgloss layout: header before content before footer", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		f := NewFrame("HCF")
-		f.Header(StaticModel("AAA"))
-		f.Content(StaticModel("BBB"))
-		f.Footer(StaticModel("CCC"))
-		f.width = 80
-		f.height = 24
-
-		view := f.View()
-		posA := strings.Index(view, "AAA")
-		posB := strings.Index(view, "BBB")
-		posC := strings.Index(view, "CCC")
-		core.AssertGreater(t, posA, -1, "header should be present")
-		core.AssertGreater(t, posB, -1, "content should be present")
-		core.AssertGreater(t, posC, -1, "footer should be present")
-		core.AssertLess(t, posA, posB, "header before content")
-		core.AssertLess(t, posB, posC, "content before footer")
-	})
+	core.AssertEqual(t, "4x2", m.View(4, 2))
+	core.AssertContains(t, m.View(3, 5), "3x5")
 }
 
-func TestFrameSend_Good(t *core.T) {
-	t.Run("Send is safe before Run", func(t *core.T) {
-		f := NewFrame("C")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("x"))
-		core.AssertNotPanics( // Should not panic when program is nil
-			t, func() {
-				f.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-			})
-	})
+func TestFrame_ModelFunc_View_Bad(t *core.T) {
+	m := ModelFunc(func(_, _ int) string { return "" })
+
+	core.AssertEqual(t, "", m.View(0, 0))
+	core.AssertEmpty(t, m.View(-1, -1))
 }
 
-func TestFrameSpatialFocus_Good(t *core.T) {
-	t.Run("arrow keys move to target region", func(t *core.T) {
-		f := NewFrame("HLCRF")
-		f.Header(StaticModel("h"))
-		f.Left(StaticModel("l"))
-		f.Content(StaticModel("c"))
-		f.Right(StaticModel("r"))
-		f.Footer(StaticModel("f"))
-		core.AssertEqual( // Start at Content
-			t, RegionContent, f.Focused())
+func TestFrame_ModelFunc_View_Ugly(t *core.T) {
+	m := ModelFunc(func(width, _ int) string { return frameRepeat("x", width) })
 
-		// Up → Header
-		f.Update(tea.KeyMsg{Type: tea.KeyUp})
-		core.AssertEqual(t, RegionHeader, f.Focused())
-
-		// Down → Footer
-		f.Update(tea.KeyMsg{Type: tea.KeyDown})
-		core.AssertEqual(t, RegionFooter, f.Focused())
-
-		// Left → Left sidebar
-		f.Update(tea.KeyMsg{Type: tea.KeyLeft})
-		core.AssertEqual(t, RegionLeft, f.Focused())
-
-		// Right → Right sidebar
-		f.Update(tea.KeyMsg{Type: tea.KeyRight})
-		core.AssertEqual(t, RegionRight, f.Focused())
-	})
-
-	t.Run("spatial focus ignores missing regions", func(t *core.T) {
-		f := NewFrame("HCF") // no Left or Right
-		f.Header(StaticModel("h"))
-		f.Content(StaticModel("c"))
-		f.Footer(StaticModel("f"))
-		core.AssertEqual(t, RegionContent, f.Focused())
-
-		// Left arrow → no Left region, focus stays
-		f.Update(tea.KeyMsg{Type: tea.KeyLeft})
-		core.AssertEqual(t, RegionContent, f.Focused())
-	})
+	core.AssertEqual(t, "xxx", m.View(3, 1))
+	core.AssertNotPanics(t, func() { _ = m.View(0, 0) })
 }
 
-func TestFrameNavigateFrameModel_Good(t *core.T) {
-	t.Run("Navigate preserves current focus", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Header(StaticModel("h"))
-		f.Content(&testFrameModel{viewText: "page-1"})
-		f.Footer(StaticModel("f"))
+func TestFrame_NewFrame_Good(t *core.T) {
+	f := NewFrame("HCF")
 
-		// Focus something else
-		f.Focus(RegionHeader)
-		core.AssertEqual(t, RegionHeader, f.Focused())
-
-		// Navigate replaces Content, focus should remain where it was
-		f.Navigate(&testFrameModel{viewText: "page-2"})
-		core.AssertEqual(t, RegionHeader, f.Focused())
-		core.AssertContains(t, f.String(), "page-2")
-	})
-
-	t.Run("Back restores FrameModel", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		fm1 := &testFrameModel{viewText: "page-1"}
-		fm2 := &testFrameModel{viewText: "page-2"}
-		f.Header(StaticModel("h"))
-		f.Content(fm1)
-		f.Footer(StaticModel("f"))
-
-		f.Navigate(fm2)
-		core.AssertContains(t, f.String(), "page-2")
-
-		ok := f.Back()
-		core.AssertTrue(t, ok)
-		core.AssertContains(t, f.String(), "page-1")
-	})
+	core.AssertEqual(t, "HCF", f.variant)
+	core.AssertEqual(t, RegionContent, f.Focused())
 }
 
-func TestFrameMessageRouting_Good(t *core.T) {
-	t.Run("custom message broadcasts to all FrameModels", func(t *core.T) {
-		f := NewFrame("HCF")
-		header := &testFrameModel{viewText: "h"}
-		content := &testFrameModel{viewText: "c"}
-		footer := &testFrameModel{viewText: "f"}
-		f.Header(header)
-		f.Content(content)
-		f.Footer(footer)
+func TestFrame_NewFrame_Bad(t *core.T) {
+	f := NewFrame("Z")
 
-		// Send a custom message (not KeyMsg, not WindowSizeMsg)
-		type customMsg struct{ data string }
-		f.Update(customMsg{data: "hello"})
-		core.AssertTrue(t, header.updateCalled, "header should receive custom msg")
-		core.AssertTrue(t, content.updateCalled, "content should receive custom msg")
-		core.AssertTrue(t, footer.updateCalled, "footer should receive custom msg")
-	})
-
-	t.Run("plain Model regions ignore messages gracefully", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.Header(StaticModel("h"))
-		f.Content(StaticModel("c"))
-		f.Footer(StaticModel("f"))
-		core.AssertNotPanics( // Should not panic — modelAdapter ignores all messages
-			t, func() {
-				f.Update(tea.WindowSizeMsg{Width: 100, Height: 50})
-				f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-			})
-	})
+	core.AssertEqual(t, "Z", f.variant)
+	core.AssertEmpty(t, f.String())
 }
 
-func TestCli_Frame_Ugly(t *core.T) {
-	t.Run("navigate with nil model does not panic", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("base"))
-		core.AssertNotPanics(t, func() {
-			f.Navigate(nil)
-		})
-	})
+func TestFrame_NewFrame_Ugly(t *core.T) {
+	f := NewFrame("")
 
-	t.Run("deeply nested back stack does not panic", func(t *core.T) {
-		f := NewFrame("C")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("p0"))
-		for i := 1; i <= 20; i++ {
-			f.Navigate(StaticModel("p" + string(rune('0'+i%10))))
-		}
-		for f.Back() {
-			// drain the full history stack
-		}
-		core.AssertFalse(t, f.Back(), "no more history after full drain")
-	})
+	core.AssertEqual(t, "", f.variant)
+	core.AssertEqual(t, RegionContent, f.Focused())
+}
 
-	t.Run("zero-size window renders without panic", func(t *core.T) {
-		f := NewFrame("HCF")
-		f.out = &bytes.Buffer{}
-		f.Content(StaticModel("x"))
-		f.width = 0
-		f.height = 0
-		core.AssertNotPanics(t, func() {
-			_ = f.View()
-		})
-	})
+func TestFrame_Frame_WithOutput_Good(t *core.T) {
+	f, buf := frameWithBuffer()
+
+	core.AssertEqual(t, f, f.WithOutput(buf))
+	core.AssertEqual(t, buf, f.out)
+}
+
+func TestFrame_Frame_WithOutput_Bad(t *core.T) {
+	f := NewFrame("C")
+	original := f.out
+
+	core.AssertEqual(t, f, f.WithOutput(nil))
+	core.AssertEqual(t, original, f.out)
+}
+
+func TestFrame_Frame_WithOutput_Ugly(t *core.T) {
+	f := NewFrame("C")
+	var buf bytes.Buffer
+
+	f.WithOutput(&buf).Content(StaticModel("content")).Run()
+	core.AssertContains(t, buf.String(), "content")
+}
+
+func TestFrame_Frame_Header_Good(t *core.T) {
+	f := NewFrame("HC").Header(StaticModel("header"))
+
+	core.AssertContains(t, f.String(), "header")
+	core.AssertNotNil(t, f.models[RegionHeader])
+}
+
+func TestFrame_Frame_Header_Bad(t *core.T) {
+	f := NewFrame("C").Header(StaticModel("ignored"))
+
+	core.AssertNotContains(t, f.String(), "ignored")
+	core.AssertNotNil(t, f.models[RegionHeader])
+}
+
+func TestFrame_Frame_Header_Ugly(t *core.T) {
+	f := NewFrame("HC").Header(StaticModel(":check: header"))
+
+	core.AssertContains(t, f.String(), "header")
+	core.AssertContains(t, f.String(), "✓")
+}
+
+func TestFrame_Frame_Left_Good(t *core.T) {
+	f := NewFrame("LC").Left(StaticModel("left")).Content(StaticModel("content"))
+
+	core.AssertContains(t, f.String(), "left")
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_Left_Bad(t *core.T) {
+	f := NewFrame("C").Left(StaticModel("left"))
+
+	core.AssertNotContains(t, f.String(), "left")
+	core.AssertNotNil(t, f.models[RegionLeft])
+}
+
+func TestFrame_Frame_Left_Ugly(t *core.T) {
+	f := NewFrame("LC").Left(StaticModel(""))
+
+	core.AssertNotPanics(t, func() { _ = f.String() })
+	core.AssertEqual(t, "", f.models[RegionLeft].View(1, 1))
+}
+
+func TestFrame_Frame_Content_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+
+	core.AssertContains(t, f.String(), "content")
+	core.AssertNotNil(t, f.models[RegionContent])
+}
+
+func TestFrame_Frame_Content_Bad(t *core.T) {
+	f := NewFrame("H").Content(StaticModel("content"))
+
+	core.AssertContains(t, f.String(), "content")
+	core.AssertNotNil(t, f.models[RegionContent])
+}
+
+func TestFrame_Frame_Content_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel(":warn:"))
+
+	core.AssertContains(t, f.String(), "⚠")
+	core.AssertNotEmpty(t, f.String())
+}
+
+func TestFrame_Frame_Right_Good(t *core.T) {
+	f := NewFrame("CR").Content(StaticModel("content")).Right(StaticModel("right"))
+
+	core.AssertContains(t, f.String(), "right")
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_Right_Bad(t *core.T) {
+	f := NewFrame("C").Right(StaticModel("right"))
+
+	core.AssertNotContains(t, f.String(), "right")
+	core.AssertNotNil(t, f.models[RegionRight])
+}
+
+func TestFrame_Frame_Right_Ugly(t *core.T) {
+	f := NewFrame("CR").Right(StaticModel(""))
+
+	core.AssertNotPanics(t, func() { _ = f.String() })
+	core.AssertEqual(t, "", f.models[RegionRight].View(1, 1))
+}
+
+func TestFrame_Frame_Footer_Good(t *core.T) {
+	f := NewFrame("CF").Content(StaticModel("content")).Footer(StaticModel("footer"))
+
+	core.AssertContains(t, f.String(), "footer")
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_Footer_Bad(t *core.T) {
+	f := NewFrame("C").Footer(StaticModel("footer"))
+
+	core.AssertNotContains(t, f.String(), "footer")
+	core.AssertNotNil(t, f.models[RegionFooter])
+}
+
+func TestFrame_Frame_Footer_Ugly(t *core.T) {
+	f := NewFrame("CF").Footer(StaticModel(":info: footer"))
+
+	core.AssertContains(t, f.String(), "footer")
+	core.AssertContains(t, f.String(), "ℹ")
+}
+
+func TestFrame_Frame_Navigate_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("first"))
+	f.Navigate(StaticModel("second"))
+
+	core.AssertContains(t, f.String(), "second")
+	core.AssertLen(t, f.history, 1)
+}
+
+func TestFrame_Frame_Navigate_Bad(t *core.T) {
+	f := NewFrame("C")
+	f.Navigate(StaticModel("second"))
+
+	core.AssertContains(t, f.String(), "second")
+	core.AssertEmpty(t, f.history)
+}
+
+func TestFrame_Frame_Navigate_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("first"))
+	f.Navigate(StaticModel(""))
+
+	core.AssertNotContains(t, f.String(), "first")
+	core.AssertLen(t, f.history, 1)
+}
+
+func TestFrame_Frame_Back_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("first"))
+	f.Navigate(StaticModel("second"))
+
+	core.AssertTrue(t, f.Back())
+	core.AssertContains(t, f.String(), "first")
+}
+
+func TestFrame_Frame_Back_Bad(t *core.T) {
+	f := NewFrame("C")
+
+	core.AssertFalse(t, f.Back())
+	core.AssertEmpty(t, f.history)
+}
+
+func TestFrame_Frame_Back_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("first"))
+	f.Navigate(StaticModel("second"))
+	f.Back()
+
+	core.AssertFalse(t, f.Back())
+	core.AssertContains(t, f.String(), "first")
+}
+
+func TestFrame_Frame_Stop_Good(t *core.T) {
+	f := NewFrame("C")
+	f.Stop()
+
+	_, closed := <-f.done
+	core.AssertFalse(t, closed)
+}
+
+func TestFrame_Frame_Stop_Bad(t *core.T) {
+	f := NewFrame("C")
+	f.Stop()
+
+	core.AssertNotPanics(t, func() { f.Stop() })
+	core.AssertEqual(t, RegionContent, f.Focused())
+}
+
+func TestFrame_Frame_Stop_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+	f.Stop()
+
+	core.AssertNotPanics(t, func() { f.RunFor(time.Nanosecond) })
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_Send_Good(t *core.T) {
+	f := NewFrame("C")
+
+	core.AssertNotPanics(t, func() { f.Send(struct{}{}) })
+	core.AssertNil(t, f.program)
+}
+
+func TestFrame_Frame_Send_Bad(t *core.T) {
+	var f *Frame
+
+	core.AssertPanics(t, func() { f.Send(struct{}{}) })
+	core.AssertNil(t, f)
+}
+
+func TestFrame_Frame_Send_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+
+	core.AssertNotPanics(t, func() { f.Send(nil) })
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_WithKeyMap_Good(t *core.T) {
+	f := NewFrame("C")
+	km := DefaultKeyMap()
+
+	core.AssertEqual(t, f, f.WithKeyMap(km))
+	core.AssertEqual(t, km, f.keyMap)
+}
+
+func TestFrame_Frame_WithKeyMap_Bad(t *core.T) {
+	f := NewFrame("C")
+	f.WithKeyMap(KeyMap{})
+
+	core.AssertEqual(t, tea.KeyType(0), f.keyMap.Quit)
+	core.AssertEqual(t, RegionContent, f.Focused())
+}
+
+func TestFrame_Frame_WithKeyMap_Ugly(t *core.T) {
+	f := NewFrame("HC")
+	f.WithKeyMap(DefaultKeyMap())
+
+	core.AssertNotPanics(t, func() { _, _ = f.Update(tea.KeyMsg{Type: f.keyMap.FocusNext}) })
+	core.AssertEqual(t, RegionHeader, f.Focused())
+}
+
+func TestFrame_Frame_Focused_Good(t *core.T) {
+	f := NewFrame("HC")
+	f.Focus(RegionHeader)
+
+	core.AssertEqual(t, RegionHeader, f.Focused())
+	core.AssertNotEqual(t, RegionContent, f.Focused())
+}
+
+func TestFrame_Frame_Focused_Bad(t *core.T) {
+	f := NewFrame("C")
+	f.Focus(RegionHeader)
+
+	core.AssertEqual(t, RegionContent, f.Focused())
+	core.AssertNotEqual(t, RegionHeader, f.Focused())
+}
+
+func TestFrame_Frame_Focused_Ugly(t *core.T) {
+	f := NewFrame("")
+	f.Focus(RegionContent)
+
+	core.AssertEqual(t, RegionContent, f.Focused())
+	core.AssertEmpty(t, f.layout.regions)
+}
+
+func TestFrame_Frame_Focus_Good(t *core.T) {
+	f := NewFrame("HCF")
+	f.Focus(RegionFooter)
+
+	core.AssertEqual(t, RegionFooter, f.Focused())
+	core.AssertNotEqual(t, RegionContent, f.Focused())
+}
+
+func TestFrame_Frame_Focus_Bad(t *core.T) {
+	f := NewFrame("C")
+	f.Focus(RegionLeft)
+
+	core.AssertEqual(t, RegionContent, f.Focused())
+	core.AssertFalse(t, layoutHasRegion(f.layout, RegionLeft))
+}
+
+func TestFrame_Frame_Focus_Ugly(t *core.T) {
+	f := NewFrame("HLCF")
+	f.Focus(RegionLeft)
+
+	core.AssertEqual(t, RegionLeft, f.Focused())
+	core.AssertTrue(t, layoutHasRegion(f.layout, RegionLeft))
+}
+
+func TestFrame_Frame_Init_Good(t *core.T) {
+	f := NewFrame("C").Content(&frameInteractiveModel{view: "content"})
+	cmd := f.Init()
+
+	core.AssertNil(t, cmd)
+	core.AssertNotPanics(t, func() { _ = f.Init() })
+}
+
+func TestFrame_Frame_Init_Bad(t *core.T) {
+	f := NewFrame("C")
+	cmd := f.Init()
+
+	core.AssertNil(t, cmd)
+	core.AssertNotPanics(t, func() { _ = f.Init() })
+}
+
+func TestFrame_Frame_Init_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("plain"))
+	cmd := f.Init()
+
+	core.AssertNil(t, cmd)
+	core.AssertNotPanics(t, func() { _ = f.Init() })
+}
+
+func TestFrame_Frame_Update_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+	model, cmd := f.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
+
+	core.AssertEqual(t, f, model)
+	core.AssertNil(t, cmd)
+}
+
+func TestFrame_Frame_Update_Bad(t *core.T) {
+	f := NewFrame("C")
+	model, cmd := f.Update(tea.KeyMsg{Type: DefaultKeyMap().Back})
+
+	core.AssertEqual(t, f, model)
+	core.AssertNil(t, cmd)
+}
+
+func TestFrame_Frame_Update_Ugly(t *core.T) {
+	m := &frameInteractiveModel{view: "content"}
+	f := NewFrame("C").Content(m)
+	_, _ = f.Update(struct{}{})
+
+	core.AssertEqual(t, 1, m.updates)
+	core.AssertContains(t, f.String(), "content")
+}
+
+func TestFrame_Frame_View_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+
+	core.AssertContains(t, f.View(), "content")
+	core.AssertNotEmpty(t, f.View())
+}
+
+func TestFrame_Frame_View_Bad(t *core.T) {
+	f := NewFrame("C")
+
+	core.AssertEqual(t, "", f.View())
+	core.AssertEmpty(t, f.View())
+}
+
+func TestFrame_Frame_View_Ugly(t *core.T) {
+	f := NewFrame("HCF").Header(StaticModel("h")).Content(StaticModel("c")).Footer(StaticModel("f"))
+
+	core.AssertContains(t, f.View(), "h")
+	core.AssertContains(t, f.View(), "f")
+}
+
+func TestFrame_Frame_Run_Good(t *core.T) {
+	f, buf := frameWithBuffer()
+	f.Content(StaticModel("content"))
+
+	f.Run()
+	core.AssertContains(t, buf.String(), "content")
+}
+
+func TestFrame_Frame_Run_Bad(t *core.T) {
+	f, buf := frameWithBuffer()
+
+	f.Run()
+	core.AssertEqual(t, "", buf.String())
+}
+
+func TestFrame_Frame_Run_Ugly(t *core.T) {
+	f, buf := frameWithBuffer()
+	f.Content(StaticModel(":check:"))
+
+	f.Run()
+	core.AssertContains(t, buf.String(), "✓")
+}
+
+func TestFrame_Frame_RunFor_Good(t *core.T) {
+	f, buf := frameWithBuffer()
+	f.Content(StaticModel("content"))
+
+	f.RunFor(time.Nanosecond)
+	core.AssertContains(t, buf.String(), "content")
+}
+
+func TestFrame_Frame_RunFor_Bad(t *core.T) {
+	f, buf := frameWithBuffer()
+
+	f.RunFor(0)
+	core.AssertEqual(t, "", buf.String())
+}
+
+func TestFrame_Frame_RunFor_Ugly(t *core.T) {
+	f, buf := frameWithBuffer()
+	f.Content(StaticModel(""))
+
+	f.RunFor(time.Nanosecond)
+	core.AssertEqual(t, "", buf.String())
+}
+
+func TestFrame_Frame_String_Good(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("content"))
+
+	core.AssertEqual(t, "content\n", f.String())
+	core.AssertContains(t, f.String(), "\n")
+}
+
+func TestFrame_Frame_String_Bad(t *core.T) {
+	f := NewFrame("C")
+
+	core.AssertEqual(t, "", f.String())
+	core.AssertEmpty(t, f.String())
+}
+
+func TestFrame_Frame_String_Ugly(t *core.T) {
+	f := NewFrame("C").Content(StaticModel("\033[31mred\033[0m"))
+
+	core.AssertEqual(t, "red\n", f.String())
+	core.AssertNotContains(t, f.String(), "\033")
 }

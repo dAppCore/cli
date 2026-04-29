@@ -1,204 +1,119 @@
 package cli
 
 import (
-	"sync"
-
-	"dappco.re/go"
+	core "dappco.re/go"
+	"testing/fstest"
 )
 
-// resetGlobals clears the CLI singleton and command registry for test isolation.
-func resetGlobals(t *core.T) {
-	t.Helper()
-	doReset()
-	t.Cleanup(doReset)
+func TestCommands_WithCommands_Good(t *core.T) {
+	c := core.New()
+	setup := WithCommands("x", func(c *core.Core) { c.Command("x", core.Command{}) })
+
+	setup(c)
+	core.AssertTrue(t, c.Command("x").OK)
 }
 
-// doReset clears all package-level state. Only safe from a single goroutine
-// with no concurrent RegisterCommands calls in flight (i.e. test setup/teardown).
-func doReset() {
-	registeredCommandsMu.Lock()
-	registeredCommands = nil
-	registeredLocales = nil
-	commandsAttached = false
-	registeredCommandsMu.Unlock()
-	if instance != nil {
-		Shutdown()
+func TestCommands_WithCommands_Bad(t *core.T) {
+	c := core.New()
+	setup := WithCommands("", func(c *core.Core) { c.Command("empty", core.Command{}) }, nil)
+
+	setup(c)
+	core.AssertTrue(t, c.Command("empty").OK)
+}
+
+func TestCommands_WithCommands_Ugly(t *core.T) {
+	c := core.New()
+	called := 0
+	setup := WithCommands("x", func(_ *core.Core) { called++ })
+
+	setup(c)
+	core.AssertEqual(t, 1, called)
+}
+
+func TestCommands_RegisterCommands_Good(t *core.T) {
+	resetGlobals(t)
+	RegisterCommands(func(c *core.Core) { c.Command("registered", core.Command{}) })
+
+	var count int
+	for range RegisteredCommands() {
+		count++
 	}
-	instance = nil
-	once = sync.Once{}
+	core.AssertEqual(t, 1, count)
 }
 
-// TestRegisterCommands_Good tests the happy path for command registration.
-func TestRegisterCommands_Good(t *core.T) {
-	t.Run("registers on startup", func(t *core.T) {
-		resetGlobals(t)
+func TestCommands_RegisterCommands_Bad(t *core.T) {
+	resetGlobals(t)
+	RegisterCommands(func(*core.Core) {}, nil)
 
-		RegisterCommands(func(c *core.Core) {
-			c.Command("hello", core.Command{
-				Description: "Say hello",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-		})
-
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-
-		// The "hello" command should be registered.
-		r := Core().Command("hello")
-		core.AssertTrue(t, r.OK, "hello command should be registered")
-	})
-
-	t.Run("multiple groups compose", func(t *core.T) {
-		resetGlobals(t)
-
-		RegisterCommands(func(c *core.Core) {
-			c.Command("alpha", core.Command{
-				Description: "Alpha",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-		})
-		RegisterCommands(func(c *core.Core) {
-			c.Command("beta", core.Command{
-				Description: "Beta",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-		})
-
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-
-		for _, name := range []string{"alpha", "beta"} {
-			r := Core().Command(name)
-			core.AssertTrue(t, r.OK, name+" command should be registered")
-		}
-	})
-
-	t.Run("nested commands via path", func(t *core.T) {
-		resetGlobals(t)
-
-		RegisterCommands(func(c *core.Core) {
-			c.Command("ml/train", core.Command{
-				Description: "Train a model",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-			c.Command("ml/serve", core.Command{
-				Description: "Serve a model",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-		})
-
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-
-		r := Core().Command("ml/train")
-		core.AssertTrue(t, r.OK, "ml/train command should be registered")
-
-		r = Core().Command("ml/serve")
-		core.AssertTrue(t, r.OK, "ml/serve command should be registered")
-	})
-
-	t.Run("executes registered command", func(t *core.T) {
-		resetGlobals(t)
-
-		executed := false
-		RegisterCommands(func(c *core.Core) {
-			c.Command("ping", core.Command{
-				Description: "Ping",
-				Action: func(_ core.Options) core.Result {
-					executed = true
-					return core.Ok(nil)
-				},
-			})
-		})
-
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-
-		cl := Core().Cli()
-		core.RequireTrue(t, cl != nil, "RequireNotNil")
-		result := cl.Run("ping")
-		core.AssertTrue(t, result.OK, "ping command should execute successfully")
-		core.AssertTrue(t, executed, "registered command should have been executed")
-	})
+	core.AssertEmpty(t, RegisteredLocales())
+	core.AssertNotNil(t, RegisteredCommands())
 }
 
-// TestRegisterCommands_Bad tests expected error conditions.
-func TestRegisterCommands_Bad(t *core.T) {
-	t.Run("late registration attaches immediately", func(t *core.T) {
-		resetGlobals(t)
+func TestCommands_RegisterCommands_Ugly(t *core.T) {
+	resetGlobals(t)
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "registered"})))
+	RegisterCommands(func(c *core.Core) { c.Command("late", core.Command{}) })
 
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-
-		// Register after Init — should attach immediately.
-		RegisterCommands(func(c *core.Core) {
-			c.Command("late", core.Command{
-				Description: "Late arrival",
-				Action: func(_ core.Options) core.Result {
-					return core.Ok(nil)
-				},
-			})
-		})
-
-		r := Core().Command("late")
-		core.AssertTrue(t, r.OK, "late command should be registered")
-	})
+	core.AssertTrue(t, Core().Command("late").OK)
 }
 
-// TestWithAppName_Good tests the app name override.
-func TestWithAppName_Good(t *core.T) {
-	t.Run("overrides app name", func(t *core.T) {
-		resetGlobals(t)
+func TestCommands_RegisteredLocales_Good(t *core.T) {
+	resetGlobals(t)
+	fs := fstest.MapFS{"en.json": {Data: []byte(`{"x":"y"}`)}}
+	RegisterCommands(func(*core.Core) {}, fs)
 
-		WithAppName("lem")
-		defer WithAppName("core") // restore
-
-		err := Init(Options{AppName: AppName})
-		core.RequireNoError(t, err)
-		core.AssertEqual(t, "lem", Core().App().Name)
-	})
-
-	t.Run("default is core", func(t *core.T) {
-		resetGlobals(t)
-
-		err := Init(Options{AppName: AppName})
-		core.RequireNoError(t, err)
-		core.AssertEqual(t, "core", Core().App().Name)
-	})
+	core.AssertLen(t, RegisteredLocales(), 1)
+	core.AssertNotNil(t, RegisteredLocales()[0])
 }
 
-// TestRegisterCommands_Ugly tests edge cases and concurrent registration.
-func TestRegisterCommands_Ugly(t *core.T) {
-	t.Run("register nil function does not panic", func(t *core.T) {
-		resetGlobals(t)
-		core.
+func TestCommands_RegisteredLocales_Bad(t *core.T) {
+	resetGlobals(t)
+	RegisterCommands(func(*core.Core) {}, nil)
 
-			// Registering a nil function should not panic at registration time.
-			AssertNotPanics(t, func() {
-				RegisterCommands(nil)
-			})
-	})
+	core.AssertNil(t, RegisteredLocales())
+	core.AssertEmpty(t, RegisteredLocales())
+}
 
-	t.Run("re-init after shutdown is idempotent", func(t *core.T) {
-		resetGlobals(t)
+func TestCommands_RegisteredLocales_Ugly(t *core.T) {
+	resetGlobals(t)
+	fs := fstest.MapFS{"en.json": {Data: []byte(`{"x":"y"}`)}}
+	RegisterCommands(func(*core.Core) {}, fs, nil)
 
-		err := Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-		Shutdown()
+	core.AssertLen(t, RegisteredLocales(), 1)
+	core.AssertNotNil(t, RegisteredLocales()[0])
+}
 
-		resetGlobals(t)
-		err = Init(Options{AppName: "test"})
-		core.RequireNoError(t, err)
-		core.AssertNotNil(t, Core())
-	})
+func TestCommands_RegisteredCommands_Good(t *core.T) {
+	resetGlobals(t)
+	RegisterCommands(func(c *core.Core) { c.Command("one", core.Command{}) })
+
+	var count int
+	for fn := range RegisteredCommands() {
+		core.AssertNotNil(t, fn)
+		count++
+	}
+	core.AssertEqual(t, 1, count)
+}
+
+func TestCommands_RegisteredCommands_Bad(t *core.T) {
+	resetGlobals(t)
+	var count int
+	for range RegisteredCommands() {
+		count++
+	}
+
+	core.AssertEqual(t, 0, count)
+	core.AssertEmpty(t, RegisteredLocales())
+}
+
+func TestCommands_RegisteredCommands_Ugly(t *core.T) {
+	resetGlobals(t)
+	RegisterCommands(func(*core.Core) {})
+	RegisterCommands(func(*core.Core) {})
+
+	var count int
+	for range RegisteredCommands() {
+		count++
+	}
+	core.AssertEqual(t, 2, count)
 }

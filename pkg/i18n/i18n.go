@@ -1,17 +1,13 @@
 package i18n
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"io/fs"
-	"path"
 	"sort"
-	"strings"
 	"sync"
 	"text/template"
 	"unicode"
+
+	"dappco.re/go"
 )
 
 // FSSource pairs a filesystem with a directory containing locale JSON files.
@@ -49,29 +45,30 @@ func Default() *Service {
 }
 
 // AddLoader merges translations from loader into the service.
-func (s *Service) AddLoader(loader *FSLoader) error {
+func (s *Service) AddLoader(loader *FSLoader) core.Result {
 	if s == nil {
-		return errors.New("i18n: nil service")
+		return core.Fail(core.NewError("i18n: nil service"))
 	}
 	if loader == nil {
-		return errors.New("i18n: nil loader")
+		return core.Fail(core.NewError("i18n: nil loader"))
 	}
-	messages, err := loader.Load(s.lang)
-	if err != nil {
-		return err
+	messagesResult := loader.Load(s.lang)
+	if !messagesResult.OK {
+		return messagesResult
 	}
+	messages := messagesResult.Value.(map[string]string)
 	s.mu.Lock()
 	for key, value := range messages {
 		s.messages[key] = value
 	}
 	s.mu.Unlock()
-	return nil
+	return core.Ok(nil)
 }
 
 // Load reads the best matching locale file for lang.
-func (l *FSLoader) Load(lang string) (map[string]string, error) {
+func (l *FSLoader) Load(lang string) core.Result {
 	if l == nil || l.fsys == nil {
-		return nil, errors.New("i18n: nil filesystem")
+		return core.Fail(core.NewError("i18n: nil filesystem"))
 	}
 	dir := l.dir
 	if dir == "" {
@@ -81,80 +78,95 @@ func (l *FSLoader) Load(lang string) (map[string]string, error) {
 	candidates := localeCandidates(lang)
 	var firstErr error
 	for _, candidate := range candidates {
-		messages, err := l.loadFile(path.Join(dir, candidate+".json"))
-		if err == nil {
-			return messages, nil
+		messages := l.loadFile(core.Join("/", dir, candidate+".json"))
+		if messages.OK {
+			return messages
 		}
-		if firstErr == nil && !errors.Is(err, fs.ErrNotExist) {
+		err, _ := messages.Value.(error)
+		if firstErr == nil && !core.Is(err, fs.ErrNotExist) {
 			firstErr = err
 		}
 	}
 
-	languages, err := l.Languages()
-	if err != nil {
-		return nil, err
+	languagesResult := l.Languages()
+	if !languagesResult.OK {
+		return languagesResult
 	}
+	languages := languagesResult.Value.([]string)
 	if len(languages) == 0 {
 		if firstErr != nil {
-			return nil, firstErr
+			return core.Fail(firstErr)
 		}
-		return nil, errors.New("i18n: no locale files found")
+		return core.Fail(core.NewError("i18n: no locale files found"))
 	}
-	return l.loadFile(path.Join(dir, languages[0]+".json"))
+	return l.loadFile(core.Join("/", dir, languages[0]+".json"))
 }
 
 // Languages returns the locale tags available in the loader directory.
-func (l *FSLoader) Languages() ([]string, error) {
+func (l *FSLoader) Languages() core.Result {
 	if l == nil || l.fsys == nil {
-		return nil, errors.New("i18n: nil filesystem")
+		return core.Fail(core.NewError("i18n: nil filesystem"))
 	}
 	dir := l.dir
 	if dir == "" {
 		dir = "."
 	}
-	entries, err := fs.ReadDir(l.fsys, dir)
-	if err != nil {
-		return nil, err
+	entriesResult := core.ReadDir(l.fsys, dir)
+	if !entriesResult.OK {
+		return entriesResult
 	}
+	entries := entriesResult.Value.([]core.FsDirEntry)
 	languages := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+		if entry.IsDir() || !core.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
-		languages = append(languages, strings.TrimSuffix(entry.Name(), ".json"))
+		languages = append(languages, core.TrimSuffix(entry.Name(), ".json"))
 	}
 	sort.Strings(languages)
-	return languages, nil
+	return core.Ok(languages)
 }
 
-func (l *FSLoader) loadFile(name string) (map[string]string, error) {
-	data, err := fs.ReadFile(l.fsys, name)
-	if err != nil {
-		return nil, err
+func (l *FSLoader) loadFile(name string) core.Result {
+	dataResult := core.ReadFSFile(l.fsys, name)
+	if !dataResult.OK {
+		return dataResult
 	}
+	data := dataResult.Value.([]byte)
 	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, err
+	if r := core.JSONUnmarshal(data, &raw); !r.OK {
+		return r
 	}
 	out := make(map[string]string)
 	flatten("", raw, out)
-	return out, nil
+	return core.Ok(out)
 }
 
 func localeCandidates(lang string) []string {
-	lang = strings.TrimSpace(lang)
+	lang = core.Trim(lang)
 	if lang == "" {
 		lang = "en"
 	}
 	candidates := []string{lang}
-	if normalized := strings.ReplaceAll(lang, "_", "-"); normalized != lang {
+	if normalized := core.Replace(lang, "_", "-"); normalized != lang {
 		candidates = append(candidates, normalized)
 	}
-	if idx := strings.IndexAny(lang, "-_"); idx > 0 {
+	if idx := firstIndexAny(lang, "-_"); idx > 0 {
 		candidates = append(candidates, lang[:idx])
 	}
 	candidates = append(candidates, "en")
 	return uniqueStrings(candidates)
+}
+
+func firstIndexAny(s, chars string) int {
+	for i, r := range s {
+		for _, c := range chars {
+			if r == c {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 func uniqueStrings(values []string) []string {
@@ -217,7 +229,7 @@ func (s *Service) T(messageID string, args ...any) string {
 }
 
 func renderTemplate(text string, data any) string {
-	if !strings.Contains(text, "{{") {
+	if !core.Contains(text, "{{") {
 		return text
 	}
 	tmpl, err := template.New("i18n").Option("missingkey=zero").Funcs(template.FuncMap{
@@ -229,8 +241,8 @@ func renderTemplate(text string, data any) string {
 	if err != nil {
 		return text
 	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
+	buf := core.NewBufferString("")
+	if err := tmpl.Execute(buf, data); err != nil {
 		return text
 	}
 	return buf.String()
@@ -255,7 +267,7 @@ func templateData(args ...any) any {
 	}
 	data := make(map[string]any, len(args)+4)
 	for i, arg := range args {
-		data[fmt.Sprintf("Arg%d", i+1)] = arg
+		data[core.Sprintf("Arg%d", i+1)] = arg
 	}
 	data["Item"] = args[0]
 	data["Value"] = args[0]
@@ -266,14 +278,14 @@ func templateData(args ...any) any {
 
 func renderMagicKey(messageID string, args ...any) string {
 	switch {
-	case strings.HasPrefix(messageID, "i18n.fail."):
-		return ActionFailed(strings.TrimPrefix(messageID, "i18n.fail."), subjectArg(args...))
-	case strings.HasPrefix(messageID, "i18n.done."):
-		return actionResult(strings.TrimPrefix(messageID, "i18n.done."), subjectArg(args...))
-	case strings.HasPrefix(messageID, "i18n.label."):
-		return Label(strings.TrimPrefix(messageID, "i18n.label."))
-	case strings.HasPrefix(messageID, "i18n.progress."):
-		return Progress(strings.TrimPrefix(messageID, "i18n.progress."))
+	case core.HasPrefix(messageID, "i18n.fail."):
+		return ActionFailed(core.TrimPrefix(messageID, "i18n.fail."), subjectArg(args...))
+	case core.HasPrefix(messageID, "i18n.done."):
+		return actionResult(core.TrimPrefix(messageID, "i18n.done."), subjectArg(args...))
+	case core.HasPrefix(messageID, "i18n.label."):
+		return Label(core.TrimPrefix(messageID, "i18n.label."))
+	case core.HasPrefix(messageID, "i18n.progress."):
+		return Progress(core.TrimPrefix(messageID, "i18n.progress."))
 	default:
 		return ""
 	}
@@ -293,17 +305,17 @@ func subjectArg(args ...any) string {
 	case map[string]int:
 		for _, key := range []string{"Count", "Total"} {
 			if value, ok := v[key]; ok {
-				return fmt.Sprint(value)
+				return core.Sprint(value)
 			}
 		}
 	}
-	return fmt.Sprint(args[0])
+	return core.Sprint(args[0])
 }
 
 func firstMapString[M ~map[string]V, V any](m M, keys ...string) string {
 	for _, key := range keys {
 		if value, ok := m[key]; ok {
-			return fmt.Sprint(value)
+			return core.Sprint(value)
 		}
 	}
 	return ""
@@ -311,7 +323,7 @@ func firstMapString[M ~map[string]V, V any](m M, keys ...string) string {
 
 // Title capitalises the first rune after whitespace or hyphen separators.
 func Title(s string) string {
-	var b strings.Builder
+	b := core.NewBuilder()
 	b.Grow(len(s))
 	capNext := true
 	for _, r := range s {
@@ -326,7 +338,7 @@ func Title(s string) string {
 
 // Progress returns a simple gerund progress phrase.
 func Progress(verb string) string {
-	verb = strings.TrimSpace(verb)
+	verb = core.Trim(verb)
 	if verb == "" {
 		return ""
 	}
@@ -335,11 +347,11 @@ func Progress(verb string) string {
 
 // ActionFailed returns a failure phrase.
 func ActionFailed(verb, subject string) string {
-	verb = strings.TrimSpace(strings.ToLower(verb))
+	verb = core.Trim(core.Lower(verb))
 	if verb == "" {
 		return ""
 	}
-	subject = strings.TrimSpace(subject)
+	subject = core.Trim(subject)
 	if subject == "" {
 		return "Failed to " + verb
 	}
@@ -348,7 +360,7 @@ func ActionFailed(verb, subject string) string {
 
 // Label returns a title-cased label with a colon suffix.
 func Label(word string) string {
-	word = strings.TrimSpace(word)
+	word = core.Trim(word)
 	if word == "" {
 		return ""
 	}
@@ -356,12 +368,12 @@ func Label(word string) string {
 }
 
 func actionResult(verb, subject string) string {
-	verb = strings.TrimSpace(strings.ToLower(verb))
+	verb = core.Trim(core.Lower(verb))
 	if verb == "" {
 		return ""
 	}
 	result := pastTense(verb)
-	subject = strings.TrimSpace(subject)
+	subject = core.Trim(subject)
 	if subject == "" {
 		return Title(result)
 	}
@@ -369,24 +381,24 @@ func actionResult(verb, subject string) string {
 }
 
 func gerund(verb string) string {
-	verb = strings.ToLower(strings.TrimSpace(verb))
+	verb = core.Lower(core.Trim(verb))
 	switch {
-	case strings.HasSuffix(verb, "ie"):
-		return strings.TrimSuffix(verb, "ie") + "ying"
-	case strings.HasSuffix(verb, "e") && !strings.HasSuffix(verb, "ee"):
-		return strings.TrimSuffix(verb, "e") + "ing"
+	case core.HasSuffix(verb, "ie"):
+		return core.TrimSuffix(verb, "ie") + "ying"
+	case core.HasSuffix(verb, "e") && !core.HasSuffix(verb, "ee"):
+		return core.TrimSuffix(verb, "e") + "ing"
 	default:
 		return verb + "ing"
 	}
 }
 
 func pastTense(verb string) string {
-	verb = strings.ToLower(strings.TrimSpace(verb))
+	verb = core.Lower(core.Trim(verb))
 	switch {
-	case strings.HasSuffix(verb, "e"):
+	case core.HasSuffix(verb, "e"):
 		return verb + "d"
-	case strings.HasSuffix(verb, "y") && len(verb) > 1 && !isVowel(rune(verb[len(verb)-2])):
-		return strings.TrimSuffix(verb, "y") + "ied"
+	case core.HasSuffix(verb, "y") && len(verb) > 1 && !isVowel(rune(verb[len(verb)-2])):
+		return core.TrimSuffix(verb, "y") + "ied"
 	default:
 		return verb + "ed"
 	}

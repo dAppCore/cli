@@ -16,13 +16,13 @@ var (
 
 func doctorAction(opts core.Options) core.Result {
 	verbose := opts.Bool("verbose")
-	if err := runDoctor(verbose); err != nil {
-		return core.Fail(err)
+	if r := runDoctor(verbose); !r.OK {
+		return r
 	}
 	return core.Ok(nil)
 }
 
-func runDoctor(verbose bool) error {
+func runDoctor(verbose bool) core.Result {
 	cli.Println("%s", i18n.T("common.progress.checking", map[string]any{"Item": "development environment"}))
 	cli.Blank()
 
@@ -94,7 +94,7 @@ func runDoctor(verbose bool) error {
 	cli.Success(i18n.T("cmd.doctor.ready"))
 	_ = passed
 	_ = optional
-	return nil
+	return core.Ok(nil)
 }
 
 func formatCheckResult(ok bool, name, detail string) string {

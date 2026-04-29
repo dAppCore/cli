@@ -5,14 +5,16 @@ import (
 
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/config"
 	"gopkg.in/yaml.v3"
 )
 
 func configListAction(_ core.Options) core.Result {
-	configuration, err := loadConfig()
-	if err != nil {
-		return core.Fail(err)
+	configurationResult := loadConfig()
+	if !configurationResult.OK {
+		return configurationResult
 	}
+	configuration := configurationResult.Value.(*config.Config)
 
 	all := maps.Collect(configuration.All())
 	if len(all) == 0 {
@@ -22,7 +24,7 @@ func configListAction(_ core.Options) core.Result {
 
 	output, err := yaml.Marshal(all)
 	if err != nil {
-		return core.Fail(cli.Wrap(err, "failed to format config"))
+		return cli.Wrap(err, "failed to format config")
 	}
 
 	cli.Print("%s", string(output))

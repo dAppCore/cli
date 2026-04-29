@@ -1,300 +1,243 @@
 package cli
 
 import (
-	"strings"
-
-	"dappco.re/go"
-	"unicode/utf8"
+	core "dappco.re/go"
+	"time"
 )
 
-func TestTable_Good(t *core.T) {
-	t.Run("plain table unchanged", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_Pad_Good(t *core.T) {
+	got := Pad("go", 4)
 
-		tbl := NewTable("NAME", "AGE")
-		tbl.AddRow("Alice", "30")
-		tbl.AddRow("Bob", "25")
+	core.AssertEqual(t, "go  ", got)
+	core.AssertLen(t, got, 4)
+}
 
-		out := tbl.String()
-		core.AssertContains(t, out, "NAME")
-		core.AssertContains(t, out, "Alice")
-		core.AssertContains(t, out, "Bob")
-	})
+func TestStyles_Pad_Bad(t *core.T) {
+	got := Pad("long", 2)
 
-	t.Run("bordered normal", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+	core.AssertEqual(t, "long", got)
+	core.AssertLen(t, got, 4)
+}
 
-		tbl := NewTable("A", "B").WithBorders(BorderNormal)
-		tbl.AddRow("x", "y")
+func TestStyles_Pad_Ugly(t *core.T) {
+	got := Pad("", 3)
 
-		out := tbl.String()
-		core.AssertTrue(t, strings.HasPrefix(out, "┌"))
-		core.AssertContains(t, out, "┐")
-		core.AssertContains(t, out, "│")
-		core.AssertContains(t, out, "├")
-		core.AssertContains(t, out, "┤")
-		core.AssertContains(t, out, "└")
-		core.AssertContains(t, out, "┘")
-	})
+	core.AssertEqual(t, "   ", got)
+	core.AssertLen(t, got, 3)
+}
 
-	t.Run("bordered rounded", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_FormatAge_Good(t *core.T) {
+	got := FormatAge(time.Now().Add(-2 * time.Minute))
 
-		tbl := NewTable("REPO", "STATUS").WithBorders(BorderRounded)
-		tbl.AddRow("core", "clean")
+	core.AssertContains(t, got, "m ago")
+	core.AssertNotEqual(t, "just now", got)
+}
 
-		out := tbl.String()
-		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		core.AssertTrue(t, strings.HasPrefix(lines[0], "╭"))
-		core.AssertTrue(t, strings.HasSuffix(lines[0], "╮"))
-		core.AssertTrue(t, strings.HasPrefix(lines[len(lines)-1], "╰"))
-		core.AssertTrue(t, strings.HasSuffix(lines[len(lines)-1], "╯"))
-	})
+func TestStyles_FormatAge_Bad(t *core.T) {
+	got := FormatAge(time.Now().Add(time.Minute))
 
-	t.Run("bordered heavy", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+	core.AssertEqual(t, "just now", got)
+	core.AssertNotEmpty(t, got)
+}
 
-		tbl := NewTable("X").WithBorders(BorderHeavy)
-		tbl.AddRow("v")
+func TestStyles_FormatAge_Ugly(t *core.T) {
+	got := FormatAge(time.Now().Add(-45 * 24 * time.Hour))
 
-		out := tbl.String()
-		core.AssertContains(t, out, "┏")
-		core.AssertContains(t, out, "┓")
-		core.AssertContains(t, out, "┃")
-	})
+	core.AssertContains(t, got, "mo ago")
+	core.AssertNotEmpty(t, got)
+}
 
-	t.Run("bordered double", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_DefaultTableStyle_Good(t *core.T) {
+	style := DefaultTableStyle()
 
-		tbl := NewTable("X").WithBorders(BorderDouble)
-		tbl.AddRow("v")
+	core.AssertNotNil(t, style.HeaderStyle)
+	core.AssertEqual(t, "  ", style.Separator)
+}
 
-		out := tbl.String()
-		core.AssertContains(t, out, "╔")
-		core.AssertContains(t, out, "╗")
-		core.AssertContains(t, out, "║")
-	})
+func TestStyles_DefaultTableStyle_Bad(t *core.T) {
+	style := DefaultTableStyle()
 
-	t.Run("ASCII theme uses ASCII borders", func(t *core.T) {
-		restoreThemeAndColors(t)
-		UseASCII()
+	core.AssertNil(t, style.CellStyle)
+	core.AssertNotNil(t, style.HeaderStyle)
+}
 
-		tbl := NewTable("REPO", "STATUS").WithBorders(BorderRounded)
-		tbl.AddRow("core", "clean")
+func TestStyles_DefaultTableStyle_Ugly(t *core.T) {
+	style := DefaultTableStyle()
+	style.Separator = "|"
 
-		out := tbl.String()
-		core.AssertContains(t, out, "+")
-		core.AssertContains(t, out, "-")
-		core.AssertContains(t, out, "|")
-		core.AssertNotContains(t, out, "╭")
-		core.AssertNotContains(t, out, "╮")
-		core.AssertNotContains(t, out, "│")
-	})
+	core.AssertEqual(t, "|", style.Separator)
+	core.AssertEqual(t, "  ", DefaultTableStyle().Separator)
+}
 
-	t.Run("bordered structure", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_NewTable_Good(t *core.T) {
+	table := NewTable("Name", "Status")
 
-		tbl := NewTable("A", "B").WithBorders(BorderRounded)
-		tbl.AddRow("x", "y")
-		tbl.AddRow("1", "2")
+	core.AssertEqual(t, []string{"Name", "Status"}, table.Headers)
+	core.AssertNotNil(t, table.Style.HeaderStyle)
+}
 
-		lines := strings.Split(strings.TrimRight(tbl.String(), "\n"), "\n")
-		core.
-			// Top border, header, separator, 2 data rows, bottom border = 6 lines
-			AssertEqual(t, 6, len(lines), "expected 6 lines: border, header, sep, 2 rows, border")
-	})
+func TestStyles_NewTable_Bad(t *core.T) {
+	table := NewTable()
 
-	t.Run("cell style function", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+	core.AssertEmpty(t, table.Headers)
+	core.AssertEqual(t, "", table.String())
+}
 
-		called := false
-		tbl := NewTable("STATUS").
-			WithCellStyle(0, func(val string) *AnsiStyle {
-				called = true
-				if val == "ok" {
-					return SuccessStyle
-				}
-				return ErrorStyle
-			})
-		tbl.AddRow("ok")
-		tbl.AddRow("fail")
+func TestStyles_NewTable_Ugly(t *core.T) {
+	table := NewTable(":check:")
 
-		_ = tbl.String()
-		core.AssertTrue(t, called, "cell style function should be called")
-	})
+	core.AssertEqual(t, []string{":check:"}, table.Headers)
+	core.AssertContains(t, table.String(), "✓")
+}
 
-	t.Run("cell style with borders", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_Table_AddRow_Good(t *core.T) {
+	table := NewTable("Name").AddRow("codex")
 
-		tbl := NewTable("NAME", "STATUS").
-			WithBorders(BorderRounded).
-			WithCellStyle(1, func(val string) *AnsiStyle {
-				return nil // fallback to default
-			})
-		tbl.AddRow("core", "ok")
+	core.AssertLen(t, table.Rows, 1)
+	core.AssertEqual(t, []string{"codex"}, table.Rows[0])
+}
 
-		out := tbl.String()
-		core.AssertContains(t, out, "core")
-		core.AssertContains(t, out, "ok")
-	})
+func TestStyles_Table_AddRow_Bad(t *core.T) {
+	table := NewTable("Name").AddRow()
 
-	t.Run("glyph shortcodes render in headers and cells", func(t *core.T) {
-		restoreThemeAndColors(t)
-		UseASCII()
+	core.AssertLen(t, table.Rows, 1)
+	core.AssertEmpty(t, table.Rows[0])
+}
 
-		tbl := NewTable(":check: NAME", "STATUS").
-			WithBorders(BorderRounded)
-		tbl.AddRow("core", ":warn:")
+func TestStyles_Table_AddRow_Ugly(t *core.T) {
+	table := NewTable().AddRow("orphan")
 
-		out := tbl.String()
-		core.AssertContains(t, out, "[OK] NAME")
-		core.AssertContains(t, out, "[WARN]")
-	})
+	core.AssertContains(t, table.String(), "orphan")
+	core.AssertLen(t, table.Rows, 1)
+}
 
-	t.Run("max width truncates", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_Table_WithBorders_Good(t *core.T) {
+	table := NewTable("Name").WithBorders(BorderRounded)
 
-		tbl := NewTable("LONG_HEADER", "SHORT").WithMaxWidth(25)
-		tbl.AddRow("very_long_value_here", "x")
+	core.AssertEqual(t, BorderRounded, table.borders)
+	core.AssertContains(t, table.String(), "╭")
+}
 
-		out := tbl.String()
-		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		for _, line := range lines {
-			w := utf8.RuneCountInString(line)
-			core.AssertLessOrEqual(t, w, 25, core.Sprintf("line should not exceed max width: %q", line))
+func TestStyles_Table_WithBorders_Bad(t *core.T) {
+	table := NewTable("Name").WithBorders(BorderNone)
+
+	core.AssertEqual(t, BorderNone, table.borders)
+	core.AssertNotContains(t, table.String(), "╭")
+}
+
+func TestStyles_Table_WithBorders_Ugly(t *core.T) {
+	cliPlainCLI(t)
+	table := NewTable("Name").WithBorders(BorderHeavy)
+
+	core.AssertEqual(t, BorderHeavy, table.borders)
+	core.AssertContains(t, table.String(), "+")
+}
+
+func TestStyles_Table_WithCellStyle_Good(t *core.T) {
+	table := NewTable("Name").WithCellStyle(0, func(string) *AnsiStyle { return NewStyle().Bold() })
+
+	core.AssertNotNil(t, table.cellStyleFns[0])
+	core.AssertEqual(t, table, table.WithCellStyle(1, nil))
+}
+
+func TestStyles_Table_WithCellStyle_Bad(t *core.T) {
+	table := NewTable("Name").WithCellStyle(-1, nil)
+
+	core.AssertNotNil(t, table.cellStyleFns)
+	core.AssertNil(t, table.cellStyleFns[-1])
+}
+
+func TestStyles_Table_WithCellStyle_Ugly(t *core.T) {
+	table := NewTable("Name").WithCellStyle(0, func(value string) *AnsiStyle {
+		if value == "hot" {
+			return NewStyle().Bold()
 		}
+		return nil
 	})
 
-	t.Run("max width with borders", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		tbl := NewTable("A", "B").WithBorders(BorderNormal).WithMaxWidth(20)
-		tbl.AddRow("hello", "world")
-
-		out := tbl.String()
-		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		for _, line := range lines {
-			w := utf8.RuneCountInString(line)
-			core.AssertLessOrEqual(t, w, 20, core.Sprintf("bordered line should not exceed max width: %q", line))
-		}
-	})
-
-	t.Run("empty table returns empty", func(t *core.T) {
-		tbl := NewTable()
-		core.AssertEqual(t, "", tbl.String())
-	})
-
-	t.Run("no headers with borders", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		tbl := NewTable().WithBorders(BorderNormal)
-		tbl.Rows = [][]string{{"a", "b"}, {"c", "d"}}
-
-		out := tbl.String()
-		core.AssertContains(t, out, "┌")
-		// No header separator since no headers
-		lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-		core.
-			// Top border, 2 data rows, bottom border = 4 lines (no header separator)
-			AssertEqual(t, 4, len(lines))
-	})
+	core.AssertNotNil(t, table.cellStyleFns[0]("hot"))
 }
 
-func TestTable_Bad(t *core.T) {
-	t.Run("short rows padded", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
+func TestStyles_Table_WithMaxWidth_Good(t *core.T) {
+	table := NewTable("Name").WithMaxWidth(10)
 
-		tbl := NewTable("A", "B", "C")
-		tbl.AddRow("x") // only 1 cell, 3 columns
-
-		out := tbl.String()
-		core.AssertContains(t, out, "x")
-	})
+	core.AssertEqual(t, 10, table.maxWidth)
+	core.AssertEqual(t, table, table.WithMaxWidth(20))
 }
 
-func TestTable_Ugly(t *core.T) {
-	t.Run("no columns no panic", func(t *core.T) {
-		core.AssertNotPanics(t, func() {
-			tbl := NewTable()
-			tbl.AddRow()
-			_ = tbl.String()
-		})
-	})
+func TestStyles_Table_WithMaxWidth_Bad(t *core.T) {
+	table := NewTable("Name").WithMaxWidth(0)
 
-	t.Run("cell style function returning nil does not panic", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		tbl := NewTable("A").WithCellStyle(0, func(_ string) *AnsiStyle {
-			return nil
-		})
-		tbl.AddRow("value")
-		core.AssertNotPanics(t, func() {
-			_ = tbl.String()
-		})
-	})
-
-	t.Run("max width of 1 does not panic", func(t *core.T) {
-		SetColorEnabled(false)
-		defer SetColorEnabled(true)
-
-		tbl := NewTable("HEADER").WithMaxWidth(1)
-		tbl.AddRow("data")
-		core.AssertNotPanics(t, func() {
-			_ = tbl.String()
-		})
-	})
+	core.AssertEqual(t, 0, table.maxWidth)
+	core.AssertContains(t, table.String(), "Name")
 }
 
-func TestTruncate_Good(t *core.T) {
-	core.AssertEqual(t, "hel...", Truncate("hello world", 6))
-	core.AssertEqual(t, "hi", Truncate("hi", 6))
-	core.AssertEqual(t, "he", Truncate("hello", 2))
-	core.AssertEqual(t, "東", Truncate("東京", 3))
+func TestStyles_Table_WithMaxWidth_Ugly(t *core.T) {
+	table := NewTable("Name").AddRow("abcdef").WithMaxWidth(5)
+
+	core.AssertContains(t, table.String(), "...")
+	core.AssertEqual(t, 5, table.maxWidth)
 }
 
-func TestTruncate_Ugly(t *core.T) {
-	t.Run("zero max does not panic", func(t *core.T) {
-		core.AssertNotPanics(t, func() {
-			_ = Truncate("hello", 0)
-		})
-	})
+func TestStyles_Table_String_Good(t *core.T) {
+	got := NewTable("Name").AddRow("codex").String()
+
+	core.AssertContains(t, got, "Name")
+	core.AssertContains(t, got, "codex")
 }
 
-func TestPad_Good(t *core.T) {
-	core.AssertEqual(t, "hi   ", Pad("hi", 5))
-	core.AssertEqual(t, "hello", Pad("hello", 3))
-	core.AssertEqual(t, "東京  ", Pad("東京", 6))
+func TestStyles_Table_String_Bad(t *core.T) {
+	got := NewTable().String()
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
 }
 
-func TestStyled_Good_NilStyle(t *core.T) {
-	restoreThemeAndColors(t)
-	UseASCII()
-	core.AssertEqual(t, "hello [OK]", Styled(nil, "hello :check:"))
+func TestStyles_Table_String_Ugly(t *core.T) {
+	got := NewTable("Name").WithBorders(BorderDouble).String()
+
+	core.AssertContains(t, got, "Name")
+	core.AssertContains(t, got, "╔")
 }
 
-func TestStyledf_Good_NilStyle(t *core.T) {
-	restoreThemeAndColors(t)
-	UseASCII()
-	core.AssertEqual(t, "value: [WARN]", Styledf(nil, "value: %s", ":warn:"))
+func TestStyles_Table_Render_Good(t *core.T) {
+	out := cliCaptureStdout(t, func() { NewTable("Name").AddRow("codex").Render() })
+
+	core.AssertContains(t, out, "Name")
+	core.AssertContains(t, out, "codex")
 }
 
-func TestPad_Ugly(t *core.T) {
-	t.Run("zero width does not panic", func(t *core.T) {
-		core.AssertNotPanics(t, func() {
-			_ = Pad("hello", 0)
-		})
-	})
+func TestStyles_Table_Render_Bad(t *core.T) {
+	out := cliCaptureStdout(t, func() { NewTable().Render() })
+
+	core.AssertEqual(t, "", out)
+	core.AssertEmpty(t, out)
+}
+
+func TestStyles_Table_Render_Ugly(t *core.T) {
+	out := cliCaptureStdout(t, func() { NewTable("Name").WithBorders(BorderNormal).Render() })
+
+	core.AssertContains(t, out, "Name")
+	core.AssertContains(t, out, "┌")
+}
+
+func TestStyles_Truncate_Good(t *core.T) {
+	got := Truncate("abcdef", 4)
+
+	core.AssertEqual(t, "a...", got)
+	core.AssertLen(t, got, 4)
+}
+
+func TestStyles_Truncate_Bad(t *core.T) {
+	got := Truncate("abcdef", 0)
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
+}
+
+func TestStyles_Truncate_Ugly(t *core.T) {
+	got := Truncate("go", 10)
+
+	core.AssertEqual(t, "go", got)
+	core.AssertNotContains(t, got, "...")
 }

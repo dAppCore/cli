@@ -115,8 +115,8 @@ func loadLocaleSources(sources ...LocaleSource) {
 		if src.FS == nil {
 			continue
 		}
-		if err := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); err != nil {
-			LogDebug("failed to load locale source", "dir", src.Dir, "err", err)
+		if r := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); !r.OK {
+			LogDebug("failed to load locale source", "dir", src.Dir, "err", r.Error())
 		}
 	}
 }

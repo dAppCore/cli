@@ -11,7 +11,7 @@ import (
 
 func TestRun_Good_CancelledContext(t *core.T) {
 	resetGlobals(t)
-	core.RequireNoError(t, Init(Options{AppName: "test"}))
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "test"})))
 
 	// Register a long-running command that waits for context cancellation
 	RegisterCommands(func(c *core.Core) {
@@ -34,7 +34,7 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *core.T) {
 
 	finished := make(chan struct{})
 	var finishedOnce sync.Once
-	core.RequireNoError(t, Init(Options{
+	core.RequireNoError(t, cliResultError(Init(Options{
 		AppName: "test",
 		Services: []core.Service{
 			{
@@ -48,7 +48,7 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *core.T) {
 				},
 			},
 		},
-	}))
+	})))
 
 	start := time.Now()
 	RunWithTimeout(20 * time.Millisecond)()
@@ -63,11 +63,11 @@ func TestRunWithTimeout_Good_ReturnsHelper(t *core.T) {
 
 func TestRun_Good_NilContext(t *core.T) {
 	resetGlobals(t)
-	core.RequireNoError(t, Init(Options{AppName: "test"}))
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "test"})))
 
 	// Run with nil context should not panic
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
-	err := Run(ctx)
+	err := cliResultError(Run(ctx))
 	core.AssertError(t, err) // Should get context.Canceled
 }

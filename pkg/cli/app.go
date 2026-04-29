@@ -123,12 +123,12 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	}
 
 	// Initialise CLI runtime
-	if err := Init(Options{
+	if r := Init(Options{
 		AppName:     AppName,
 		Version:     SemVer(),
 		I18nSources: extraFS,
-	}); err != nil {
-		Error(err.Error())
+	}); !r.OK {
+		Error(r.Error())
 		core.Exit(1)
 	}
 	defer Shutdown()
@@ -148,13 +148,13 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 		setup(c)
 	}
 
-	if err := Execute(); err != nil {
+	if r := Execute(); !r.OK {
 		code := 1
 		var exitErr *ExitError
-		if As(err, &exitErr) {
+		if err, ok := r.Value.(error); ok && As(err, &exitErr) {
 			code = exitErr.Code
 		}
-		Error(err.Error())
+		Error(r.Error())
 		c.Exit(code)
 	}
 }

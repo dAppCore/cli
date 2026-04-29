@@ -1,162 +1,223 @@
 package cli
 
 import (
-	"bytes"
-	"runtime/debug"
-
-	"dappco.re/go"
+	core "dappco.re/go"
+	"testing/fstest"
 )
 
-// TestCli_PanicRecovery_Good verifies that the panic recovery mechanism
-// catches panics and calls the appropriate shutdown and error handling.
-func TestCli_PanicRecovery_Good(t *core.T) {
-	t.Run("recovery captures panic value and stack", func(t *core.T) {
-		var recovered any
-		var capturedStack []byte
-		var shutdownCalled bool
+func cliResultError(r core.Result) error {
+	if r.OK {
+		return nil
+	}
+	if err, ok := r.Value.(error); ok {
+		return err
+	}
+	return core.NewError(r.Error())
+}
 
-		// Simulate the panic recovery pattern from Main()
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					recovered = r
-					capturedStack = debug.Stack()
-					shutdownCalled = true // simulates Shutdown() call
-				}
-			}()
-
-			panic("test panic")
-		}()
-		core.AssertEqual(t, "test panic", recovered)
-		core.AssertTrue(t, shutdownCalled, "Shutdown should be called after panic recovery")
-		core.AssertNotEmpty(t, capturedStack, "Stack trace should be captured")
-		core.AssertContains(t, string(capturedStack), "TestCli_PanicRecovery_Good")
-	})
-
-	t.Run("recovery handles error type panics", func(t *core.T) {
-		var recovered any
-
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					recovered = r
-				}
-			}()
-
-			panic(core.E("", "error panic", nil))
-		}()
-
-		err, ok := recovered.(error)
-		core.AssertTrue(t, ok, "Recovered value should be an error")
-		core.AssertEqual(t, "error panic", err.Error())
-	})
-
-	t.Run("recovery handles nil panic gracefully", func(t *core.T) {
-		recoveryExecuted := false
-
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					recoveryExecuted = true
-				}
-			}()
-
-			// No panic occurs
-		}()
-		core.AssertFalse(t, recoveryExecuted, "Recovery block should not execute without panic")
+func cliPlainCLI(t *core.T) {
+	t.Helper()
+	originalTheme := currentTheme
+	originalColor := ColorEnabled()
+	UseASCII()
+	SetColorEnabled(false)
+	t.Cleanup(func() {
+		currentTheme = originalTheme
+		SetColorEnabled(originalColor)
+		SetStdout(nil)
+		SetStderr(nil)
+		SetStdin(nil)
 	})
 }
 
-// TestCli_PanicRecovery_Bad tests error conditions in panic recovery.
-func TestCli_PanicRecovery_Bad(t *core.T) {
-	t.Run("recovery handles concurrent panics", func(t *core.T) {
-		done := make(chan struct{}, 3)
-		recovered := make(chan struct{}, 3)
+func cliCaptureStdout(t *core.T, fn func()) string {
+	t.Helper()
+	out := core.NewBuilder()
+	SetStdout(out)
+	defer SetStdout(nil)
+	fn()
+	return out.String()
+}
 
-		for i := 0; i < 3; i++ {
-			go func(id int) {
-				defer func() { done <- struct{}{} }()
-				defer func() {
-					if r := recover(); r != nil {
-						recovered <- struct{}{}
-					}
-				}()
+func cliCaptureStderr(t *core.T, fn func()) string {
+	t.Helper()
+	out := core.NewBuilder()
+	SetStderr(out)
+	defer SetStderr(nil)
+	fn()
+	return out.String()
+}
 
-				panic(core.Sprintf("panic from goroutine %d", id))
-			}(i)
+func cliFakeCommands(t *core.T, scripts map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for name, body := range scripts {
+		path := core.Path(dir, name)
+		data := []byte("#!/bin/sh\n" + body)
+		core.RequireTrue(t, core.WriteFile(path, data, 0o755).OK)
+	}
+	t.Setenv("PATH", dir+string(core.PathListSeparator)+core.Getenv("PATH"))
+	return dir
+}
+
+func cliRunSelf(t *core.T, envKey string) error {
+	t.Helper()
+	t.Setenv(envKey, "1")
+	return cliResultError(runProcessOutput(core.Background(), core.Args()[0], "-test.run", "^"+t.Name()+"$"))
+}
+
+func resetGlobals(t *core.T) {
+	t.Helper()
+	if instance != nil {
+		Shutdown()
+		instance = nil
+	}
+	registeredCommandsMu.Lock()
+	registeredCommands = nil
+	registeredLocales = nil
+	commandsAttached = false
+	registeredCommandsMu.Unlock()
+	SetStdin(nil)
+	SetStdout(nil)
+	SetStderr(nil)
+	t.Cleanup(func() {
+		if instance != nil {
+			Shutdown()
+			instance = nil
 		}
-
-		for i := 0; i < 3; i++ {
-			<-done
-		}
-		close(recovered)
-
-		recoveryCount := 0
-		for range recovered {
-			recoveryCount++
-		}
-		core.AssertEqual(t, 3, recoveryCount, "All goroutine panics should be recovered")
+		registeredCommandsMu.Lock()
+		registeredCommands = nil
+		registeredLocales = nil
+		commandsAttached = false
+		registeredCommandsMu.Unlock()
+		SetStdin(nil)
+		SetStdout(nil)
+		SetStderr(nil)
 	})
 }
 
-// TestCli_PanicRecovery_Ugly tests edge cases in panic recovery.
-func TestCli_PanicRecovery_Ugly(t *core.T) {
-	t.Run("recovery handles typed panic values", func(t *core.T) {
-		type customError struct {
-			code int
-			msg  string
-		}
+func TestApp_SemVer_Good(t *core.T) {
+	oldVersion, oldPre, oldCommit, oldDate := AppVersion, BuildPreRelease, BuildCommit, BuildDate
+	AppVersion, BuildPreRelease, BuildCommit, BuildDate = "1.2.3", "", "unknown", "unknown"
+	defer func() { AppVersion, BuildPreRelease, BuildCommit, BuildDate = oldVersion, oldPre, oldCommit, oldDate }()
 
-		var recovered any
-
-		func() {
-			defer func() {
-				recovered = recover()
-			}()
-
-			panic(customError{code: 500, msg: "internal error"})
-		}()
-
-		ce, ok := recovered.(customError)
-		core.AssertTrue(t, ok, "Should recover custom type")
-		core.AssertEqual(t, 500, ce.code)
-		core.AssertEqual(t, "internal error", ce.msg)
-	})
+	core.AssertEqual(t, "1.2.3", SemVer())
 }
 
-// TestCli_MainPanicRecoveryPattern_Good verifies the exact pattern used in Main().
-func TestCli_MainPanicRecoveryPattern_Good(t *core.T) {
-	t.Run("pattern logs error and calls shutdown", func(t *core.T) {
-		var logBuffer bytes.Buffer
-		var shutdownCalled bool
-		var fatalErr error
+func TestApp_SemVer_Bad(t *core.T) {
+	oldVersion, oldPre, oldCommit, oldDate := AppVersion, BuildPreRelease, BuildCommit, BuildDate
+	AppVersion, BuildPreRelease, BuildCommit, BuildDate = "0.0.0", "dev.1", "unknown", "unknown"
+	defer func() { AppVersion, BuildPreRelease, BuildCommit, BuildDate = oldVersion, oldPre, oldCommit, oldDate }()
 
-		// Mock implementations
-		mockLogError := func(msg string, args ...any) {
-			logBuffer.WriteString(core.Sprintf(msg, args...))
-		}
-		mockShutdown := func() {
-			shutdownCalled = true
-		}
-		mockFatal := func(err error) {
-			fatalErr = err
-		}
+	core.AssertEqual(t, "0.0.0-dev.1", SemVer())
+}
 
-		// Execute the pattern from Main()
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					mockLogError("recovered from panic: %v", r)
-					mockShutdown()
-					mockFatal(core.E("", core.Sprintf("panic: %v", r), nil))
-				}
-			}()
+func TestApp_SemVer_Ugly(t *core.T) {
+	oldVersion, oldPre, oldCommit, oldDate := AppVersion, BuildPreRelease, BuildCommit, BuildDate
+	AppVersion, BuildPreRelease, BuildCommit, BuildDate = "1.0.0", "rc.1", "abc123", "20260428"
+	defer func() { AppVersion, BuildPreRelease, BuildCommit, BuildDate = oldVersion, oldPre, oldCommit, oldDate }()
 
-			panic("simulated crash")
-		}()
-		core.AssertContains(t, logBuffer.String(), "recovered from panic: simulated crash")
-		core.AssertTrue(t, shutdownCalled, "Shutdown must be called on panic")
-		core.AssertNotNil(t, fatalErr, "Fatal must be called with error")
-		core.AssertEqual(t, "panic: simulated crash", fatalErr.Error())
-	})
+	core.AssertEqual(t, "1.0.0-rc.1+abc123.20260428", SemVer())
+}
+
+func TestApp_WithAppName_Good(t *core.T) {
+	old := AppName
+	defer func() { AppName = old }()
+	WithAppName("codex")
+
+	core.AssertEqual(t, "codex", AppName)
+}
+
+func TestApp_WithAppName_Bad(t *core.T) {
+	old := AppName
+	defer func() { AppName = old }()
+	WithAppName("")
+
+	core.AssertEqual(t, "", AppName)
+}
+
+func TestApp_WithAppName_Ugly(t *core.T) {
+	old := AppName
+	defer func() { AppName = old }()
+	WithAppName("core dev")
+
+	core.AssertEqual(t, "core dev", AppName)
+}
+
+func TestApp_WithLocales_Good(t *core.T) {
+	fs := fstest.MapFS{"en.json": {Data: []byte(`{"x":"y"}`)}}
+	src := WithLocales(fs, ".")
+
+	core.AssertEqual(t, ".", src.Dir)
+	core.AssertNotNil(t, src.FS)
+}
+
+func TestApp_WithLocales_Bad(t *core.T) {
+	src := WithLocales(nil, ".")
+
+	core.AssertEqual(t, ".", src.Dir)
+	core.AssertNil(t, src.FS)
+}
+
+func TestApp_WithLocales_Ugly(t *core.T) {
+	fs := fstest.MapFS{}
+	src := WithLocales(fs, "")
+
+	core.AssertEqual(t, "", src.Dir)
+	core.AssertNotNil(t, src.FS)
+}
+
+func TestApp_Main_Good(t *core.T) {
+	if core.Getenv("AX7_MAIN_GOOD") == "1" {
+		Main()
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_GOOD")
+	core.AssertError(t, err)
+}
+
+func TestApp_Main_Bad(t *core.T) {
+	if core.Getenv("AX7_MAIN_BAD") == "1" {
+		Main(func(*core.Core) { panic("main setup failed") })
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_BAD")
+	core.AssertError(t, err)
+}
+
+func TestApp_Main_Ugly(t *core.T) {
+	if core.Getenv("AX7_MAIN_UGLY") == "1" {
+		Main(func(c *core.Core) { c.App().Name = "ugly" })
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_UGLY")
+	core.AssertError(t, err)
+}
+
+func TestApp_MainWithLocales_Good(t *core.T) {
+	if core.Getenv("AX7_MAIN_WITH_LOCALES_GOOD") == "1" {
+		fs := fstest.MapFS{"en.json": {Data: []byte(`{"x":"y"}`)}}
+		MainWithLocales([]LocaleSource{WithLocales(fs, ".")})
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_WITH_LOCALES_GOOD")
+	core.AssertError(t, err)
+}
+
+func TestApp_MainWithLocales_Bad(t *core.T) {
+	if core.Getenv("AX7_MAIN_WITH_LOCALES_BAD") == "1" {
+		MainWithLocales([]LocaleSource{{}})
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_WITH_LOCALES_BAD")
+	core.AssertError(t, err)
+}
+
+func TestApp_MainWithLocales_Ugly(t *core.T) {
+	if core.Getenv("AX7_MAIN_WITH_LOCALES_UGLY") == "1" {
+		MainWithLocales(nil, func(c *core.Core) { c.App().Version = SemVer() })
+		return
+	}
+	err := cliRunSelf(t, "AX7_MAIN_WITH_LOCALES_UGLY")
+	core.AssertError(t, err)
 }

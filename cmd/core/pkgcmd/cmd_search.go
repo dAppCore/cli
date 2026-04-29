@@ -31,8 +31,8 @@ func pkgSearchAction(opts core.Options) core.Result {
 		limit = 50
 	}
 
-	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
-		return core.Fail(err)
+	if r := runPkgSearch(org, pattern, repoType, limit, refresh); !r.OK {
+		return r
 	}
 	return core.Ok(nil)
 }
@@ -46,7 +46,7 @@ type ghRepo struct {
 	Language    string `json:"language"`
 }
 
-func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error {
+func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.Result {
 	// Initialise cache in workspace .core/ directory.
 	var cacheDirectory string
 	if registryPath, err := repos.FindRegistry(coreio.Local); err == nil {
@@ -132,7 +132,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 	if len(filtered) == 0 {
 		cli.Println("%s", i18n.T("cmd.pkg.search.no_repos_found"))
-		return nil
+		return core.Ok(nil)
 	}
 
 	slices.SortFunc(filtered, func(a, b ghRepo) int {
@@ -162,7 +162,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 	cli.Blank()
 	cli.Println("%s %s", i18n.T("common.hint.install_with"), dimStyle.Render(cli.Sprintf("core pkg install %s/<repo-name>", org)))
 
-	return nil
+	return core.Ok(nil)
 }
 
 // matchGlob does simple glob matching with * wildcards.

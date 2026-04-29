@@ -1,8 +1,9 @@
 package frame
 
 import (
-	"fmt"
 	"iter"
+
+	"dappco.re/go"
 )
 
 // Region represents one of the 5 HLCRF regions.
@@ -72,15 +73,15 @@ func (s StringBlock) Render() string { return compileGlyphs(string(s)) }
 
 // Layout creates a new layout from a variant string.
 func Layout(variant string) *Composite {
-	c, err := ParseVariant(variant)
-	if err != nil {
+	r := ParseVariant(variant)
+	if !r.OK {
 		return &Composite{variant: variant, regions: make(map[Region]*Slot)}
 	}
-	return c
+	return r.Value.(*Composite)
 }
 
 // ParseVariant parses a variant string like "H[LC]C[HCF]F".
-func ParseVariant(variant string) (*Composite, error) {
+func ParseVariant(variant string) core.Result {
 	c := &Composite{
 		variant: variant,
 		path:    "",
@@ -91,7 +92,7 @@ func ParseVariant(variant string) (*Composite, error) {
 	for i < len(variant) {
 		r := Region(variant[i])
 		if !isValidRegion(r) {
-			return nil, fmt.Errorf("ParseVariant: invalid region: %c", r)
+			return core.Fail(core.Errorf("ParseVariant: invalid region: %c", r))
 		}
 
 		slot := &Slot{region: r, path: string(r)}
@@ -101,19 +102,20 @@ func ParseVariant(variant string) (*Composite, error) {
 		if i < len(variant) && variant[i] == '[' {
 			end := findMatchingBracket(variant, i)
 			if end == -1 {
-				return nil, fmt.Errorf("ParseVariant: unmatched bracket at %d", i)
+				return core.Fail(core.Errorf("ParseVariant: unmatched bracket at %d", i))
 			}
-			nested, err := ParseVariant(variant[i+1 : end])
-			if err != nil {
-				return nil, err
+			nestedResult := ParseVariant(variant[i+1 : end])
+			if !nestedResult.OK {
+				return nestedResult
 			}
+			nested := nestedResult.Value.(*Composite)
 			nested.path = string(r) + "-"
 			nested.parent = c
 			slot.child = nested
 			i = end + 1
 		}
 	}
-	return c, nil
+	return core.Ok(c)
 }
 
 func isValidRegion(r Region) bool {
@@ -168,7 +170,7 @@ func toRenderable(item any) Renderable {
 	case string:
 		return StringBlock(v)
 	default:
-		return StringBlock(fmt.Sprint(v))
+		return StringBlock(core.Sprint(v))
 	}
 }
 

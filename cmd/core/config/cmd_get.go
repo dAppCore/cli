@@ -3,22 +3,24 @@ package config
 import (
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/config"
 )
 
 func configGetAction(opts core.Options) core.Result {
 	key := opts.String("_arg")
 	if key == "" {
-		return core.Fail(cli.Err("requires a configuration key argument"))
+		return cli.Err("requires a configuration key argument")
 	}
 
-	configuration, err := loadConfig()
-	if err != nil {
-		return core.Fail(err)
+	configurationResult := loadConfig()
+	if !configurationResult.OK {
+		return configurationResult
 	}
+	configuration := configurationResult.Value.(*config.Config)
 
 	var value any
 	if err := configuration.Get(key, &value); err != nil {
-		return core.Fail(cli.Err("key not found: %s", key))
+		return cli.Err("key not found: %s", key)
 	}
 
 	cli.Println("%v", value)

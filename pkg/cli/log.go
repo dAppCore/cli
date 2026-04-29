@@ -22,7 +22,7 @@ func LogDebug(msg string, keyvals ...any) { core.Debug(msg, keyvals...) }
 
 // LogInfo logs an info message.
 //
-//	cli.LogInfo("configuration reloaded", "path", configPath)
+//	cli.LogInfo("configuration reloaded", "config_path", configPath)
 func LogInfo(msg string, keyvals ...any) { core.Info(msg, keyvals...) }
 
 // LogWarn logs a warning message.

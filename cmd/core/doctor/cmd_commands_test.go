@@ -1,8 +1,10 @@
 package doctor
 
-import . "dappco.re/go"
+import (
+	. "dappco.re/go"
+)
 
-func TestAX7Doctor_AddDoctorCommands_Good(t *T) {
+func TestCmdCommands_AddDoctorCommands_Good(t *T) {
 	c := New()
 	AddDoctorCommands(c)
 
@@ -10,14 +12,14 @@ func TestAX7Doctor_AddDoctorCommands_Good(t *T) {
 	AssertContains(t, c.Command("doctor").Value.(Command).Description, "environment")
 }
 
-func TestAX7Doctor_AddDoctorCommands_Bad(t *T) {
+func TestCmdCommands_AddDoctorCommands_Bad(t *T) {
 	var c *Core
 
 	AssertPanics(t, func() { AddDoctorCommands(c) })
 	AssertNil(t, c)
 }
 
-func TestAX7Doctor_AddDoctorCommands_Ugly(t *T) {
+func TestCmdCommands_AddDoctorCommands_Ugly(t *T) {
 	c := New()
 	AddDoctorCommands(c)
 	AddDoctorCommands(c)

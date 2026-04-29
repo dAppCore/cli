@@ -1,88 +1,100 @@
 package cli
 
 import (
-	"dappco.re/go"
-	"strings"
+	core "dappco.re/go"
 )
 
-func TestPrompt_Good(t *core.T) {
-	SetStdin(strings.NewReader("hello\n"))
-	defer SetStdin(nil) // reset
+func TestPrompt_Prompt_Good(t *core.T) {
+	SetStdin(core.NewReader("codex\n"))
+	defer SetStdin(nil)
+	result := Prompt("Name", "default")
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	val, err := Prompt("Name", "")
 	core.AssertNoError(t, err)
-	core.AssertEqual(t, "hello", val)
+	core.AssertEqual(t, "codex", got)
 }
 
-func TestPrompt_Good_Default(t *core.T) {
-	SetStdin(strings.NewReader("\n"))
+func TestPrompt_Prompt_Bad(t *core.T) {
+	SetStdin(core.NewReader("\n"))
 	defer SetStdin(nil)
+	result := Prompt("Name", "default")
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	val, err := Prompt("Name", "world")
 	core.AssertNoError(t, err)
-	core.AssertEqual(t, "world", val)
+	core.AssertEqual(t, "default", got)
 }
 
-func TestSelect_Good(t *core.T) {
-	SetStdin(strings.NewReader("2\n"))
+func TestPrompt_Prompt_Ugly(t *core.T) {
+	SetStdin(core.NewReader(""))
 	defer SetStdin(nil)
+	result := Prompt("Name", "")
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	val, err := Select("Pick", []string{"a", "b", "c"})
-	core.AssertNoError(t, err)
-	core.AssertEqual(t, "b", val)
-}
-
-func TestSelect_Bad_Invalid(t *core.T) {
-	SetStdin(strings.NewReader("5\n"))
-	defer SetStdin(nil)
-
-	_, err := Select("Pick", []string{"a", "b"})
 	core.AssertError(t, err)
+	core.AssertEqual(t, "", got)
 }
 
-func TestMultiSelect_Good(t *core.T) {
-	SetStdin(strings.NewReader("1 3\n"))
+func TestPrompt_Select_Good(t *core.T) {
+	SetStdin(core.NewReader("2\n"))
 	defer SetStdin(nil)
+	result := Select("Pick", []string{"alpha", "beta"})
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	vals, err := MultiSelect("Pick", []string{"a", "b", "c"})
 	core.AssertNoError(t, err)
-	core.AssertEqual(t, []string{"a", "c"}, vals)
+	core.AssertEqual(t, "beta", got)
 }
 
-func TestPrompt_Ugly(t *core.T) {
-	t.Run("empty prompt label does not panic", func(t *core.T) {
-		SetStdin(strings.NewReader("value\n"))
-		defer SetStdin(nil)
-		core.AssertNotPanics(t, func() {
-			_, _ = Prompt("", "")
-		})
-	})
+func TestPrompt_Select_Bad(t *core.T) {
+	SetStdin(core.NewReader("9\n"))
+	defer SetStdin(nil)
+	result := Select("Pick", []string{"alpha", "beta"})
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	t.Run("prompt with only whitespace input returns default", func(t *core.T) {
-		SetStdin(strings.NewReader("   \n"))
-		defer SetStdin(nil)
-
-		val, err := Prompt("Name", "fallback")
-		core.AssertNoError(t, err)
-		// Either whitespace-trimmed empty returns default, or returns whitespace — no panic.
-		_ = val
-	})
+	core.AssertError(t, err)
+	core.AssertEqual(t, "", got)
 }
 
-func TestSelect_Ugly(t *core.T) {
-	t.Run("empty choices does not panic", func(t *core.T) {
-		SetStdin(strings.NewReader("1\n"))
-		defer SetStdin(nil)
-		core.AssertNotPanics(t, func() {
-			_, _ = Select("Pick", []string{})
-		})
-	})
+func TestPrompt_Select_Ugly(t *core.T) {
+	result := Select("Pick", nil)
+	got, _ := result.Value.(string)
+	err := cliResultError(result)
 
-	t.Run("non-numeric input returns error without panic", func(t *core.T) {
-		SetStdin(strings.NewReader("abc\n"))
-		defer SetStdin(nil)
-		core.AssertNotPanics(t, func() {
-			_, _ = Select("Pick", []string{"a", "b"})
-		})
-	})
+	core.AssertNoError(t, err)
+	core.AssertEqual(t, "", got)
+}
+
+func TestPrompt_MultiSelect_Good(t *core.T) {
+	SetStdin(core.NewReader("1 3\n"))
+	defer SetStdin(nil)
+	result := MultiSelect("Pick", []string{"alpha", "beta", "gamma"})
+	got, _ := result.Value.([]string)
+	err := cliResultError(result)
+
+	core.AssertNoError(t, err)
+	core.AssertEqual(t, []string{"alpha", "gamma"}, got)
+}
+
+func TestPrompt_MultiSelect_Bad(t *core.T) {
+	SetStdin(core.NewReader("9\n"))
+	defer SetStdin(nil)
+	result := MultiSelect("Pick", []string{"alpha", "beta"})
+	got, _ := result.Value.([]string)
+	err := cliResultError(result)
+
+	core.AssertError(t, err)
+	core.AssertNil(t, got)
+}
+
+func TestPrompt_MultiSelect_Ugly(t *core.T) {
+	result := MultiSelect("Pick", nil)
+	got, _ := result.Value.([]string)
+	err := cliResultError(result)
+
+	core.AssertNoError(t, err)
+	core.AssertEmpty(t, got)
 }

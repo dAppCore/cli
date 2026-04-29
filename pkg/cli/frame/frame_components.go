@@ -1,8 +1,6 @@
 package frame
 
-import (
-	"strings"
-)
+import "dappco.re/go"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Built-in Region Components
@@ -26,7 +24,7 @@ func (s *statusLineModel) View(width, _ int) string {
 	for _, p := range s.pairs {
 		parts = append(parts, DimStyle.Render(compileGlyphs(p)))
 	}
-	line := strings.Join(parts, "  ")
+	line := core.Join("  ", parts...)
 	if width > 0 {
 		line = Truncate(line, width)
 	}
@@ -50,7 +48,7 @@ func (k *keyHintsModel) View(width, _ int) string {
 	for i, h := range k.hints {
 		parts[i] = DimStyle.Render(compileGlyphs(h))
 	}
-	line := strings.Join(parts, "  ")
+	line := core.Join("  ", parts...)
 	if width > 0 {
 		line = Truncate(line, width)
 	}
@@ -79,7 +77,7 @@ func (b *breadcrumbModel) View(width, _ int) string {
 			styled[i] = DimStyle.Render(part)
 		}
 	}
-	line := strings.Join(styled, DimStyle.Render(" > "))
+	line := core.Join(DimStyle.Render(" > "), styled...)
 	if width > 0 {
 		line = Truncate(line, width)
 	}

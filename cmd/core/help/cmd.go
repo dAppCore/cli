@@ -46,7 +46,7 @@ func helpAction(opts core.Options) core.Result {
 
 	topic, err := catalog.Get(topicID)
 	if err != nil {
-		return core.Fail(cli.Err("Error: %v", err))
+		return cli.Err("Error: %v", err)
 	}
 
 	renderTopic(topic)
