@@ -1,11 +1,10 @@
 package frame
 
 import (
-	"fmt"
-	"strings"
 	"sync"
 	"time"
 
+	"dappco.re/go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
@@ -337,7 +336,9 @@ func (f *Frame) updateFocusedLocked(msg tea.Msg) tea.Cmd {
 // Run renders the frame and blocks.
 func (f *Frame) Run() {
 	if !f.isTTY() {
-		_, _ = f.out.Write([]byte(f.String()))
+		if r := core.WriteString(f.out, f.String()); !r.OK {
+			core.Warn("frame write failed", "err", r.Error())
+		}
 		return
 	}
 	f.runLive()
@@ -367,7 +368,7 @@ func (f *Frame) String() string {
 		return ""
 	}
 	view = ansi.Strip(view)
-	if !strings.HasSuffix(view, "\n") {
+	if !core.HasSuffix(view, "\n") {
 		view += "\n"
 	}
 	return view
@@ -382,9 +383,10 @@ func (f *Frame) isTTY() bool {
 
 func (f *Frame) termSize() (int, int) {
 	if fd, ok := writerFileDescriptor(f.out); ok {
-		w, h, err := terminalSize(fd)
-		if err == nil {
-			return w, h
+		r := terminalSize(fd)
+		if r.OK {
+			size := r.Value.([]int)
+			return size[0], size[1]
 		}
 	}
 	return 80, 24
@@ -402,6 +404,8 @@ func (f *Frame) runLive() {
 	f.program = p
 
 	if _, err := p.Run(); err != nil {
-		_, _ = fmt.Fprintln(stderrWriter(), err.Error())
+		if r := core.WriteString(stderrWriter(), err.Error()+"\n"); !r.OK {
+			core.Warn("frame error write failed", "err", r.Error())
+		}
 	}
 }

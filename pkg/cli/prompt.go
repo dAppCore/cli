@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"io"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 func newReader() *bufio.Reader {
@@ -15,13 +15,17 @@ func newReader() *bufio.Reader {
 }
 
 // Prompt asks for text input with a default value.
-func Prompt(label, defaultVal string) (string, error) {
+func Prompt(label, defaultVal string) core.Result {
 	label = compileGlyphs(label)
 	defaultVal = compileGlyphs(defaultVal)
 	if defaultVal != "" {
-		io.WriteString(stderrWriter(), core.Sprintf("%s [%s]: ", label, defaultVal))
+		if r := core.WriteString(stderrWriter(), core.Sprintf("%s [%s]: ", label, defaultVal)); !r.OK {
+			return r
+		}
 	} else {
-		io.WriteString(stderrWriter(), core.Sprintf("%s: ", label))
+		if r := core.WriteString(stderrWriter(), core.Sprintf("%s: ", label)); !r.OK {
+			return r
+		}
 	}
 
 	r := newReader()
@@ -29,79 +33,89 @@ func Prompt(label, defaultVal string) (string, error) {
 	input = core.Trim(input)
 	if err != nil {
 		if !core.Is(err, io.EOF) {
-			return "", err
+			return core.Fail(err)
 		}
 		if input == "" {
 			if defaultVal != "" {
-				return defaultVal, nil
+				return core.Ok(defaultVal)
 			}
-			return "", err
+			return core.Fail(err)
 		}
 	}
 	if input == "" {
-		return defaultVal, nil
+		return core.Ok(defaultVal)
 	}
-	return input, nil
+	return core.Ok(input)
 }
 
 // Select presents numbered options and returns the selected value.
-func Select(label string, options []string) (string, error) {
+func Select(label string, options []string) core.Result {
 	if len(options) == 0 {
-		return "", nil
+		return core.Ok("")
 	}
 
 	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
 		core.Print(stderrWriter(), "  %d. %s", i+1, compileGlyphs(opt))
 	}
-	io.WriteString(stderrWriter(), core.Sprintf("Choose [1-%d]: ", len(options)))
+	if r := core.WriteString(stderrWriter(), core.Sprintf("Choose [1-%d]: ", len(options))); !r.OK {
+		return r
+	}
 
 	r := newReader()
 	input, err := r.ReadString('\n')
 	if err != nil && core.Trim(input) == "" {
 		promptHint("No input received. Selection cancelled.")
-		return "", Wrap(err, "selection cancelled")
+		return Wrap(err, "selection cancelled")
 	}
 
 	trimmed := core.Trim(input)
-	n, err := Atoi(trimmed)
-	if err != nil || n < 1 || n > len(options) {
+	parsed := Atoi(trimmed)
+	if !parsed.OK {
 		promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(options)))
-		return "", Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
+		return Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
 	}
-	return options[n-1], nil
+	n := parsed.Value.(int)
+	if n < 1 || n > len(options) {
+		promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(options)))
+		return Err("invalid selection %q: choose a number between 1 and %d", trimmed, len(options))
+	}
+	return core.Ok(options[n-1])
 }
 
 // MultiSelect presents checkboxes (space-separated numbers).
-func MultiSelect(label string, options []string) ([]string, error) {
+func MultiSelect(label string, options []string) core.Result {
 	if len(options) == 0 {
-		return []string{}, nil
+		return core.Ok([]string{})
 	}
 
 	core.Print(stderrWriter(), "%s", compileGlyphs(label))
 	for i, opt := range options {
 		core.Print(stderrWriter(), "  %d. %s", i+1, compileGlyphs(opt))
 	}
-	io.WriteString(stderrWriter(), core.Sprintf("Choose (space-separated) [1-%d]: ", len(options)))
+	if r := core.WriteString(stderrWriter(), core.Sprintf("Choose (space-separated) [1-%d]: ", len(options))); !r.OK {
+		return r
+	}
 
 	r := newReader()
 	input, err := r.ReadString('\n')
 	trimmed := core.Trim(input)
 	if err != nil && trimmed == "" {
-		return []string{}, nil
+		return core.Ok([]string{})
 	}
 	if err != nil && !core.Is(err, io.EOF) {
-		return nil, err
+		return core.Fail(err)
 	}
 
-	selected, parseErr := parseMultiSelection(trimmed, len(options))
-	if parseErr != nil {
-		return nil, Wrap(parseErr, core.Sprintf("invalid selection %q", trimmed))
+	selectedResult := parseMultiSelection(trimmed, len(options))
+	if !selectedResult.OK {
+		return Wrap(selectedResult.Value.(error), core.Sprintf("invalid selection %q", trimmed))
 	}
+	selected := selectedResult.Value.([]int)
 
 	selectedOptions := make([]string, 0, len(selected))
 	for _, idx := range selected {
 		selectedOptions = append(selectedOptions, options[idx])
 	}
-	return selectedOptions, nil
+	return core.Ok(selectedOptions)
 }

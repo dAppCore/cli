@@ -1,11 +1,9 @@
 package doctor
 
 import (
-	"os" // Note: AX-6 — os.UserHomeDir; released core has no home-directory primitive.
-
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	io "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -15,10 +13,11 @@ var environmentFS = (&core.Fs{}).New("/")
 // checkGitHubSSH checks if SSH keys exist for GitHub access.
 // Returns true if any standard SSH key file exists in ~/.ssh/.
 func checkGitHubSSH() bool {
-	home, err := os.UserHomeDir()
-	if err != nil {
+	homeResult := core.UserHomeDir()
+	if !homeResult.OK {
 		return false
 	}
+	home := homeResult.Value.(string)
 
 	sshDirectory := core.Path(home, ".ssh")
 	keyPatterns := []string{"id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"}
@@ -58,8 +57,10 @@ func checkWorkspace() {
 				basePath = core.Path(core.PathDir(registryPath), basePath)
 			}
 			if core.HasPrefix(basePath, "~/") {
-				home, _ := os.UserHomeDir()
-				basePath = core.Path(home, basePath[2:])
+				homeResult := core.UserHomeDir()
+				if homeResult.OK {
+					basePath = core.Path(homeResult.Value.(string), basePath[2:])
+				}
 			}
 
 			// Count existing repos.

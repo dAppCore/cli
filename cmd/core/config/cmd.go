@@ -1,7 +1,7 @@
 package config
 
 import (
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	"dappco.re/go/config"
 )
@@ -28,10 +28,10 @@ func AddConfigCommands(c *core.Core) {
 	})
 }
 
-func loadConfig() (*config.Config, error) {
+func loadConfig() core.Result {
 	configuration, err := config.New()
 	if err != nil {
-		return nil, cli.Wrap(err, "failed to load config")
+		return cli.Wrap(err, "failed to load config")
 	}
-	return configuration, nil
+	return core.Ok(configuration)
 }

@@ -5,9 +5,8 @@ import (
 	"io/fs"
 	"runtime/debug"
 
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
-	"dappco.re/go/log"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 //go:embed locales/*.json
@@ -19,10 +18,10 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X dappco.re/go/core/cli/pkg/cli.AppVersion=1.2.0 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildCommit=df94c24 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildDate=2026-02-06 \
-//	  -X dappco.re/go/core/cli/pkg/cli.BuildPreRelease=dev.8"
+//	go build -ldflags="-X dappco.re/go/cli/pkg/cli.AppVersion=1.2.0 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildCommit=df94c24 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildDate=2026-02-06 \
+//	  -X dappco.re/go/cli/pkg/cli.BuildPreRelease=dev.8"
 var (
 	AppVersion      = "0.0.0"
 	BuildCommit     = "unknown"
@@ -108,7 +107,7 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("recovered from panic", "error", r, "stack", string(debug.Stack()))
+			core.Error("recovered from panic", "error", r, "stack", string(debug.Stack()))
 			Shutdown()
 			Fatal(core.E("Main", core.Sprintf("panic: %v", r), nil))
 		}
@@ -124,12 +123,12 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 	}
 
 	// Initialise CLI runtime
-	if err := Init(Options{
+	if r := Init(Options{
 		AppName:     AppName,
 		Version:     SemVer(),
 		I18nSources: extraFS,
-	}); err != nil {
-		Error(err.Error())
+	}); !r.OK {
+		Error(r.Error())
 		core.Exit(1)
 	}
 	defer Shutdown()
@@ -149,13 +148,13 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 		setup(c)
 	}
 
-	if err := Execute(); err != nil {
+	if r := Execute(); !r.OK {
 		code := 1
 		var exitErr *ExitError
-		if As(err, &exitErr) {
+		if err, ok := r.Value.(error); ok && As(err, &exitErr) {
 			code = exitErr.Code
 		}
-		Error(err.Error())
+		Error(r.Error())
 		c.Exit(code)
 	}
 }

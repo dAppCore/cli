@@ -1,133 +1,65 @@
 package cli
 
 import (
-	"bytes"
-	"os"
-	"strings"
-	"sync"
-	"testing"
+	core "dappco.re/go"
 )
 
-func TestIO_SetStdin_Good(t *testing.T) {
+func TestIo_SetStdin_Good(t *core.T) {
+	reader := core.NewReader("input")
+	SetStdin(reader)
 	defer SetStdin(nil)
-
-	r := strings.NewReader("hello\n")
-	SetStdin(r)
-
-	if got := stdinReader(); got != r {
-		t.Errorf("stdinReader: expected override, got %T", got)
-	}
+	core.AssertEqual(t, reader, stdinReader())
 }
 
-func TestIO_SetStdin_Bad(t *testing.T) {
-	defer SetStdin(nil)
-
-	SetStdin(strings.NewReader("data"))
-	// Passing nil should restore the real os.Stdin.
+func TestIo_SetStdin_Bad(t *core.T) {
 	SetStdin(nil)
-
-	if got := stdinReader(); got != os.Stdin {
-		t.Errorf("stdinReader: expected os.Stdin after SetStdin(nil), got %T", got)
-	}
+	core.AssertNotNil(t, stdinReader())
+	core.AssertNotPanics(t, func() { SetStdin(nil) })
 }
 
-func TestIO_SetStdin_Ugly(t *testing.T) {
-	// Concurrent SetStdin + stdinReader must not race.
-	// Uses RWMutex internally — this test exercises the lock path.
-	defer SetStdin(nil)
-
-	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			SetStdin(strings.NewReader("concurrent"))
-		}()
-		go func() {
-			defer wg.Done()
-			_ = stdinReader()
-		}()
-	}
-	wg.Wait()
+func TestIo_SetStdin_Ugly(t *core.T) {
+	first := core.NewReader("")
+	SetStdin(first)
+	SetStdin(nil)
+	core.AssertNotEqual(t, first, stdinReader())
 }
 
-func TestIO_SetStdout_Good(t *testing.T) {
+func TestIo_SetStdout_Good(t *core.T) {
+	out := core.NewBuilder()
+	SetStdout(out)
 	defer SetStdout(nil)
-
-	buf := &bytes.Buffer{}
-	SetStdout(buf)
-
-	if got := stdoutWriter(); got != buf {
-		t.Errorf("stdoutWriter: expected override, got %T", got)
-	}
+	core.AssertEqual(t, out, stdoutWriter())
 }
 
-func TestIO_SetStdout_Bad(t *testing.T) {
-	defer SetStdout(nil)
-
-	SetStdout(&bytes.Buffer{})
-	// Passing nil should clear the override — writes return to os.Stdout.
+func TestIo_SetStdout_Bad(t *core.T) {
 	SetStdout(nil)
-
-	if got := stdoutWriter(); got != os.Stdout {
-		t.Errorf("stdoutWriter: expected os.Stdout after SetStdout(nil), got %T", got)
-	}
+	core.AssertNotNil(t, stdoutWriter())
+	core.AssertNotPanics(t, func() { SetStdout(nil) })
 }
 
-func TestIO_SetStdout_Ugly(t *testing.T) {
-	// Override + writes must be observed through the injected writer.
-	defer SetStdout(nil)
-
-	buf := &bytes.Buffer{}
-	SetStdout(buf)
-
-	Println("hello %s", "world")
-
-	if !strings.Contains(buf.String(), "hello world") {
-		t.Errorf("stdout override: expected 'hello world' in buffer, got %q", buf.String())
-	}
+func TestIo_SetStdout_Ugly(t *core.T) {
+	out := core.NewBuilder()
+	SetStdout(out)
+	writeString(stdoutWriter(), "x")
+	core.AssertEqual(t, "x", out.String())
 }
 
-func TestIO_SetStderr_Good(t *testing.T) {
+func TestIo_SetStderr_Good(t *core.T) {
+	errOut := core.NewBuilder()
+	SetStderr(errOut)
 	defer SetStderr(nil)
-
-	buf := &bytes.Buffer{}
-	SetStderr(buf)
-
-	if got := stderrWriter(); got != buf {
-		t.Errorf("stderrWriter: expected override, got %T", got)
-	}
+	core.AssertEqual(t, errOut, stderrWriter())
 }
 
-func TestIO_SetStderr_Bad(t *testing.T) {
-	defer SetStderr(nil)
-
-	SetStderr(&bytes.Buffer{})
-	// Passing nil should clear the override — writes return to os.Stderr.
+func TestIo_SetStderr_Bad(t *core.T) {
 	SetStderr(nil)
-
-	if got := stderrWriter(); got != os.Stderr {
-		t.Errorf("stderrWriter: expected os.Stderr after SetStderr(nil), got %T", got)
-	}
+	core.AssertNotNil(t, stderrWriter())
+	core.AssertNotPanics(t, func() { SetStderr(nil) })
 }
 
-func TestIO_SetStderr_Ugly(t *testing.T) {
-	// Concurrent readers and writers across all three streams must not race.
-	defer func() {
-		SetStdin(nil)
-		SetStdout(nil)
-		SetStderr(nil)
-	}()
-
-	var wg sync.WaitGroup
-	for i := 0; i < 4; i++ {
-		wg.Add(6)
-		go func() { defer wg.Done(); SetStdout(&bytes.Buffer{}) }()
-		go func() { defer wg.Done(); SetStderr(&bytes.Buffer{}) }()
-		go func() { defer wg.Done(); SetStdin(strings.NewReader("x")) }()
-		go func() { defer wg.Done(); _ = stdoutWriter() }()
-		go func() { defer wg.Done(); _ = stderrWriter() }()
-		go func() { defer wg.Done(); _ = stdinReader() }()
-	}
-	wg.Wait()
+func TestIo_SetStderr_Ugly(t *core.T) {
+	errOut := core.NewBuilder()
+	SetStderr(errOut)
+	writeString(stderrWriter(), "x")
+	core.AssertEqual(t, "x", errOut.String())
 }

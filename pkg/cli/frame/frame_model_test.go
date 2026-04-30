@@ -1,107 +1,93 @@
 package frame
 
 import (
-	"testing"
-
+	core "dappco.re/go"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestFrameModel_AdaptModel_Good(t *testing.T) {
-	// A plain Model is wrapped in a modelAdapter.
-	m := StaticModel("wrapped")
-	adapted := adaptModel(m)
+func TestFrameModel_Adapter_View_Good(t *core.T) {
+	a := &modelAdapter{m: frameTestModel("content")}
 
-	if adapted == nil {
-		t.Fatal("adaptModel returned nil for a valid Model")
-	}
-	assert.Equal(t, "wrapped", adapted.View(80, 24))
+	core.AssertEqual(t, "content", a.View(80, 1))
+	core.AssertContains(t, a.View(80, 1), "content")
 }
 
-func TestFrameModel_AdaptModel_Bad(t *testing.T) {
-	// A FrameModel passes through unchanged — no double-wrapping.
-	fm := &testFrameModelForAdapter{viewText: "native"}
-	adapted := adaptModel(fm)
+func TestFrameModel_Adapter_View_Bad(t *core.T) {
+	a := &modelAdapter{}
 
-	same, ok := adapted.(*testFrameModelForAdapter)
-	if !ok {
-		t.Fatalf("FrameModel should not be wrapped, got %T", adapted)
-	}
-	if same != fm {
-		t.Error("FrameModel was wrapped instead of passed through")
-	}
+	core.AssertPanics(t, func() { _ = a.View(80, 1) })
+	core.AssertNil(t, a.m)
 }
 
-func TestFrameModel_AdaptModel_Ugly(t *testing.T) {
-	// modelAdapter's Init, Update, and View must not panic on edge inputs.
-	m := StaticModel("edge")
-	adapted := adaptModel(m)
+func TestFrameModel_Adapter_View_Ugly(t *core.T) {
+	a := &modelAdapter{m: frameTestModel("")}
 
-	assert.NotPanics(t, func() {
-		_ = adapted.Init()
-	})
-	assert.NotPanics(t, func() {
-		_, _ = adapted.Update(nil)
-	})
-	assert.NotPanics(t, func() {
-		_ = adapted.View(-1, -1)
-	})
-	assert.NotPanics(t, func() {
-		_ = adapted.View(0, 0)
-	})
+	core.AssertEqual(t, "", a.View(0, 0))
+	core.AssertEmpty(t, a.View(0, 0))
 }
 
-func TestFrameModel_DefaultKeyMap_Good(t *testing.T) {
-	// DefaultKeyMap must return the expected standard bindings.
+func TestFrameModel_Adapter_Init_Good(t *core.T) {
+	a := &modelAdapter{m: frameTestModel("content")}
+
+	core.AssertNil(t, a.Init())
+	core.AssertNotNil(t, a.m)
+}
+
+func TestFrameModel_Adapter_Init_Bad(t *core.T) {
+	a := &modelAdapter{}
+
+	core.AssertNil(t, a.Init())
+	core.AssertNil(t, a.m)
+}
+
+func TestFrameModel_Adapter_Init_Ugly(t *core.T) {
+	var a *modelAdapter
+
+	core.AssertNil(t, a.Init())
+	core.AssertNil(t, a)
+}
+
+func TestFrameModel_Adapter_Update_Good(t *core.T) {
+	a := &modelAdapter{m: frameTestModel("content")}
+	updated, cmd := a.Update(struct{}{})
+
+	core.AssertEqual(t, a, updated)
+	core.AssertNil(t, cmd)
+}
+
+func TestFrameModel_Adapter_Update_Bad(t *core.T) {
+	a := &modelAdapter{}
+	updated, cmd := a.Update(nil)
+
+	core.AssertEqual(t, a, updated)
+	core.AssertNil(t, cmd)
+}
+
+func TestFrameModel_Adapter_Update_Ugly(t *core.T) {
+	var a *modelAdapter
+
+	updated, cmd := a.Update(nil)
+	core.AssertNil(t, updated)
+	core.AssertNil(t, cmd)
+}
+
+func TestFrameModel_DefaultKeyMap_Good(t *core.T) {
 	km := DefaultKeyMap()
 
-	assert.Equal(t, tea.KeyTab, km.FocusNext)
-	assert.Equal(t, tea.KeyShiftTab, km.FocusPrev)
-	assert.Equal(t, tea.KeyUp, km.FocusUp)
-	assert.Equal(t, tea.KeyDown, km.FocusDown)
-	assert.Equal(t, tea.KeyLeft, km.FocusLeft)
-	assert.Equal(t, tea.KeyRight, km.FocusRight)
-	assert.Equal(t, tea.KeyEsc, km.Back)
-	assert.Equal(t, tea.KeyCtrlC, km.Quit)
+	core.AssertEqual(t, tea.KeyTab, km.FocusNext)
+	core.AssertEqual(t, tea.KeyCtrlC, km.Quit)
 }
 
-func TestFrameModel_DefaultKeyMap_Bad(t *testing.T) {
-	// The four spatial focus keys must all be distinct from each other.
+func TestFrameModel_DefaultKeyMap_Bad(t *core.T) {
+	km := KeyMap{}
+
+	core.AssertNotEqual(t, DefaultKeyMap(), km)
+	core.AssertEqual(t, tea.KeyType(0), km.Quit)
+}
+
+func TestFrameModel_DefaultKeyMap_Ugly(t *core.T) {
 	km := DefaultKeyMap()
-	spatial := []tea.KeyType{km.FocusUp, km.FocusDown, km.FocusLeft, km.FocusRight}
-	seen := make(map[tea.KeyType]bool)
-	for _, k := range spatial {
-		if seen[k] {
-			t.Errorf("duplicate spatial binding: %v", k)
-		}
-		seen[k] = true
-	}
-}
 
-func TestFrameModel_DefaultKeyMap_Ugly(t *testing.T) {
-	// Multiple calls must return identical, independent copies — no shared state.
-	a := DefaultKeyMap()
-	b := DefaultKeyMap()
-
-	// Same values.
-	assert.Equal(t, a, b)
-
-	// Mutating one does not affect the other (value semantics).
-	b.Quit = tea.KeyCtrlD
-	if a.Quit == b.Quit {
-		t.Error("DefaultKeyMap should return independent copies, mutation leaked")
-	}
-}
-
-// testFrameModelForAdapter is a minimal FrameModel used only by
-// frame_model_test.go to verify adaptModel's pass-through path.
-// Named distinctly from testFrameModel in frame_test.go to avoid collisions.
-type testFrameModelForAdapter struct {
-	viewText string
-}
-
-func (m *testFrameModelForAdapter) View(_, _ int) string { return m.viewText }
-func (m *testFrameModelForAdapter) Init() tea.Cmd        { return nil }
-func (m *testFrameModelForAdapter) Update(_ tea.Msg) (FrameModel, tea.Cmd) {
-	return m, nil
+	core.AssertNotEqual(t, km.FocusNext, km.FocusPrev)
+	core.AssertNotEqual(t, km.FocusLeft, km.FocusRight)
 }

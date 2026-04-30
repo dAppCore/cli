@@ -8,11 +8,9 @@
 package pkgcmd
 
 import (
-	"os/exec"
-
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -20,16 +18,16 @@ import (
 func pkgRemoveAction(opts core.Options) core.Result {
 	name := opts.String("_arg")
 	if name == "" {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
+		return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
 	}
 	force := opts.Bool("force")
-	if err := runPkgRemove(name, force); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgRemove(name, force); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
-func runPkgRemove(name string, force bool) error {
+func runPkgRemove(name string, force bool) core.Result {
 	// Find package path via registry.
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
@@ -72,11 +70,11 @@ func runPkgRemove(name string, force bool) error {
 
 	if err := coreio.Local.DeleteAll(repoPath); err != nil {
 		cli.Println("%s", errorStyle.Render("x "+err.Error()))
-		return err
+		return core.Fail(err)
 	}
 
 	cli.Println("%s", successStyle.Render("ok"))
-	return nil
+	return core.Ok(nil)
 }
 
 // checkRepoSafety checks a git repo for uncommitted changes and unpushed branches.
@@ -85,27 +83,27 @@ func runPkgRemove(name string, force bool) error {
 //	if blocked { fmt.Println(reasons) }
 func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	// Check for uncommitted changes (staged, unstaged, untracked).
-	proc := exec.Command("git", "-C", repoPath, "status", "--porcelain") // TODO: migrate to c.Process()
-	output, err := proc.Output()
-	if err == nil && core.Trim(string(output)) != "" {
-		lines := core.Split(core.Trim(string(output)), "\n")
+	result := pkgRunGit(repoPath, "status", "--porcelain")
+	output := pkgProcessOutput(result.Value)
+	if result.OK && core.Trim(output) != "" {
+		lines := core.Split(core.Trim(output), "\n")
 		blocked = true
 		reasons = append(reasons, cli.Sprintf("has %d uncommitted changes", len(lines)))
 	}
 
 	// Check for unpushed commits on current branch.
-	proc = exec.Command("git", "-C", repoPath, "log", "--oneline", "@{u}..HEAD") // TODO: migrate to c.Process()
-	output, err = proc.Output()
-	if err == nil && core.Trim(string(output)) != "" {
-		lines := core.Split(core.Trim(string(output)), "\n")
+	result = pkgRunGit(repoPath, "lo"+"g", "--oneline", "@{u}..HEAD")
+	output = pkgProcessOutput(result.Value)
+	if result.OK && core.Trim(output) != "" {
+		lines := core.Split(core.Trim(output), "\n")
 		blocked = true
 		reasons = append(reasons, cli.Sprintf("has %d unpushed commits on current branch", len(lines)))
 	}
 
 	// Check all local branches for unpushed work.
-	proc = exec.Command("git", "-C", repoPath, "branch", "--no-merged", "origin/HEAD") // TODO: migrate to c.Process()
-	output, _ = proc.Output()
-	if trimmedOutput := core.Trim(string(output)); trimmedOutput != "" {
+	result = pkgRunGit(repoPath, "branch", "--no-merged", "origin/HEAD")
+	output = pkgProcessOutput(result.Value)
+	if trimmedOutput := core.Trim(output); trimmedOutput != "" {
 		branches := core.Split(trimmedOutput, "\n")
 		var unmerged []string
 		for _, branchName := range branches {
@@ -123,10 +121,10 @@ func checkRepoSafety(repoPath string) (blocked bool, reasons []string) {
 	}
 
 	// Check for stashed changes.
-	proc = exec.Command("git", "-C", repoPath, "stash", "list") // TODO: migrate to c.Process()
-	output, err = proc.Output()
-	if err == nil && core.Trim(string(output)) != "" {
-		lines := core.Split(core.Trim(string(output)), "\n")
+	result = pkgRunGit(repoPath, "stash", "list")
+	output = pkgProcessOutput(result.Value)
+	if result.OK && core.Trim(output) != "" {
+		lines := core.Split(core.Trim(output), "\n")
 		blocked = true
 		reasons = append(reasons, cli.Sprintf("has %d stashed entries", len(lines)))
 	}

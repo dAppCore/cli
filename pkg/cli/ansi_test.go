@@ -1,161 +1,235 @@
 package cli
 
 import (
-	"strings"
-	"testing"
+	core "dappco.re/go"
 )
 
-func TestAnsiStyle_Render(t *testing.T) {
-	// Ensure colors are enabled for this test
-	SetColorEnabled(true)
-	defer SetColorEnabled(true) // Reset after test
+func TestAnsi_AnsiStyle_Italic_Good(t *core.T) {
+	s := NewStyle().Italic()
 
-	s := NewStyle().Bold().Foreground("#ff0000")
-	got := s.Render("test")
-	if got == "test" {
-		t.Error("Expected styled output")
-	}
-	if !strings.Contains(got, "test") {
-		t.Error("Output should contain text")
-	}
-	if !strings.Contains(got, "[1m") {
-		t.Error("Output should contain bold code")
-	}
+	core.AssertTrue(t, s.italic)
+	core.AssertEqual(t, s, s.Italic())
 }
 
-func TestColorEnabled_Good(t *testing.T) {
-	// Save original state
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
-
-	// Test enabling
-	SetColorEnabled(true)
-	if !ColorEnabled() {
-		t.Error("ColorEnabled should return true")
-	}
-
-	// Test disabling
-	SetColorEnabled(false)
-	if ColorEnabled() {
-		t.Error("ColorEnabled should return false")
-	}
-}
-
-func TestRender_ColorDisabled_Good(t *testing.T) {
-	// Save original state
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
-
-	// Disable colors
-	SetColorEnabled(false)
-
-	s := NewStyle().Bold().Foreground("#ff0000")
-	got := s.Render("test")
-
-	// Should return plain text without ANSI codes
-	if got != "test" {
-		t.Errorf("Expected plain 'test', got %q", got)
-	}
-}
-
-func TestRender_ColorEnabled_Good(t *testing.T) {
-	// Save original state
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
-
-	// Enable colors
-	SetColorEnabled(true)
-
-	s := NewStyle().Bold()
-	got := s.Render("test")
-
-	// Should contain ANSI codes
-	if !strings.Contains(got, "\033[") {
-		t.Error("Expected ANSI codes when colors enabled")
-	}
-}
-
-func TestUseASCII_Good(t *testing.T) {
-	restoreThemeAndColors(t)
-
-	// Enable first, then UseASCII should disable colors
-	SetColorEnabled(true)
-	UseASCII()
-	if ColorEnabled() {
-		t.Error("UseASCII should disable colors")
-	}
-}
-
-func TestUseUnicodeAndEmojiRestoreColorsAfterASCII(t *testing.T) {
-	restoreThemeAndColors(t)
-
-	SetColorEnabled(true)
-	UseASCII()
-	if ColorEnabled() {
-		t.Fatal("UseASCII should disable colors")
-	}
-
-	UseUnicode()
-	if !ColorEnabled() {
-		t.Fatal("UseUnicode should restore colors after ASCII mode")
-	}
-
-	UseASCII()
-	if ColorEnabled() {
-		t.Fatal("UseASCII should disable colors again")
-	}
-
-	UseEmoji()
-	if !ColorEnabled() {
-		t.Fatal("UseEmoji should restore colors after ASCII mode")
-	}
-}
-
-func TestRender_NilStyle_Good(t *testing.T) {
-	restoreThemeAndColors(t)
+func TestAnsi_AnsiStyle_Italic_Bad(t *core.T) {
 	var s *AnsiStyle
-	got := s.Render("test")
-	if got != "test" {
-		t.Errorf("Nil style should return plain text, got %q", got)
-	}
+
+	core.AssertPanics(t, func() { s.Italic() })
+	core.AssertNil(t, s)
 }
 
-func TestAnsiStyle_Bad(t *testing.T) {
-	restoreThemeAndColors(t)
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
+func TestAnsi_AnsiStyle_Italic_Ugly(t *core.T) {
+	s := NewStyle().Italic().Italic()
 
-	// Invalid hex colour falls back to white (255,255,255).
-	SetColorEnabled(true)
-	style := NewStyle().Foreground("notahex")
-	got := style.Render("text")
-	if !strings.Contains(got, "text") {
-		t.Errorf("Invalid hex: expected 'text' in output, got %q", got)
-	}
-
-	// Short hex (less than 6 chars) also falls back.
-	style = NewStyle().Foreground("#abc")
-	got = style.Render("x")
-	if !strings.Contains(got, "x") {
-		t.Errorf("Short hex: expected 'x' in output, got %q", got)
-	}
+	core.AssertTrue(t, s.italic)
+	core.AssertFalse(t, s.underline)
 }
 
-func TestAnsiStyle_Ugly(t *testing.T) {
-	restoreThemeAndColors(t)
-	original := ColorEnabled()
-	defer SetColorEnabled(original)
+func TestAnsi_AnsiStyle_Underline_Good(t *core.T) {
+	s := NewStyle().Underline()
 
-	// All style modifiers stack without panicking.
+	core.AssertTrue(t, s.underline)
+	core.AssertEqual(t, s, s.Underline())
+}
+
+func TestAnsi_AnsiStyle_Underline_Bad(t *core.T) {
+	var s *AnsiStyle
+
+	core.AssertPanics(t, func() { s.Underline() })
+	core.AssertNil(t, s)
+}
+
+func TestAnsi_AnsiStyle_Underline_Ugly(t *core.T) {
+	s := NewStyle().Underline().Underline()
+
+	core.AssertTrue(t, s.underline)
+	core.AssertFalse(t, s.bold)
+}
+
+func TestAnsi_AnsiStyle_Background_Good(t *core.T) {
+	s := NewStyle().Background("#0000ff")
+
+	core.AssertContains(t, s.bg, "48;2;0;0;255")
+	core.AssertEqual(t, s, s.Background("#00ff00"))
+}
+
+func TestAnsi_AnsiStyle_Background_Bad(t *core.T) {
+	s := NewStyle().Background("bad")
+
+	core.AssertContains(t, s.bg, "255;255;255")
+	core.AssertNotEmpty(t, s.bg)
+}
+
+func TestAnsi_AnsiStyle_Background_Ugly(t *core.T) {
+	s := NewStyle().Background("")
+
+	core.AssertContains(t, s.bg, "255;255;255")
+	core.AssertNotEmpty(t, s.bg)
+}
+
+func TestAnsi_ColorEnabled_Good(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
 	SetColorEnabled(true)
-	style := NewStyle().Bold().Dim().Italic().Underline().
-		Foreground("#3b82f6").Background("#1f2937")
-	got := style.Render("styled")
-	if !strings.Contains(got, "styled") {
-		t.Errorf("All modifiers: expected 'styled' in output, got %q", got)
-	}
 
-	// Empty string renders without panicking.
-	got = style.Render("")
-	_ = got
+	core.AssertTrue(t, ColorEnabled())
+	core.AssertContains(t, NewStyle().Bold().Render("x"), "\033[")
+}
+
+func TestAnsi_ColorEnabled_Bad(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(false)
+
+	core.AssertFalse(t, ColorEnabled())
+	core.AssertEqual(t, "x", NewStyle().Bold().Render("x"))
+}
+
+func TestAnsi_ColorEnabled_Ugly(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(false)
+	SetColorEnabled(true)
+
+	core.AssertTrue(t, ColorEnabled())
+	core.AssertNotEqual(t, "x", NewStyle().Bold().Render("x"))
+}
+
+func TestAnsi_SetColorEnabled_Good(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(false)
+
+	core.AssertFalse(t, ColorEnabled())
+	core.AssertEqual(t, "plain", NewStyle().Foreground("#00ff00").Render("plain"))
+}
+
+func TestAnsi_SetColorEnabled_Bad(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(true)
+
+	core.AssertTrue(t, ColorEnabled())
+	core.AssertContains(t, NewStyle().Foreground("#00ff00").Render("plain"), "38;2;0;255;0")
+}
+
+func TestAnsi_SetColorEnabled_Ugly(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(false)
+	SetColorEnabled(false)
+
+	core.AssertFalse(t, ColorEnabled())
+	core.AssertEqual(t, "plain", NewStyle().Render("plain"))
+}
+
+func TestAnsi_NewStyle_Good(t *core.T) {
+	s := NewStyle()
+
+	core.AssertNotNil(t, s)
+	core.AssertEqual(t, "plain", s.Render("plain"))
+}
+
+func TestAnsi_NewStyle_Bad(t *core.T) {
+	s := NewStyle()
+
+	core.AssertFalse(t, s.bold)
+	core.AssertEmpty(t, s.fg)
+}
+
+func TestAnsi_NewStyle_Ugly(t *core.T) {
+	s := NewStyle().Bold().Dim()
+
+	core.AssertTrue(t, s.bold)
+	core.AssertTrue(t, s.dim)
+}
+
+func TestAnsi_AnsiStyle_Bold_Good(t *core.T) {
+	s := NewStyle().Bold()
+
+	core.AssertTrue(t, s.bold)
+	core.AssertEqual(t, s, s.Bold())
+}
+
+func TestAnsi_AnsiStyle_Bold_Bad(t *core.T) {
+	var s *AnsiStyle
+
+	core.AssertPanics(t, func() { s.Bold() })
+	core.AssertNil(t, s)
+}
+
+func TestAnsi_AnsiStyle_Bold_Ugly(t *core.T) {
+	s := NewStyle().Bold().Bold()
+
+	core.AssertTrue(t, s.bold)
+	core.AssertFalse(t, s.dim)
+}
+
+func TestAnsi_AnsiStyle_Dim_Good(t *core.T) {
+	s := NewStyle().Dim()
+
+	core.AssertTrue(t, s.dim)
+	core.AssertEqual(t, s, s.Dim())
+}
+
+func TestAnsi_AnsiStyle_Dim_Bad(t *core.T) {
+	var s *AnsiStyle
+
+	core.AssertPanics(t, func() { s.Dim() })
+	core.AssertNil(t, s)
+}
+
+func TestAnsi_AnsiStyle_Dim_Ugly(t *core.T) {
+	s := NewStyle().Dim().Dim()
+
+	core.AssertTrue(t, s.dim)
+	core.AssertFalse(t, s.bold)
+}
+
+func TestAnsi_AnsiStyle_Foreground_Good(t *core.T) {
+	s := NewStyle().Foreground("#0000ff")
+
+	core.AssertContains(t, s.fg, "38;2;0;0;255")
+	core.AssertEqual(t, s, s.Foreground("#00ff00"))
+}
+
+func TestAnsi_AnsiStyle_Foreground_Bad(t *core.T) {
+	s := NewStyle().Foreground("bad")
+
+	core.AssertContains(t, s.fg, "255;255;255")
+	core.AssertNotEmpty(t, s.fg)
+}
+
+func TestAnsi_AnsiStyle_Foreground_Ugly(t *core.T) {
+	s := NewStyle().Foreground("")
+
+	core.AssertContains(t, s.fg, "255;255;255")
+	core.AssertNotEmpty(t, s.fg)
+}
+
+func TestAnsi_AnsiStyle_Render_Good(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(true)
+
+	got := NewStyle().Bold().Render("ready")
+	core.AssertContains(t, got, "ready")
+	core.AssertContains(t, got, ansiReset)
+}
+
+func TestAnsi_AnsiStyle_Render_Bad(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(false)
+
+	got := NewStyle().Bold().Render("ready")
+	core.AssertEqual(t, "ready", got)
+	core.AssertNotContains(t, got, ansiReset)
+}
+
+func TestAnsi_AnsiStyle_Render_Ugly(t *core.T) {
+	got := NewStyle().Render("ready")
+
+	core.AssertEqual(t, "ready", got)
+	core.AssertNotContains(t, got, ansiReset)
 }

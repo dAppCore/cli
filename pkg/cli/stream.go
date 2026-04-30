@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -88,7 +88,7 @@ func (s *Stream) Write(text string) {
 }
 
 // WriteFrom reads from r and streams all content until EOF.
-func (s *Stream) WriteFrom(r Reader) error {
+func (s *Stream) WriteFrom(r Reader) core.Result {
 	buf := make([]byte, 256)
 	for {
 		n, err := r.Read(buf)
@@ -96,10 +96,10 @@ func (s *Stream) WriteFrom(r Reader) error {
 			s.Write(string(buf[:n]))
 		}
 		if isEOF(err) {
-			return nil
+			return core.Ok(nil)
 		}
 		if err != nil {
-			return err
+			return core.Fail(err)
 		}
 	}
 }

@@ -1,11 +1,8 @@
 package doctor
 
 import (
-	"context"
-
-	"dappco.re/go/core"
-	"dappco.re/go/core/process"
-	"dappco.re/go/i18n"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // check represents a tool check configuration
@@ -96,27 +93,8 @@ func optionalChecks() []check {
 //
 //	ok, version := runCheck(check{command: "git", args: []string{"--version"}})
 func runCheck(toolCheck check) (bool, string) {
-	ctx := context.Background()
-	processCore := core.New(core.WithService(process.Register))
-	if startup := processCore.ServiceStartup(ctx, nil); !startup.OK {
+	if !(core.App{}).Find(toolCheck.command, toolCheck.name).OK {
 		return false, ""
 	}
-	defer processCore.ServiceShutdown(context.Background())
-
-	result := processCore.Process().Run(ctx, toolCheck.command, toolCheck.args...)
-	if !result.OK {
-		return false, ""
-	}
-
-	output, ok := result.Value.(string)
-	if !ok {
-		return false, ""
-	}
-
-	// Extract first line as version info.
-	lines := core.Split(core.Trim(output), "\n")
-	if len(lines) > 0 {
-		return true, core.Trim(lines[0])
-	}
-	return true, ""
+	return true, toolCheck.command
 }

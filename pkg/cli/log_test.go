@@ -1,43 +1,113 @@
 package cli
 
-import "testing"
+import (
+	core "dappco.re/go"
+)
 
-func TestLog_Good(t *testing.T) {
-	// All log functions should not panic when called without a configured logger.
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("LogInfo panicked: %v", r)
-		}
-	}()
-	LogInfo("test info message", "key", "value")
+func TestLog_LogDebug_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogDebug("debug", "k", "v") })
+	core.AssertNotPanics(t, func() { LogDebug("") })
+	core.AssertNotPanics(t, func() { LogDebug("probe") })
 }
 
-func TestLog_Bad(t *testing.T) {
-	// LogError should not panic with an empty message.
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("LogError panicked: %v", r)
-		}
-	}()
-	LogError("")
+func TestLog_LogDebug_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogDebug("debug", "odd") })
+	core.AssertNotPanics(t, func() { LogDebug("debug", nil) })
+	core.AssertNotPanics(t, func() { LogDebug("probe") })
 }
 
-func TestLog_Ugly(t *testing.T) {
-	// All log levels should not panic.
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("log function panicked: %v", r)
-		}
-	}()
-	LogDebug("debug", "k", "v")
-	LogInfo("info", "k", "v")
-	LogWarn("warn", "k", "v")
-	LogError("error", "k", "v")
+func TestLog_LogDebug_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogDebug("debug\nline", "k", 1) })
+	core.AssertNotPanics(t, func() { LogDebug("probe") })
+	core.AssertNotPanics(t, func() { LogDebug("probe") })
+}
 
-	// Level constants should be accessible.
-	_ = LogLevelQuiet
-	_ = LogLevelError
-	_ = LogLevelWarn
-	_ = LogLevelInfo
-	_ = LogLevelDebug
+func TestLog_LogInfo_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogInfo("info", "k", "v") })
+	core.AssertNotPanics(t, func() { LogInfo("") })
+	core.AssertNotPanics(t, func() { LogInfo("probe") })
+}
+
+func TestLog_LogInfo_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogInfo("info", "odd") })
+	core.AssertNotPanics(t, func() { LogInfo("info", nil) })
+	core.AssertNotPanics(t, func() { LogInfo("probe") })
+}
+
+func TestLog_LogInfo_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogInfo("info\nline", "k", 1) })
+	core.AssertNotPanics(t, func() { LogInfo("probe") })
+	core.AssertNotPanics(t, func() { LogInfo("probe") })
+}
+
+func TestLog_LogWarn_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogWarn("warn", "k", "v") })
+	core.AssertNotPanics(t, func() { LogWarn("") })
+	core.AssertNotPanics(t, func() { LogWarn("probe") })
+}
+
+func TestLog_LogWarn_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogWarn("warn", "odd") })
+	core.AssertNotPanics(t, func() { LogWarn("warn", nil) })
+	core.AssertNotPanics(t, func() { LogWarn("probe") })
+}
+
+func TestLog_LogWarn_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogWarn("warn\nline", "k", 1) })
+	core.AssertNotPanics(t, func() { LogWarn("probe") })
+	core.AssertNotPanics(t, func() { LogWarn("probe") })
+}
+
+func TestLog_LogError_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogError("error", "k", "v") })
+	core.AssertNotPanics(t, func() { LogError("") })
+	core.AssertNotPanics(t, func() { LogError("probe") })
+}
+
+func TestLog_LogError_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogError("error", "odd") })
+	core.AssertNotPanics(t, func() { LogError("error", nil) })
+	core.AssertNotPanics(t, func() { LogError("probe") })
+}
+
+func TestLog_LogError_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogError("error\nline", "k", 1) })
+	core.AssertNotPanics(t, func() { LogError("probe") })
+	core.AssertNotPanics(t, func() { LogError("probe") })
+}
+
+func TestLog_LogSecurity_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurity("security", "k", "v") })
+	core.AssertNotPanics(t, func() { LogSecurity("") })
+	core.AssertNotPanics(t, func() { LogSecurity("probe") })
+}
+
+func TestLog_LogSecurity_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurity("security", "odd") })
+	core.AssertNotPanics(t, func() { LogSecurity("security", nil) })
+	core.AssertNotPanics(t, func() { LogSecurity("probe") })
+}
+
+func TestLog_LogSecurity_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurity("security\nline", "k", 1) })
+	core.AssertNotPanics(t, func() { LogSecurity("probe") })
+	core.AssertNotPanics(t, func() { LogSecurity("probe") })
+}
+
+func TestLog_LogSecurityf_Good(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurityf("security %s", "event") })
+	core.AssertNotPanics(t, func() { LogSecurityf("") })
+	core.AssertNotPanics(t, func() { LogSecurityf("probe") })
+}
+
+func TestLog_LogSecurityf_Bad(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurityf("%s", "bad") })
+	core.AssertNotPanics(t, func() { LogSecurityf("probe") })
+	core.AssertNotPanics(t, func() { LogSecurityf("probe") })
+}
+
+func TestLog_LogSecurityf_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { LogSecurityf("security\n%s", "event") })
+	core.AssertNotPanics(t, func() { LogSecurityf("probe") })
+	core.AssertNotPanics(t, func() { LogSecurityf("probe") })
 }

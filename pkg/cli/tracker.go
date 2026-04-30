@@ -1,13 +1,11 @@
 package cli
 
 import (
-	"io" // Note: AX-6 — io.Writer for tracker output.
 	"iter"
-	"os" // Note: AX-6 — os.File for tty detection.
 	"time"
 
+	"dappco.re/go"
 	"dappco.re/go/cli/internal/term"
-	"dappco.re/go/core"
 )
 
 var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
@@ -59,7 +57,7 @@ func (t *TrackedTask) snapshot() (string, string, taskState) {
 
 type TaskTracker struct {
 	tasks   []*TrackedTask
-	out     io.Writer
+	out     Writer
 	mu      core.Mutex
 	started bool
 }
@@ -97,7 +95,7 @@ func NewTaskTracker() *TaskTracker {
 	return &TaskTracker{out: stderrWriter()}
 }
 
-func (tr *TaskTracker) WithOutput(out io.Writer) *TaskTracker {
+func (tr *TaskTracker) WithOutput(out Writer) *TaskTracker {
 	if out != nil {
 		tr.out = out
 	}
@@ -121,8 +119,8 @@ func (tr *TaskTracker) Wait() {
 }
 
 func (tr *TaskTracker) isTTY() bool {
-	if f, ok := tr.out.(*os.File); ok {
-		return term.IsTerminal(int(f.Fd()))
+	if fd, ok := writerFileDescriptor(tr.out); ok {
+		return term.IsTerminal(fd)
 	}
 	return false
 }
@@ -184,7 +182,9 @@ func (tr *TaskTracker) waitLive() {
 		count := len(tr.tasks)
 		tr.mu.Unlock()
 
-		io.WriteString(tr.out, core.Sprintf("\033[%dA", count))
+		if r := core.WriteString(tr.out, core.Sprintf("\033[%dA", count)); !r.OK {
+			LogWarn("failed to move tracker cursor", "err", r.Error())
+		}
 		for i := range count {
 			tr.renderLine(i, frame)
 		}

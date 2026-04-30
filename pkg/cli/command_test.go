@@ -1,73 +1,76 @@
 package cli
 
 import (
-	"testing"
-
-	"dappco.re/go/core"
+	core "dappco.re/go"
 )
 
-func TestCommand_Good(t *testing.T) {
-	// RegisterCommand registers a command on Core.
+func TestCommand_RegisterCommand_Good(t *core.T) {
 	c := core.New()
-	RegisterCommand(c, "build", core.Command{
-		Description: "Build the project",
-		Action: func(_ core.Options) core.Result {
-			return core.Result{OK: true}
-		},
-	})
+	RegisterCommand(c, "hello", core.Command{Description: "Hello"})
 
-	r := c.Command("build")
-	if !r.OK {
-		t.Fatal("RegisterCommand: command not found after registration")
-	}
-
-	cmd := r.Value.(*core.Command)
-	if cmd.Name != "build" {
-		t.Errorf("RegisterCommand: Name=%q, expected 'build'", cmd.Name)
-	}
+	core.AssertTrue(t, c.Command("hello").OK)
+	core.AssertContains(t, c.Command("hello").Value.(*core.Command).Description, "Hello")
 }
 
-func TestCommand_Bad(t *testing.T) {
-	// RequireArgs with no args should return error message.
-	opts := core.NewOptions()
-	msg := RequireArgs(opts, 1)
-	if msg == "" {
-		t.Error("RequireArgs: should return error message when no args present")
-	}
+func TestCommand_RegisterCommand_Bad(t *core.T) {
+	var c *core.Core
 
-	// RequireArgs with args should return empty.
-	opts.Set("_arg", "value")
-	msg = RequireArgs(opts, 1)
-	if msg != "" {
-		t.Errorf("RequireArgs: should return empty string when args present, got %q", msg)
-	}
+	core.AssertPanics(t, func() { RegisterCommand(c, "hello", core.Command{}) })
+	core.AssertNil(t, c)
 }
 
-func TestCommand_Ugly(t *testing.T) {
-	// RequireExactArgs with 0 and no arg should pass.
-	opts := core.NewOptions()
-	msg := RequireExactArgs(opts, 0)
-	if msg != "" {
-		t.Errorf("RequireExactArgs(0): expected empty, got %q", msg)
-	}
-
-	// RequireExactArgs with 0 but arg present should fail.
-	opts.Set("_arg", "unexpected")
-	msg = RequireExactArgs(opts, 0)
-	if msg == "" {
-		t.Error("RequireExactArgs(0): should fail when args present")
-	}
-
-	// Path-based nested commands work.
+func TestCommand_RegisterCommand_Ugly(t *core.T) {
 	c := core.New()
-	RegisterCommand(c, "deploy/to/homelab", core.Command{
-		Description: "Deploy to homelab",
-		Action: func(_ core.Options) core.Result {
-			return core.Result{OK: true}
-		},
-	})
-	r := c.Command("deploy/to/homelab")
-	if !r.OK {
-		t.Error("RegisterCommand: nested path command not found")
-	}
+	RegisterCommand(c, "root", core.Command{Description: "Root"})
+
+	core.AssertTrue(t, c.Command("root").OK)
+	core.AssertNotNil(t, c.Command("root").Value)
+}
+
+func TestCommand_RequireArgs_Good(t *core.T) {
+	opts := core.NewOptions(core.Option{Key: "_arg", Value: "config"})
+	got := RequireArgs(opts, 1)
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
+}
+
+func TestCommand_RequireArgs_Bad(t *core.T) {
+	opts := core.NewOptions()
+	got := RequireArgs(opts, 1)
+
+	core.AssertContains(t, got, "requires")
+	core.AssertContains(t, got, "1")
+}
+
+func TestCommand_RequireArgs_Ugly(t *core.T) {
+	opts := core.NewOptions()
+	got := RequireArgs(opts, 0)
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
+}
+
+func TestCommand_RequireExactArgs_Good(t *core.T) {
+	opts := core.NewOptions(core.Option{Key: "_arg", Value: "config"})
+	got := RequireExactArgs(opts, 1)
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
+}
+
+func TestCommand_RequireExactArgs_Bad(t *core.T) {
+	opts := core.NewOptions(core.Option{Key: "_arg", Value: "extra"})
+	got := RequireExactArgs(opts, 0)
+
+	core.AssertContains(t, got, "accepts no arguments")
+	core.AssertNotEmpty(t, got)
+}
+
+func TestCommand_RequireExactArgs_Ugly(t *core.T) {
+	opts := core.NewOptions()
+	got := RequireExactArgs(opts, 0)
+
+	core.AssertEqual(t, "", got)
+	core.AssertEmpty(t, got)
 }

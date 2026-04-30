@@ -1,7 +1,7 @@
 package help
 
 import (
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	"dappco.re/go/help"
 )
@@ -24,13 +24,13 @@ func helpAction(opts core.Options) core.Result {
 		results := catalog.Search(search)
 		if len(results) == 0 {
 			cli.Println("No topics found.")
-			return core.Result{OK: true}
+			return core.Ok(nil)
 		}
 		cli.Println("Search Results:")
 		for _, result := range results {
 			cli.Println("  %s - %s", result.Topic.ID, result.Topic.Title)
 		}
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 
 	// Check for topic argument
@@ -41,16 +41,16 @@ func helpAction(opts core.Options) core.Result {
 		for _, topic := range topics {
 			cli.Println("  %s - %s", topic.ID, topic.Title)
 		}
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 
 	topic, err := catalog.Get(topicID)
 	if err != nil {
-		return core.Result{Value: cli.Err("Error: %v", err), OK: false}
+		return cli.Err("Error: %v", err)
 	}
 
 	renderTopic(topic)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func renderTopic(topic *help.Topic) {

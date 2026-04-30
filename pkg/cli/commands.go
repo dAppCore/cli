@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"iter"
 
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // WithCommands returns a CommandSetup that registers a command group.
@@ -33,7 +33,7 @@ func WithCommands(name string, register CommandRegistration, localeFS ...fs.FS) 
 //	        Description: "Ping API",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println("pong")
-//	            return core.Result{OK: true}
+//	            return core.Ok(nil)
 //	        },
 //	    })
 //	}
@@ -60,7 +60,7 @@ var (
 //	        Description: "Show version",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println(cli.SemVer())
-//	            return core.Result{OK: true}
+//	            return core.Ok(nil)
 //	        },
 //	    })
 //	})
@@ -115,8 +115,8 @@ func loadLocaleSources(sources ...LocaleSource) {
 		if src.FS == nil {
 			continue
 		}
-		if err := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); err != nil {
-			LogDebug("failed to load locale source", "dir", src.Dir, "err", err)
+		if r := svc.AddLoader(i18n.NewFSLoader(src.FS, src.Dir)); !r.OK {
+			LogDebug("failed to load locale source", "dir", src.Dir, "err", r.Error())
 		}
 	}
 }

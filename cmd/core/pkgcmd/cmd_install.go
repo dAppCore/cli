@@ -2,11 +2,10 @@ package pkgcmd
 
 import (
 	"context"
-	"os"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -14,17 +13,17 @@ import (
 func pkgInstallAction(opts core.Options) core.Result {
 	repoArg := opts.String("_arg")
 	if repoArg == "" {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.repo_required")), OK: false}
+		return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
 	}
 	targetDir := opts.String("dir")
 	addToReg := opts.Bool("add")
-	if err := runPkgInstall(repoArg, targetDir, addToReg); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgInstall(repoArg, targetDir, addToReg); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
-func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
+func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) core.Result {
 	ctx := context.Background()
 
 	// Parse org/repo argument.
@@ -53,15 +52,17 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
 	}
 
 	if core.HasPrefix(targetDirectory, "~/") {
-		home, _ := os.UserHomeDir()
-		targetDirectory = core.Path(home, targetDirectory[2:])
+		homeResult := core.UserHomeDir()
+		if homeResult.OK {
+			targetDirectory = core.Path(homeResult.Value.(string), targetDirectory[2:])
+		}
 	}
 
 	repoPath := core.Path(targetDirectory, repoName)
 
 	if coreio.Local.Exists(core.Path(repoPath, ".git")) {
 		cli.Println("%s %s", dimStyle.Render(i18n.Label("skip")), i18n.T("cmd.pkg.install.already_exists", map[string]string{"Name": repoName, "Path": repoPath}))
-		return nil
+		return core.Ok(nil)
 	}
 
 	if err := coreio.Local.EnsureDir(targetDirectory); err != nil {
@@ -73,16 +74,16 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
 	cli.Blank()
 
 	cli.Print("  %s... ", dimStyle.Render(i18n.T("common.status.cloning")))
-	err := gitClone(ctx, org, repoName, repoPath)
-	if err != nil {
-		cli.Println("%s", errorStyle.Render("x "+err.Error()))
-		return err
+	cloneResult := gitClone(ctx, org, repoName, repoPath)
+	if !cloneResult.OK {
+		cli.Println("%s", errorStyle.Render("x "+cloneResult.Error()))
+		return cloneResult
 	}
 	cli.Println("%s", successStyle.Render("ok"))
 
 	if addToRegistry {
-		if err := addToRegistryFile(org, repoName); err != nil {
-			cli.Println("  %s %s: %s", errorStyle.Render("x"), i18n.T("cmd.pkg.install.add_to_registry"), err)
+		if r := addToRegistryFile(org, repoName); !r.OK {
+			cli.Println("  %s %s: %s", errorStyle.Render("x"), i18n.T("cmd.pkg.install.add_to_registry"), r.Error())
 		} else {
 			cli.Println("  %s %s", successStyle.Render("ok"), i18n.T("cmd.pkg.install.added_to_registry"))
 		}
@@ -91,10 +92,10 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) error {
 	cli.Blank()
 	cli.Println("%s %s", successStyle.Render(i18n.T("i18n.done.install")), i18n.T("cmd.pkg.install.installed", map[string]string{"Name": repoName}))
 
-	return nil
+	return core.Ok(nil)
 }
 
-func addToRegistryFile(org, repoName string) error {
+func addToRegistryFile(org, repoName string) core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
@@ -102,16 +103,16 @@ func addToRegistryFile(org, repoName string) error {
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return err
+		return core.Fail(err)
 	}
 
 	if _, exists := registry.Get(repoName); exists {
-		return nil
+		return core.Ok(nil)
 	}
 
 	content, err := coreio.Local.Read(registryPath)
 	if err != nil {
-		return err
+		return core.Fail(err)
 	}
 
 	repoType := detectRepoType(repoName)
@@ -119,7 +120,10 @@ func addToRegistryFile(org, repoName string) error {
 		repoName, repoType)
 
 	content += entry
-	return coreio.Local.Write(registryPath, content)
+	if err := coreio.Local.Write(registryPath, content); err != nil {
+		return core.Fail(err)
+	}
+	return core.Ok(nil)
 }
 
 func detectRepoType(name string) string {

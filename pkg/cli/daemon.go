@@ -2,8 +2,7 @@
 package cli
 
 import (
-	"os"
-
+	"dappco.re/go"
 	"dappco.re/go/cli/internal/term"
 )
 
@@ -45,7 +44,7 @@ func (m Mode) String() string {
 //	// cli.ModePipe when stdout is not a terminal
 //	// cli.ModeInteractive otherwise
 func DetectMode() Mode {
-	if os.Getenv("CORE_DAEMON") == "1" {
+	if core.Getenv("CORE_DAEMON") == "1" {
 		return ModeDaemon
 	}
 	if !IsTTY() {
@@ -60,8 +59,8 @@ func DetectMode() Mode {
 //	    cli.Success("interactive output enabled")
 //	}
 func IsTTY() bool {
-	if f, ok := stdoutWriter().(*os.File); ok {
-		return term.IsTerminal(int(f.Fd()))
+	if fd, ok := writerFileDescriptor(stdoutWriter()); ok {
+		return term.IsTerminal(fd)
 	}
 	return false
 }
@@ -72,8 +71,8 @@ func IsTTY() bool {
 //	    cli.Warn("input is piped")
 //	}
 func IsStdinTTY() bool {
-	if f, ok := stdinReader().(*os.File); ok {
-		return term.IsTerminal(int(f.Fd()))
+	if fd, ok := writerFileDescriptor(stdinReader()); ok {
+		return term.IsTerminal(fd)
 	}
 	return false
 }
@@ -84,8 +83,8 @@ func IsStdinTTY() bool {
 //	    cli.Progress("load", 1, 3, "config")
 //	}
 func IsStderrTTY() bool {
-	if f, ok := stderrWriter().(*os.File); ok {
-		return term.IsTerminal(int(f.Fd()))
+	if fd, ok := writerFileDescriptor(stderrWriter()); ok {
+		return term.IsTerminal(fd)
 	}
 	return false
 }

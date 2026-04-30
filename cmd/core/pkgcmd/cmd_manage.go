@@ -1,23 +1,23 @@
 package pkgcmd
 
 import (
-	"os/exec"
+	"syscall"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
 
 func pkgListAction(_ core.Options) core.Result {
-	if err := runPkgList(); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgList(); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
-func runPkgList() error {
+func runPkgList() core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml_workspace"))
@@ -39,7 +39,7 @@ func runPkgList() error {
 	allRepos := registry.List()
 	if len(allRepos) == 0 {
 		cli.Println("%s", i18n.T("cmd.pkg.list.no_packages"))
-		return nil
+		return core.Ok(nil)
 	}
 
 	cli.Println("%s\n", repoNameStyle.Render(i18n.T("cmd.pkg.list.title")))
@@ -78,7 +78,7 @@ func runPkgList() error {
 		cli.Println("\n%s %s", i18n.T("cmd.pkg.list.install_missing"), dimStyle.Render("core setup"))
 	}
 
-	return nil
+	return core.Ok(nil)
 }
 
 func pkgUpdateAction(opts core.Options) core.Result {
@@ -89,15 +89,15 @@ func pkgUpdateAction(opts core.Options) core.Result {
 		packages = append(packages, pkg)
 	}
 	if !all && len(packages) == 0 {
-		return core.Result{Value: cli.Err(i18n.T("cmd.pkg.error.specify_package")), OK: false}
+		return cli.Err(i18n.T("cmd.pkg.error.specify_package"))
 	}
-	if err := runPkgUpdate(packages, all); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgUpdate(packages, all); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
-func runPkgUpdate(packages []string, all bool) error {
+func runPkgUpdate(packages []string, all bool) core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
@@ -139,16 +139,16 @@ func runPkgUpdate(packages []string, all bool) error {
 
 		cli.Print("  %s %s... ", dimStyle.Render("v"), name)
 
-		proc := exec.Command("git", "-C", repoPath, "pull", "--ff-only") // TODO: migrate to c.Process()
-		output, err := proc.CombinedOutput()
-		if err != nil {
+		result := pkgRunGit(repoPath, "pull", "--ff-only")
+		output := pkgProcessOutput(result.Value)
+		if !result.OK {
 			cli.Println("%s", errorStyle.Render("x"))
-			cli.Println("      %s", core.Trim(string(output)))
+			cli.Println("      %s", core.Trim(output))
 			failed++
 			continue
 		}
 
-		if core.Contains(string(output), "Already up to date") {
+		if core.Contains(output, "Already up to date") {
 			cli.Println("%s", dimStyle.Render(i18n.T("common.status.up_to_date")))
 		} else {
 			cli.Println("%s", successStyle.Render("ok"))
@@ -160,17 +160,17 @@ func runPkgUpdate(packages []string, all bool) error {
 	cli.Println("%s %s",
 		dimStyle.Render(i18n.T("i18n.done.update")), i18n.T("cmd.pkg.update.summary", map[string]int{"Updated": updated, "Skipped": skipped, "Failed": failed}))
 
-	return nil
+	return core.Ok(nil)
 }
 
 func pkgOutdatedAction(_ core.Options) core.Result {
-	if err := runPkgOutdated(); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgOutdated(); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
-func runPkgOutdated() error {
+func runPkgOutdated() core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
 		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
@@ -202,16 +202,17 @@ func runPkgOutdated() error {
 		}
 
 		// Fetch updates silently.
-		_ = exec.Command("git", "-C", repoPath, "fetch", "--quiet").Run() // TODO: migrate to c.Process()
+		if r := pkgRunGit(repoPath, "fetch", "--quiet"); !r.OK {
+			cli.LogWarn("failed to fetch package updates", "repo", repo.Name, "err", r.Error())
+		}
 
 		// Check commit count behind upstream.
-		proc := exec.Command("git", "-C", repoPath, "rev-list", "--count", "HEAD..@{u}") // TODO: migrate to c.Process()
-		output, err := proc.Output()
-		if err != nil {
+		result := pkgRunGit(repoPath, "rev-list", "--count", "HEAD..@{u}")
+		if !result.OK {
 			continue
 		}
 
-		commitCount := core.Trim(string(output))
+		commitCount := core.Trim(pkgProcessOutput(result.Value))
 		if commitCount != "0" {
 			cli.Println("  %s %s (%s)",
 				errorStyle.Render("v"), repoNameStyle.Render(repo.Name), i18n.T("cmd.pkg.outdated.commits_behind", map[string]string{"Count": commitCount}))
@@ -232,5 +233,103 @@ func runPkgOutdated() error {
 		cli.Println("\n%s %s", i18n.T("cmd.pkg.outdated.update_with"), dimStyle.Render("core pkg update --all"))
 	}
 
-	return nil
+	return core.Ok(nil)
+}
+
+func pkgRunGit(dir string, args ...string) core.Result {
+	return pkgRunProcess(dir, "git", args...)
+}
+
+func pkgProcessOutput(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	case error:
+		return v.Error()
+	case nil:
+		return ""
+	default:
+		return core.Sprint(v)
+	}
+}
+
+func pkgRunProcess(dir, command string, args ...string) core.Result {
+	commandResult := pkgFindExecutable(command)
+	if !commandResult.OK {
+		return commandResult
+	}
+	commandPath := commandResult.Value.(string)
+
+	var pipe [2]int
+	if err := syscall.Pipe(pipe[:]); err != nil {
+		return core.Fail(err)
+	}
+	readFD, writeFD := pipe[0], pipe[1]
+	defer syscall.Close(readFD)
+
+	argv := append([]string{commandPath}, args...)
+	pid, err := syscall.ForkExec(commandPath, argv, &syscall.ProcAttr{
+		Dir:   dir,
+		Env:   core.Environ(),
+		Files: []uintptr{0, uintptr(writeFD), uintptr(writeFD)},
+	})
+	syscall.Close(writeFD)
+	if err != nil {
+		return core.Fail(err)
+	}
+
+	out := core.NewBuilder()
+	buf := make([]byte, 4096)
+	for {
+		n, readErr := syscall.Read(readFD, buf)
+		if n > 0 {
+			out.WriteString(string(buf[:n]))
+		}
+		if readErr != nil {
+			if readErr == syscall.EINTR {
+				continue
+			}
+			break
+		}
+		if n == 0 {
+			break
+		}
+	}
+
+	var status syscall.WaitStatus
+	if _, err := syscall.Wait4(pid, &status, 0, nil); err != nil {
+		return core.Fail(err)
+	}
+	output := out.String()
+	if status.ExitStatus() == 0 {
+		return core.Ok(output)
+	}
+	if output != "" {
+		return core.Fail(core.NewError(output))
+	}
+	return core.Fail(core.E("pkg.process", core.Sprintf("%s exited with status %d", command, status.ExitStatus()), nil))
+}
+
+func pkgFindExecutable(command string) core.Result {
+	if command == "" {
+		return core.Fail(core.NewError("empty command"))
+	}
+	if core.Contains(command, string(core.PathSeparator)) {
+		if r := core.Stat(command); r.OK {
+			return core.Ok(command)
+		}
+		return core.Fail(core.E("pkg.process", core.Concat("command not found: ", command), nil))
+	}
+	for _, dir := range core.Split(core.Getenv("PATH"), string(core.PathListSeparator)) {
+		if dir == "" {
+			continue
+		}
+		candidate := core.PathJoin(dir, command)
+		if r := core.Stat(candidate); r.OK {
+			return core.Ok(candidate)
+		}
+	}
+	return core.Fail(core.E("pkg.process", core.Concat("command not found: ", command), nil))
 }

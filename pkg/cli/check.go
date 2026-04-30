@@ -12,7 +12,7 @@ type CheckBuilder struct {
 // Check starts building a check result line.
 //
 //	cli.Check("audit").Pass()
-//	cli.Check("fmt").Fail().Duration("2.3s")
+//	cli.Check("format").Fail().Duration("2.3s")
 //	cli.Check("test").Skip()
 func Check(name string) *CheckBuilder {
 	return &CheckBuilder{name: name}

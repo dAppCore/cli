@@ -15,11 +15,9 @@ package cli
 
 import (
 	"context"
-	"os"        // Note: signal handling exception; released core lacks OnSignal.
-	"os/signal" // Note: signal handling exception; paired with os.Signal.
 	"time"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 	"golang.org/x/sys/unix"
 )
 
@@ -60,14 +58,14 @@ type Options struct {
 //
 // Example:
 //
-//	err := cli.Init(cli.Options{AppName: "core"})
-//	if err != nil { panic(err) }
+//	r := cli.Init(cli.Options{AppName: "core"})
+//	if !r.OK { panic(r.Error()) }
 //	defer cli.Shutdown()
-func Init(opts Options) error {
+func Init(opts Options) core.Result {
 	initLock.Mutex.Lock()
 	defer initLock.Mutex.Unlock()
 	if instance != nil {
-		return nil
+		return core.Ok(nil)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -82,25 +80,31 @@ func Init(opts Options) error {
 	// Register signal service
 	signalSvc := &signalService{
 		cancel:   cancel,
-		sigChan:  make(chan os.Signal, 1),
+		sigChan:  make(chan unix.Signal, 1),
 		stopLock: c.Lock("cli.signal.stop"),
 	}
 	if opts.OnReload != nil {
 		signalSvc.onReload = opts.OnReload
 	}
-	c.Service("signal", core.Service{
+	if r := c.Service("signal", core.Service{
 		OnStart: func() core.Result {
 			return signalSvc.start(ctx)
 		},
 		OnStop: func() core.Result {
 			return signalSvc.stop()
 		},
-	})
+	}); !r.OK {
+		cancel()
+		return r
+	}
 
 	// Register additional services
 	for _, svc := range opts.Services {
 		if svc.Name != "" {
-			c.Service(svc.Name, svc)
+			if r := c.Service(svc.Name, svc); !r.OK {
+				cancel()
+				return r
+			}
 		}
 	}
 
@@ -112,17 +116,14 @@ func Init(opts Options) error {
 
 	r := c.ServiceStartup(ctx, nil)
 	if !r.OK {
-		if err, ok := r.Value.(error); ok {
-			return err
-		}
-		return nil
+		return r
 	}
 
 	loadLocaleSources(opts.I18nSources...)
 
 	// Attach registered commands AFTER Core startup so i18n is available
 	attachRegisteredCommands(c)
-	return nil
+	return core.Ok(nil)
 }
 
 func mustInit() {
@@ -140,26 +141,24 @@ func Core() *core.Core {
 }
 
 // Execute runs the CLI via core.Cli().Run().
-// Returns an error if the command fails.
+// Returns a Result when the command fails.
 //
 // Example:
 //
-//	if err := cli.Execute(); err != nil {
-//		cli.Warn("command failed:", "err", err)
+//	if r := cli.Execute(); !r.OK {
+//		cli.Warn("command failed:", "err", r.Error())
 //	}
-func Execute() error {
+func Execute() core.Result {
 	mustInit()
 	cl := instance.core.Cli()
 	if cl == nil {
-		return core.E("cli.Execute", "CLI service not available", nil)
+		return core.Fail(core.E("cli.Execute", "CLI service not available", nil))
 	}
 	result := cl.Run()
 	if !result.OK {
-		if err, ok := result.Value.(error); ok {
-			return err
-		}
+		return result
 	}
-	return nil
+	return core.Ok(nil)
 }
 
 // Run executes the CLI and watches an external context for cancellation.
@@ -170,29 +169,29 @@ func Execute() error {
 //
 //	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 //	defer cancel()
-//	if err := cli.Run(ctx); err != nil {
-//		cli.Error(err.Error())
+//	if r := cli.Run(ctx); !r.OK {
+//		cli.Error(r.Error())
 //	}
-func Run(ctx context.Context) error {
+func Run(ctx context.Context) core.Result {
 	mustInit()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	errCh := make(chan error, 1)
+	resultCh := make(chan core.Result, 1)
 	go func() {
-		errCh <- Execute()
+		resultCh <- Execute()
 	}()
 
 	select {
-	case err := <-errCh:
-		return err
+	case r := <-resultCh:
+		return r
 	case <-ctx.Done():
 		Shutdown()
-		if err := <-errCh; err != nil {
-			return err
+		if r := <-resultCh; !r.OK {
+			return r
 		}
-		return ctx.Err()
+		return core.Fail(ctx.Err())
 	}
 }
 
@@ -247,26 +246,22 @@ func Shutdown() {
 		return
 	}
 	instance.cancel()
-	_ = instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx))
+	if r := instance.core.ServiceShutdown(context.WithoutCancel(instance.ctx)); !r.OK {
+		LogWarn("CLI service shutdown failed", "err", r.Error())
+	}
 }
 
 // --- Signal Srv (internal) ---
 
 type signalService struct {
 	cancel   context.CancelFunc
-	sigChan  chan os.Signal
+	sigChan  chan unix.Signal
 	onReload func() error
 	stopLock *core.Lock
 	stopped  bool
 }
 
 func (s *signalService) start(ctx context.Context) core.Result {
-	signals := []os.Signal{unix.SIGINT, unix.SIGTERM}
-	if s.onReload != nil {
-		signals = append(signals, unix.SIGHUP)
-	}
-	signal.Notify(s.sigChan, signals...)
-
 	go func() {
 		for {
 			select {
@@ -293,17 +288,16 @@ func (s *signalService) start(ctx context.Context) core.Result {
 		}
 	}()
 
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 func (s *signalService) stop() core.Result {
 	s.stopLock.Mutex.Lock()
 	defer s.stopLock.Mutex.Unlock()
 	if s.stopped {
-		return core.Result{OK: true}
+		return core.Ok(nil)
 	}
 	s.stopped = true
-	signal.Stop(s.sigChan)
 	close(s.sigChan)
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }

@@ -2,14 +2,12 @@ package cli
 
 import (
 	"context"
-	"io"       // Note: AX-6 — io.Reader/Writer.
 	"net"      // Note: AX-6 — daemon HTTP server boundary.
 	"net/http" // Note: AX-6 — daemon HTTP server boundary.
-	"os"       // Note: AX-6 — process control.
 	"syscall"  // Note: AX-6 — SIGTERM/SIGINT signal handling.
 	"time"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 // DaemonOptions configures a background process helper.
@@ -59,19 +57,14 @@ var (
 	processNow   = time.Now
 	processSleep = time.Sleep
 	processAlive = func(pid int) bool {
-		proc, err := os.FindProcess(pid)
-		if err != nil {
-			return false
-		}
-		err = proc.Signal(syscall.Signal(0))
+		err := syscall.Kill(pid, syscall.Signal(0))
 		return err == nil || core.Is(err, syscall.EPERM)
 	}
-	processSignal = func(pid int, sig syscall.Signal) error {
-		proc, err := os.FindProcess(pid)
-		if err != nil {
-			return err
+	processSignal = func(pid int, sig syscall.Signal) core.Result {
+		if err := syscall.Kill(pid, sig); err != nil {
+			return core.Fail(err)
 		}
-		return proc.Signal(sig)
+		return core.Ok(nil)
 	}
 	processPollInterval = 100 * time.Millisecond
 	processShutdownWait = 30 * time.Second
@@ -89,7 +82,7 @@ func NewDaemon(opts DaemonOptions) *Daemon {
 }
 
 // Start writes the PID file and starts the health server, if configured.
-func (d *Daemon) Start(ctx context.Context) error {
+func (d *Daemon) Start(ctx context.Context) core.Result {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -98,26 +91,28 @@ func (d *Daemon) Start(ctx context.Context) error {
 	defer d.mu.Unlock()
 
 	if d.started {
-		return nil
+		return core.Ok(nil)
 	}
 
-	if err := d.writePIDFile(); err != nil {
-		return err
+	if r := d.writePIDFile(); !r.OK {
+		return r
 	}
 
 	if d.opts.HealthAddr != "" {
-		if err := d.startHealthServer(ctx); err != nil {
-			_ = d.removePIDFile()
-			return err
+		if r := d.startHealthServer(ctx); !r.OK {
+			if cleanup := d.removePIDFile(); !cleanup.OK {
+				LogWarn("failed to remove PID file after daemon startup error", "err", cleanup.Error())
+			}
+			return r
 		}
 	}
 
 	d.started = true
-	return nil
+	return core.Ok(nil)
 }
 
 // Stop shuts down the health server and removes the PID file.
-func (d *Daemon) Stop(ctx context.Context) error {
+func (d *Daemon) Stop(ctx context.Context) core.Result {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -147,11 +142,14 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	if err := d.removePIDFile(); err != nil && firstErr == nil {
-		firstErr = err
+	if r := d.removePIDFile(); !r.OK && firstErr == nil {
+		firstErr, _ = r.Value.(error)
 	}
 
-	return firstErr
+	if firstErr != nil {
+		return core.Fail(firstErr)
+	}
+	return core.Ok(nil)
 }
 
 // HealthAddr returns the bound health server address, if running.
@@ -168,29 +166,32 @@ func (d *Daemon) HealthAddr() string {
 // to exit, escalates to SIGKILL after the timeout, and then removes the file.
 //
 // If the PID file does not exist, StopPIDFile returns nil.
-func StopPIDFile(pidFile string, timeout time.Duration) error {
+func StopPIDFile(pidFile string, timeout time.Duration) core.Result {
 	if pidFile == "" {
-		return nil
+		return core.Ok(nil)
 	}
 	if timeout <= 0 {
 		timeout = processShutdownWait
 	}
 
-	rawPID, err := os.ReadFile(pidFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
+	rawPIDResult := core.ReadFile(pidFile)
+	if !rawPIDResult.OK {
+		err, _ := rawPIDResult.Value.(error)
+		if core.IsNotExist(err) {
+			return core.Ok(nil)
 		}
-		return err
+		return rawPIDResult
 	}
+	rawPID := rawPIDResult.Value.([]byte)
 
-	pid, err := parsePID(core.Trim(string(rawPID)))
-	if err != nil {
-		return core.E("StopPIDFile", core.Sprintf("parse pid file %q", pidFile), err)
+	pidResult := parsePID(core.Trim(string(rawPID)))
+	if !pidResult.OK {
+		return core.Fail(core.E("StopPIDFile", core.Sprintf("parse pid file %q", pidFile), pidResult.Value.(error)))
 	}
+	pid := pidResult.Value.(int)
 
-	if err := processSignal(pid, syscall.SIGTERM); err != nil && !isProcessGone(err) {
-		return err
+	if r := processSignal(pid, syscall.SIGTERM); !r.OK && !isProcessGone(r.Value.(error)) {
+		return r
 	}
 
 	deadline := processNow().Add(timeout)
@@ -199,8 +200,8 @@ func StopPIDFile(pidFile string, timeout time.Duration) error {
 	}
 
 	if processAlive(pid) {
-		if err := processSignal(pid, syscall.SIGKILL); err != nil && !isProcessGone(err) {
-			return err
+		if r := processSignal(pid, syscall.SIGKILL); !r.OK && !isProcessGone(r.Value.(error)) {
+			return r
 		}
 
 		deadline = processNow().Add(processShutdownWait)
@@ -209,53 +210,58 @@ func StopPIDFile(pidFile string, timeout time.Duration) error {
 		}
 
 		if processAlive(pid) {
-			return core.E("StopPIDFile", core.Sprintf("process %d did not exit after SIGKILL", pid), nil)
+			return core.Fail(core.E("StopPIDFile", core.Sprintf("process %d did not exit after SIGKILL", pid), nil))
 		}
 	}
 
-	return os.Remove(pidFile)
+	return core.Remove(pidFile)
 }
 
-func parsePID(raw string) (int, error) {
+func parsePID(raw string) core.Result {
 	if raw == "" {
-		return 0, core.NewError("empty pid")
+		return core.Fail(core.NewError("empty pid"))
 	}
-	pid, err := Atoi(raw)
-	if err != nil {
-		return 0, err
+	pidResult := Atoi(raw)
+	if !pidResult.OK {
+		return pidResult
 	}
+	pid := pidResult.Value.(int)
 	if pid <= 0 {
-		return 0, core.E("parsePID", core.Sprintf("invalid pid %d", pid), nil)
+		return core.Fail(core.E("parsePID", core.Sprintf("invalid pid %d", pid), nil))
 	}
-	return pid, nil
+	return core.Ok(pid)
 }
 
 func isProcessGone(err error) bool {
-	return core.Is(err, os.ErrProcessDone) || core.Is(err, syscall.ESRCH)
+	return core.Is(err, syscall.ESRCH)
 }
 
-func (d *Daemon) writePIDFile() error {
+func (d *Daemon) writePIDFile() core.Result {
 	if d.opts.PIDFile == "" {
-		return nil
+		return core.Ok(nil)
 	}
 
-	if err := os.MkdirAll(core.PathDir(d.opts.PIDFile), 0o755); err != nil {
-		return err
+	if r := core.MkdirAll(core.PathDir(d.opts.PIDFile), 0o755); !r.OK {
+		return r
 	}
-	return os.WriteFile(d.opts.PIDFile, []byte(core.Sprintf("%d", os.Getpid())+"\n"), 0o644)
+	return core.WriteFile(d.opts.PIDFile, []byte(core.Sprintf("%d", core.Getpid())+"\n"), 0o644)
 }
 
-func (d *Daemon) removePIDFile() error {
+func (d *Daemon) removePIDFile() core.Result {
 	if d.opts.PIDFile == "" {
-		return nil
+		return core.Ok(nil)
 	}
-	if err := os.Remove(d.opts.PIDFile); err != nil && !os.IsNotExist(err) {
-		return err
+	r := core.Remove(d.opts.PIDFile)
+	if !r.OK {
+		err, _ := r.Value.(error)
+		if !core.IsNotExist(err) {
+			return r
+		}
 	}
-	return nil
+	return core.Ok(nil)
 }
 
-func (d *Daemon) startHealthServer(ctx context.Context) error {
+func (d *Daemon) startHealthServer(ctx context.Context) core.Result {
 	mux := http.NewServeMux()
 	healthCheck := d.opts.HealthCheck
 	if healthCheck == nil {
@@ -275,7 +281,7 @@ func (d *Daemon) startHealthServer(ctx context.Context) error {
 
 	listener, err := net.Listen("tcp", d.opts.HealthAddr)
 	if err != nil {
-		return err
+		return core.Fail(err)
 	}
 
 	server := &http.Server{
@@ -292,21 +298,25 @@ func (d *Daemon) startHealthServer(ctx context.Context) error {
 	go func() {
 		err := server.Serve(listener)
 		if err != nil && !isClosedServerError(err) {
-			_ = err
+			LogWarn("daemon health server stopped unexpectedly", "err", err)
 		}
 	}()
 
-	return nil
+	return core.Ok(nil)
 }
 
 func writeProbe(w http.ResponseWriter, ok bool) {
 	if ok {
 		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, "ok\n")
+		if r := core.WriteString(w, "ok\n"); !r.OK {
+			LogWarn("failed to write health response", "err", r.Error())
+		}
 		return
 	}
 	w.WriteHeader(http.StatusServiceUnavailable)
-	_, _ = io.WriteString(w, "unhealthy\n")
+	if r := core.WriteString(w, "unhealthy\n"); !r.OK {
+		LogWarn("failed to write health response", "err", r.Error())
+	}
 }
 
 func isClosedServerError(err error) bool {

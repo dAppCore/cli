@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"bytes"   // Note: AX-6 — bytes.Buffer provides rune-by-rune parser state for glyph shortcode rendering; core has no NewBuffer wrapper in this release.
-	"unicode" // Note: AX-6 — unicode is structural for rune classification in glyph rendering.
+	"unicode"
+
+	"dappco.re/go"
 )
 
 // GlyphTheme defines which symbols to use.
@@ -63,8 +64,8 @@ func compileGlyphs(x string) string {
 	if x == "" {
 		return ""
 	}
-	input := bytes.NewBufferString(x)
-	output := bytes.NewBufferString("")
+	input := core.NewBufferString(x)
+	output := core.NewBufferString("")
 
 	for {
 		r, _, err := input.ReadRune()
@@ -80,8 +81,10 @@ func compileGlyphs(x string) string {
 	return output.String()
 }
 
-func replaceGlyph(input *bytes.Buffer) string {
-	code := bytes.NewBufferString(":")
+func replaceGlyph(input interface {
+	ReadRune() (rune, int, error)
+}) string {
+	code := core.NewBufferString(":")
 	for {
 		r, _, err := input.ReadRune()
 		if err != nil {

@@ -6,10 +6,10 @@ import (
 	"slices"
 	"time"
 
+	"dappco.re/go"
 	"dappco.re/go/cache"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -31,10 +31,10 @@ func pkgSearchAction(opts core.Options) core.Result {
 		limit = 50
 	}
 
-	if err := runPkgSearch(org, pattern, repoType, limit, refresh); err != nil {
-		return core.Result{Value: err, OK: false}
+	if r := runPkgSearch(org, pattern, repoType, limit, refresh); !r.OK {
+		return r
 	}
-	return core.Result{OK: true}
+	return core.Ok(nil)
 }
 
 type ghRepo struct {
@@ -46,7 +46,7 @@ type ghRepo struct {
 	Language    string `json:"language"`
 }
 
-func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error {
+func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.Result {
 	// Initialise cache in workspace .core/ directory.
 	var cacheDirectory string
 	if registryPath, err := repos.FindRegistry(coreio.Local); err == nil {
@@ -110,7 +110,9 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 		}
 
 		if cacheInstance != nil {
-			_ = cacheInstance.Set(cacheKey, ghRepos)
+			if err := cacheInstance.Set(cacheKey, ghRepos); err != nil {
+				cli.LogWarn("failed to cache package search results", "err", err)
+			}
 		}
 
 		cli.Println("%s", successStyle.Render("ok"))
@@ -130,7 +132,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 
 	if len(filtered) == 0 {
 		cli.Println("%s", i18n.T("cmd.pkg.search.no_repos_found"))
-		return nil
+		return core.Ok(nil)
 	}
 
 	slices.SortFunc(filtered, func(a, b ghRepo) int {
@@ -160,7 +162,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) error 
 	cli.Blank()
 	cli.Println("%s %s", i18n.T("common.hint.install_with"), dimStyle.Render(cli.Sprintf("core pkg install %s/<repo-name>", org)))
 
-	return nil
+	return core.Ok(nil)
 }
 
 // matchGlob does simple glob matching with * wildcards.

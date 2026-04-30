@@ -3,21 +3,22 @@ package cli
 import (
 	"context"
 	"io" // Note: AX-6 - io.Reader/io.Writer stream IO contract for prompt writes and interception.
+	"syscall"
 	"time"
 	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
-	"dappco.re/go/log"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 func GhAuthenticated() bool {
-	output, _ := runProcessOutput(context.Background(), "gh", "auth", "status")
+	result := runProcessOutput(context.Background(), "gh", "auth", "status")
+	output := processOutput(result.Value)
 	authenticated := core.Contains(output, "Logged in")
 	if authenticated {
-		LogWarn("GitHub CLI authenticated", "user", log.Username())
+		LogWarn("GitHub CLI authenticated", "user", core.Username())
 	} else {
-		LogWarn("GitHub CLI not authenticated", "user", log.Username())
+		LogWarn("GitHub CLI not authenticated", "user", core.Username())
 	}
 	return authenticated
 }
@@ -29,22 +30,88 @@ func processCore() *core.Core {
 	return core.New()
 }
 
-func runProcessOutput(ctx context.Context, command string, args ...string) (string, error) {
+func runProcessOutput(ctx context.Context, command string, args ...string) core.Result {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	result := processCore().Process().Run(ctx, command, args...)
-	output := processOutput(result.Value)
-	if result.OK {
-		return output, nil
+	if err := ctx.Err(); err != nil {
+		return core.Fail(err)
 	}
-	if err, ok := result.Value.(error); ok {
-		return output, err
+	commandResult := findExecutable(command)
+	if !commandResult.OK {
+		return commandResult
+	}
+	commandPath := commandResult.Value.(string)
+
+	var pipe [2]int
+	if err := syscall.Pipe(pipe[:]); err != nil {
+		return core.Fail(err)
+	}
+	readFD, writeFD := pipe[0], pipe[1]
+	defer syscall.Close(readFD)
+
+	argv := append([]string{commandPath}, args...)
+	pid, err := syscall.ForkExec(commandPath, argv, &syscall.ProcAttr{
+		Env:   core.Environ(),
+		Files: []uintptr{0, uintptr(writeFD), uintptr(writeFD)},
+	})
+	syscall.Close(writeFD)
+	if err != nil {
+		return core.Fail(err)
+	}
+
+	out := core.NewBuilder()
+	buf := make([]byte, 4096)
+	for {
+		n, readErr := syscall.Read(readFD, buf)
+		if n > 0 {
+			out.WriteString(string(buf[:n]))
+		}
+		if readErr != nil {
+			if readErr == syscall.EINTR {
+				continue
+			}
+			break
+		}
+		if n == 0 {
+			break
+		}
+	}
+
+	var status syscall.WaitStatus
+	if _, err := syscall.Wait4(pid, &status, 0, nil); err != nil {
+		return core.Fail(err)
+	}
+	output := out.String()
+	if status.ExitStatus() == 0 {
+		return core.Ok(output)
 	}
 	if output != "" {
-		return output, core.NewError(output)
+		return core.Fail(core.NewError(output))
 	}
-	return output, core.E("cli.process", core.Concat("process failed: ", command), nil)
+	return core.Fail(core.E("cli.process", core.Sprintf("%s exited with status %d", command, status.ExitStatus()), nil))
+}
+
+func findExecutable(command string) core.Result {
+	if command == "" {
+		return core.Fail(core.NewError("empty command"))
+	}
+	if core.Contains(command, string(core.PathSeparator)) {
+		if r := core.Stat(command); r.OK {
+			return core.Ok(command)
+		}
+		return core.Fail(core.E("cli.process", core.Concat("command not found: ", command), nil))
+	}
+	for _, dir := range core.Split(core.Getenv("PATH"), string(core.PathListSeparator)) {
+		if dir == "" {
+			continue
+		}
+		candidate := core.PathJoin(dir, command)
+		if r := core.Stat(candidate); r.OK {
+			return core.Ok(candidate)
+		}
+	}
+	return core.Fail(core.E("cli.process", core.Concat("command not found: ", command), nil))
 }
 
 func processOutput(value any) string {
@@ -327,7 +394,8 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 			promptHint(core.Sprintf("Please enter a number between 1 and %d.", len(visible)))
 			continue
 		}
-		if n, err := Atoi(response); err == nil {
+		if parsed := Atoi(response); parsed.OK {
+			n := parsed.Value.(int)
 			if n >= 1 && n <= len(visible) {
 				return items[visible[n-1]]
 			}
@@ -381,8 +449,8 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 		if response == "" {
 			return nil
 		}
-		selected, err := parseMultiSelection(response, len(visible))
-		if err != nil {
+		selectedResult := parseMultiSelection(response, len(visible))
+		if !selectedResult.OK {
 			if cfg.filter && !looksLikeMultiSelectionInput(response) {
 				nextVisible := filterVisible(items, visible, response, cfg.displayFn)
 				if len(nextVisible) == 0 {
@@ -395,6 +463,7 @@ func ChooseMulti[T any](prompt string, items []T, opts ...ChooseOption[T]) []T {
 			promptWarning(core.Sprintf("Invalid selection %q: enter numbers like 1 3 or 1-3.", response))
 			continue
 		}
+		selected := selectedResult.Value.([]int)
 		result := make([]T, 0, len(selected))
 		for _, idx := range selected {
 			result = append(result, items[visible[idx]])
@@ -458,36 +527,39 @@ func looksLikeMultiSelectionInput(input string) bool {
 	return hasDigit
 }
 
-func parseMultiSelection(input string, maxItems int) ([]int, error) {
+func parseMultiSelection(input string, maxItems int) core.Result {
 	selected := make(map[int]bool)
 	normalized := core.Replace(input, ",", " ")
 	for _, part := range fields(normalized) {
 		if core.Contains(part, "-") {
 			rangeParts := core.Split(part, "-")
 			if len(rangeParts) != 2 {
-				return nil, Err("invalid range: %s", part)
+				return Err("invalid range: %s", part)
 			}
-			start, err := Atoi(rangeParts[0])
-			if err != nil {
-				return nil, Err("invalid range start: %s", rangeParts[0])
+			startResult := Atoi(rangeParts[0])
+			if !startResult.OK {
+				return Err("invalid range start: %s", rangeParts[0])
 			}
-			end, err := Atoi(rangeParts[1])
-			if err != nil {
-				return nil, Err("invalid range end: %s", rangeParts[1])
+			start := startResult.Value.(int)
+			endResult := Atoi(rangeParts[1])
+			if !endResult.OK {
+				return Err("invalid range end: %s", rangeParts[1])
 			}
+			end := endResult.Value.(int)
 			if start < 1 || start > maxItems || end < 1 || end > maxItems || start > end {
-				return nil, Err("range out of bounds: %s", part)
+				return Err("range out of bounds: %s", part)
 			}
 			for i := start; i <= end; i++ {
 				selected[i-1] = true
 			}
 		} else {
-			n, err := Atoi(part)
-			if err != nil {
-				return nil, Err("invalid number: %s", part)
+			nResult := Atoi(part)
+			if !nResult.OK {
+				return Err("invalid number: %s", part)
 			}
+			n := nResult.Value.(int)
 			if n < 1 || n > maxItems {
-				return nil, Err("number out of range: %d", n)
+				return Err("number out of range: %d", n)
 			}
 			selected[n-1] = true
 		}
@@ -498,7 +570,7 @@ func parseMultiSelection(input string, maxItems int) ([]int, error) {
 			result = append(result, i)
 		}
 	}
-	return result, nil
+	return core.Ok(result)
 }
 
 // fields splits a string on whitespace runs, returning non-empty tokens.
@@ -527,33 +599,34 @@ func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOpt
 	return ChooseMulti(question, items, opts...)
 }
 
-func GitClone(ctx context.Context, org, repo, path string) error {
+func GitClone(ctx context.Context, org, repo, path string) core.Result {
 	return GitCloneRef(ctx, org, repo, path, "")
 }
 
-func GitCloneRef(ctx context.Context, org, repo, path, ref string) error {
+func GitCloneRef(ctx context.Context, org, repo, path, ref string) core.Result {
 	if GhAuthenticated() {
 		httpsURL := core.Sprintf("https://github.com/%s/%s.git", org, repo)
 		args := ghRepoCloneArgs(httpsURL, path, ref)
-		output, err := runProcessOutput(ctx, "gh", args...)
-		if err == nil {
-			return nil
+		result := runProcessOutput(ctx, "gh", args...)
+		output := processOutput(result.Value)
+		if result.OK {
+			return core.Ok(nil)
 		}
 		errStr := core.Trim(output)
 		if core.Contains(errStr, "already exists") {
-			return core.NewError(errStr)
+			return core.Fail(core.NewError(errStr))
 		}
 	}
 	args := gitCloneArgs(core.Sprintf("git@github.com:%s/%s.git", org, repo), path, ref)
-	output, err := runProcessOutput(ctx, "git", args...)
-	if err != nil {
-		errStr := core.Trim(output)
+	result := runProcessOutput(ctx, "git", args...)
+	if !result.OK {
+		errStr := core.Trim(processOutput(result.Value))
 		if errStr == "" {
-			return err
+			return result
 		}
-		return core.NewError(errStr)
+		return core.Fail(core.NewError(errStr))
 	}
-	return nil
+	return core.Ok(nil)
 }
 
 func ghRepoCloneArgs(repoURL, path, ref string) []string {

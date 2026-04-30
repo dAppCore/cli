@@ -1,13 +1,10 @@
 package frame
 
 import (
-	"bytes"
-	"os"
-	"strconv"
-	"strings"
 	"sync"
 	"unicode"
 
+	"dappco.re/go"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/mattn/go-runewidth"
 )
@@ -29,11 +26,11 @@ var (
 )
 
 func init() {
-	if _, exists := os.LookupEnv("NO_COLOR"); exists {
+	if _, exists := core.LookupEnv("NO_COLOR"); exists {
 		colorEnabled = false
 		return
 	}
-	if os.Getenv("TERM") == "dumb" {
+	if core.Getenv("TERM") == "dumb" {
 		colorEnabled = false
 	}
 }
@@ -102,23 +99,26 @@ func (s *AnsiStyle) Render(text string) string {
 		return text
 	}
 
-	return strings.Join(codes, "") + text + ansiReset
+	return core.Join("", codes...) + text + ansiReset
 }
 
 func fgColorHex(hex string) string {
 	r, g, b := hexToRGB(hex)
-	return "\033[38;2;" + strconv.Itoa(r) + ";" + strconv.Itoa(g) + ";" + strconv.Itoa(b) + "m"
+	return core.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
 }
 
 func hexToRGB(hex string) (int, int, int) {
-	hex = strings.TrimPrefix(hex, "#")
+	hex = core.TrimPrefix(hex, "#")
 	if len(hex) != 6 {
 		return 255, 255, 255
 	}
-	r, _ := strconv.ParseUint(hex[0:2], 16, 8)
-	g, _ := strconv.ParseUint(hex[2:4], 16, 8)
-	b, _ := strconv.ParseUint(hex[4:6], 16, 8)
-	return int(r), int(g), int(b)
+	r := core.ParseInt(hex[0:2], 16, 8)
+	g := core.ParseInt(hex[2:4], 16, 8)
+	b := core.ParseInt(hex[4:6], 16, 8)
+	if !r.OK || !g.OK || !b.OK {
+		return 255, 255, 255
+	}
+	return int(r.Value.(int64)), int(g.Value.(int64)), int(b.Value.(int64))
 }
 
 func Truncate(s string, max int) string {
@@ -147,7 +147,7 @@ func truncateByWidth(s string, max int) string {
 		return plain
 	}
 	var width int
-	var out strings.Builder
+	out := core.NewBuilder()
 	for _, r := range plain {
 		rw := runewidth.RuneWidth(r)
 		if width+rw > max {
@@ -180,8 +180,8 @@ func compileGlyphs(x string) string {
 	if x == "" {
 		return ""
 	}
-	input := bytes.NewBufferString(x)
-	output := bytes.NewBufferString("")
+	input := core.NewBufferString(x)
+	output := core.NewBufferString("")
 
 	for {
 		r, _, err := input.ReadRune()
@@ -197,8 +197,10 @@ func compileGlyphs(x string) string {
 	return output.String()
 }
 
-func replaceGlyph(input *bytes.Buffer) string {
-	code := bytes.NewBufferString(":")
+func replaceGlyph(input interface {
+	ReadRune() (rune, int, error)
+}) string {
+	code := core.NewBufferString(":")
 	for {
 		r, _, err := input.ReadRune()
 		if err != nil {

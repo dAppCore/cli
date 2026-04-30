@@ -1,29 +1,28 @@
 package cli
 
 import (
-	"dappco.re/go/core"
-	"dappco.re/go/i18n"
+	"dappco.re/go"
+	"dappco.re/go/cli/pkg/i18n"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error Creation (replace fmt.Errorf)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Err creates a new error from a format string.
-// This is a direct replacement for fmt.Errorf.
-func Err(format string, args ...any) error {
-	return core.E("cli", core.Sprintf(format, args...), nil)
+// Err creates a failed Result from a format string.
+func Err(format string, args ...any) core.Result {
+	return core.Fail(core.E("cli", core.Sprintf(format, args...), nil))
 }
 
 // Wrap wraps an error with a message.
 // Returns nil if err is nil.
 //
 //	return cli.Wrap(err, "load config")  // "load config: <original error>"
-func Wrap(err error, msg string) error {
+func Wrap(err error, msg string) core.Result {
 	if err == nil {
-		return nil
+		return core.Ok(nil)
 	}
-	return core.E("cli", msg, err)
+	return core.Fail(core.E("cli", msg, err))
 }
 
 // WrapVerb wraps an error using i18n grammar for "Failed to verb subject".
@@ -31,12 +30,12 @@ func Wrap(err error, msg string) error {
 // Returns nil if err is nil.
 //
 //	return cli.WrapVerb(err, "load", "config")  // "Failed to load config: <original error>"
-func WrapVerb(err error, verb, subject string) error {
+func WrapVerb(err error, verb, subject string) core.Result {
 	if err == nil {
-		return nil
+		return core.Ok(nil)
 	}
 	msg := i18n.ActionFailed(verb, subject)
-	return core.E("cli", msg, err)
+	return core.Fail(core.E("cli", msg, err))
 }
 
 // WrapAction wraps an error using i18n grammar for "Failed to verb".
@@ -44,12 +43,12 @@ func WrapVerb(err error, verb, subject string) error {
 // Returns nil if err is nil.
 //
 //	return cli.WrapAction(err, "connect")  // "Failed to connect: <original error>"
-func WrapAction(err error, verb string) error {
+func WrapAction(err error, verb string) core.Result {
 	if err == nil {
-		return nil
+		return core.Ok(nil)
 	}
 	msg := i18n.ActionFailed(verb, "")
-	return core.E("cli", msg, err)
+	return core.Fail(core.E("cli", msg, err))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,13 +69,17 @@ func As(err error, target any) bool {
 
 // Join returns an error that wraps the given errors.
 // This is a re-export of errors.Join for convenience.
-func Join(errs ...error) error {
-	return core.ErrorJoin(errs...)
+func Join(errs ...error) core.Result {
+	err := core.ErrorJoin(errs...)
+	if err == nil {
+		return core.Ok(nil)
+	}
+	return core.Fail(err)
 }
 
 // ExitError represents an error that should cause the CLI to exit with a specific code.
 //
-//	err := cli.Exit(2, cli.Err("validation failed"))
+//	err := cli.Exit(2, core.NewError("validation failed"))
 //	var exitErr *cli.ExitError
 //	if cli.As(err, &exitErr) {
 //	    cli.Println("exit code:", exitErr.Code)
@@ -93,18 +96,14 @@ func (e *ExitError) Error() string {
 	return e.Err.Error()
 }
 
-func (e *ExitError) Unwrap() error {
-	return e.Err
-}
-
 // Exit creates a new ExitError with the given code and error.
 //
-//	return cli.Exit(2, cli.Err("validation failed"))
-func Exit(code int, err error) error {
+//	return cli.Exit(2, core.NewError("validation failed"))
+func Exit(code int, err error) core.Result {
 	if err == nil {
-		return nil
+		return core.Ok(nil)
 	}
-	return &ExitError{Code: code, Err: err}
+	return core.Fail(&ExitError{Code: code, Err: err})
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,7 +113,20 @@ func Exit(code int, err error) error {
 // Fatal prints an error message to stderr, logs it, and exits with code 1.
 //
 // Deprecated: return an error from the command instead.
-func Fatal(err error) {
+func Fatal(failure any) {
+	var err error
+	switch v := failure.(type) {
+	case core.Result:
+		if v.OK {
+			return
+		}
+		err, _ = v.Value.(error)
+		if err == nil {
+			err = core.NewError(v.Error())
+		}
+	case error:
+		err = v
+	}
 	if err != nil {
 		LogError("Fatal error", "err", err)
 		core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+err.Error()))
