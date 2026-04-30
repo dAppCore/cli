@@ -122,7 +122,9 @@ func Init(opts Options) core.Result {
 	loadLocaleSources(opts.I18nSources...)
 
 	// Attach registered commands AFTER Core startup so i18n is available
-	attachRegisteredCommands(c)
+	if r := attachRegisteredCommands(c); !r.OK {
+		return r
+	}
 	return core.Ok(nil)
 }
 

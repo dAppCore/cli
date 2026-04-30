@@ -3,7 +3,6 @@ package doctor
 import (
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/cli/pkg/i18n"
 	io "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -45,7 +44,7 @@ func checkGitHubCLI() bool {
 func checkWorkspace() {
 	registryPath, err := repos.FindRegistry(io.Local)
 	if err == nil {
-		cli.Println("  %s %s", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_yaml_found", map[string]any{"Path": registryPath}))
+		cli.Println("  %s %s", successStyle.Render("✓"), cli.T("cmd.doctor.repos_yaml_found", map[string]any{"Path": registryPath}))
 
 		registry, err := repos.LoadRegistry(io.Local, registryPath)
 		if err == nil {
@@ -72,9 +71,9 @@ func checkWorkspace() {
 					cloned++
 				}
 			}
-			cli.Println("  %s %s", successStyle.Render("✓"), i18n.T("cmd.doctor.repos_cloned", map[string]any{"Cloned": cloned, "Total": len(allRepos)}))
+			cli.Println("  %s %s", successStyle.Render("✓"), cli.T("cmd.doctor.repos_cloned", map[string]any{"Cloned": cloned, "Total": len(allRepos)}))
 		}
 	} else {
-		cli.Println("  %s %s", dimStyle.Render("○"), i18n.T("cmd.doctor.no_repos_yaml"))
+		cli.Println("  %s %s", dimStyle.Render("○"), cli.T("cmd.doctor.no_repos_yaml"))
 	}
 }

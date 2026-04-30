@@ -10,7 +10,6 @@ package pkgcmd
 import (
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -18,7 +17,7 @@ import (
 func pkgRemoveAction(opts core.Options) core.Result {
 	name := opts.String("_arg")
 	if name == "" {
-		return cli.Err(i18n.T("cmd.pkg.error.repo_required"))
+		return cli.Err(cli.T("cmd.pkg.error.repo_required"))
 	}
 	force := opts.Bool("force")
 	if r := runPkgRemove(name, force); !r.OK {
@@ -31,12 +30,12 @@ func runPkgRemove(name string, force bool) core.Result {
 	// Find package path via registry.
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(i18n.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
 	if err != nil {
-		return cli.Wrap(err, i18n.T("i18n.fail.load", "registry"))
+		return cli.Wrap(err, cli.T("i18n.fail.load", "registry"))
 	}
 
 	basePath := registry.BasePath

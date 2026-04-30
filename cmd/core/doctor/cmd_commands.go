@@ -17,9 +17,12 @@ import (
 // AddDoctorCommands registers the 'doctor' command and all subcommands.
 //
 //	doctor.AddDoctorCommands(c)
-func AddDoctorCommands(c *core.Core) {
-	c.Command("doctor", core.Command{
+func AddDoctorCommands(c *core.Core) core.Result {
+	if r := c.Command("doctor", core.Command{
 		Description: "Check development environment health",
 		Action:      doctorAction,
-	})
+	}); !r.OK {
+		return r
+	}
+	return core.Ok(nil)
 }

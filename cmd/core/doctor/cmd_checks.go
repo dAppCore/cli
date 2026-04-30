@@ -2,7 +2,7 @@ package doctor
 
 import (
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 // check represents a tool check configuration
@@ -18,43 +18,43 @@ type check struct {
 func requiredChecks() []check {
 	return []check{
 		{
-			name:        i18n.T("cmd.doctor.check.git.name"),
-			description: i18n.T("cmd.doctor.check.git.description"),
+			name:        cli.T("cmd.doctor.check.git.name"),
+			description: cli.T("cmd.doctor.check.git.description"),
 			command:     "git",
 			args:        []string{"--version"},
 			versionFlag: "--version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.go.name"),
-			description: i18n.T("cmd.doctor.check.go.description"),
+			name:        cli.T("cmd.doctor.check.go.name"),
+			description: cli.T("cmd.doctor.check.go.description"),
 			command:     "go",
 			args:        []string{"version"},
 			versionFlag: "version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.gh.name"),
-			description: i18n.T("cmd.doctor.check.gh.description"),
+			name:        cli.T("cmd.doctor.check.gh.name"),
+			description: cli.T("cmd.doctor.check.gh.description"),
 			command:     "gh",
 			args:        []string{"--version"},
 			versionFlag: "--version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.php.name"),
-			description: i18n.T("cmd.doctor.check.php.description"),
+			name:        cli.T("cmd.doctor.check.php.name"),
+			description: cli.T("cmd.doctor.check.php.description"),
 			command:     "php",
 			args:        []string{"-v"},
 			versionFlag: "-v",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.composer.name"),
-			description: i18n.T("cmd.doctor.check.composer.description"),
+			name:        cli.T("cmd.doctor.check.composer.name"),
+			description: cli.T("cmd.doctor.check.composer.description"),
 			command:     "composer",
 			args:        []string{"--version"},
 			versionFlag: "--version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.node.name"),
-			description: i18n.T("cmd.doctor.check.node.description"),
+			name:        cli.T("cmd.doctor.check.node.name"),
+			description: cli.T("cmd.doctor.check.node.description"),
 			command:     "node",
 			args:        []string{"--version"},
 			versionFlag: "--version",
@@ -66,22 +66,22 @@ func requiredChecks() []check {
 func optionalChecks() []check {
 	return []check{
 		{
-			name:        i18n.T("cmd.doctor.check.pnpm.name"),
-			description: i18n.T("cmd.doctor.check.pnpm.description"),
+			name:        cli.T("cmd.doctor.check.pnpm.name"),
+			description: cli.T("cmd.doctor.check.pnpm.description"),
 			command:     "pnpm",
 			args:        []string{"--version"},
 			versionFlag: "--version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.claude.name"),
-			description: i18n.T("cmd.doctor.check.claude.description"),
+			name:        cli.T("cmd.doctor.check.claude.name"),
+			description: cli.T("cmd.doctor.check.claude.description"),
 			command:     "claude",
 			args:        []string{"--version"},
 			versionFlag: "--version",
 		},
 		{
-			name:        i18n.T("cmd.doctor.check.docker.name"),
-			description: i18n.T("cmd.doctor.check.docker.description"),
+			name:        cli.T("cmd.doctor.check.docker.name"),
+			description: cli.T("cmd.doctor.check.docker.description"),
 			command:     "docker",
 			args:        []string{"--version"},
 			versionFlag: "--version",

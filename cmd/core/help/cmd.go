@@ -9,11 +9,14 @@ import (
 // AddHelpCommands registers the help command and subcommands.
 //
 //	help.AddHelpCommands(c)
-func AddHelpCommands(c *core.Core) {
-	c.Command("help", core.Command{
+func AddHelpCommands(c *core.Core) core.Result {
+	if r := c.Command("help", core.Command{
 		Description: "Display help documentation",
 		Action:      helpAction,
-	})
+	}); !r.OK {
+		return r
+	}
+	return core.Ok(nil)
 }
 
 func helpAction(opts core.Options) core.Result {

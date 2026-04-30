@@ -8,7 +8,6 @@ import (
 	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
 )
 
 func GhAuthenticated() bool {
@@ -240,12 +239,12 @@ func Confirm(prompt string, opts ...ConfirmOption) bool {
 }
 
 func ConfirmAction(verb, subject string, opts ...ConfirmOption) bool {
-	question := i18n.Title(verb) + " " + subject + "?"
+	question := title(verb) + " " + subject + "?"
 	return Confirm(question, opts...)
 }
 
 func ConfirmDangerousAction(verb, subject string) bool {
-	question := i18n.Title(verb) + " " + subject + "?"
+	question := title(verb) + " " + subject + "?"
 	if !Confirm(question, Required()) {
 		return false
 	}
@@ -309,7 +308,7 @@ func Question(prompt string, opts ...QuestionOption) string {
 }
 
 func QuestionAction(verb, subject string, opts ...QuestionOption) string {
-	question := i18n.Title(verb) + " " + subject + "?"
+	question := title(verb) + " " + subject + "?"
 	return Question(question, opts...)
 }
 
@@ -416,7 +415,7 @@ func Choose[T any](prompt string, items []T, opts ...ChooseOption[T]) T {
 }
 
 func ChooseAction[T any](verb, subject string, items []T, opts ...ChooseOption[T]) T {
-	question := i18n.Title(verb) + " " + subject + ":"
+	question := title(verb) + " " + subject + ":"
 	return Choose(question, items, opts...)
 }
 
@@ -595,7 +594,7 @@ func fields(s string) []string {
 }
 
 func ChooseMultiAction[T any](verb, subject string, items []T, opts ...ChooseOption[T]) []T {
-	question := i18n.Title(verb) + " " + subject + ":"
+	question := title(verb) + " " + subject + ":"
 	return ChooseMulti(question, items, opts...)
 }
 
