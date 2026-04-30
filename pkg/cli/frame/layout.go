@@ -92,7 +92,7 @@ func ParseVariant(variant string) core.Result {
 	for i < len(variant) {
 		r := Region(variant[i])
 		if !isValidRegion(r) {
-			return core.Fail(core.Errorf("ParseVariant: invalid region: %c", r))
+			return core.Fail(core.E("ParseVariant", core.Sprintf("invalid region: %c", r), nil))
 		}
 
 		slot := &Slot{region: r, path: string(r)}
@@ -102,7 +102,7 @@ func ParseVariant(variant string) core.Result {
 		if i < len(variant) && variant[i] == '[' {
 			end := findMatchingBracket(variant, i)
 			if end == -1 {
-				return core.Fail(core.Errorf("ParseVariant: unmatched bracket at %d", i))
+				return core.Fail(core.E("ParseVariant", core.Sprintf("unmatched bracket at %d", i), nil))
 			}
 			nestedResult := ParseVariant(variant[i+1 : end])
 			if !nestedResult.OK {

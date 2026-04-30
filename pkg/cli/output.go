@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
 )
 
 // Blank prints an empty line.
@@ -12,10 +11,10 @@ func Blank() {
 	core.Print(stdoutWriter(), "")
 }
 
-// Echo translates a key via i18n.T and prints with newline.
+// Echo translates a key through Core i18n and prints with newline.
 // No automatic styling - use Success/Error/Warn/Info for styled output.
 func Echo(key string, args ...any) {
-	core.Print(stdoutWriter(), "%s", compileGlyphs(i18n.T(key, args...)))
+	core.Print(stdoutWriter(), "%s", compileGlyphs(T(key, args...)))
 }
 
 // Print outputs formatted text (no newline).
@@ -71,7 +70,7 @@ func ErrorWrapVerb(err error, verb, subject string) {
 	if err == nil {
 		return
 	}
-	msg := i18n.ActionFailed(verb, subject)
+	msg := actionFailed(verb, subject)
 	Error(core.Sprintf("%s: %v", msg, err))
 }
 
@@ -80,7 +79,7 @@ func ErrorWrapAction(err error, verb string) {
 	if err == nil {
 		return
 	}
-	msg := i18n.ActionFailed(verb, "")
+	msg := actionFailed(verb, "")
 	Error(core.Sprintf("%s: %v", msg, err))
 }
 
@@ -111,9 +110,9 @@ func Dim(msg string) {
 }
 
 // Progress prints a progress indicator that overwrites the current line.
-// Uses i18n.Progress for gerund form ("Checking...").
+// Uses the CLI translation helpers for gerund form ("Checking...").
 func Progress(verb string, current, total int, item ...string) {
-	msg := compileGlyphs(i18n.Progress(verb))
+	msg := compileGlyphs(progressMessage(verb))
 	if len(item) > 0 && item[0] != "" {
 		io.WriteString(stderrWriter(), core.Sprintf("\033[2K\r%s %d/%d %s", DimStyle.Render(msg), current, total, compileGlyphs(item[0])))
 	} else {
@@ -128,13 +127,13 @@ func ProgressDone() {
 
 // Label prints a "Label: value" line.
 func Label(word, value string) {
-	core.Print(stdoutWriter(), "%s %s", KeyStyle.Render(compileGlyphs(i18n.Label(word))), compileGlyphs(value))
+	core.Print(stdoutWriter(), "%s %s", KeyStyle.Render(compileGlyphs(wordLabel(word))), compileGlyphs(value))
 }
 
 // Task prints a task header: "[label] message"
 //
 //	cli.Task("php", "Running tests...")  // [php] Running tests...
-//	cli.Task("go", i18n.Progress("build"))  // [go] Building...
+//	cli.Task("go", cli.T("i18n.progress.build"))  // [go] Building...
 func Task(label, message string) {
 	core.Print(stdoutWriter(), "%s %s\n", DimStyle.Render("["+compileGlyphs(label)+"]"), compileGlyphs(message))
 }

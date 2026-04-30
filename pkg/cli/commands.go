@@ -16,11 +16,14 @@ import (
 //	    cli.WithCommands("config", config.AddConfigCommands),
 //	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
 //	)
-func WithCommands(name string, register CommandRegistration, localeFS ...fs.FS) CommandSetup {
-	return func(c *core.Core) {
+func WithCommands(name string, register any, localeFS ...fs.FS) CommandSetup {
+	return func(c *core.Core) core.Result {
 		loadLocaleSources(localeSourcesFromFS(localeFS...)...)
-		register(c)
+		if r := asCommandRegistration(register)(c); !r.OK {
+			return r
+		}
 		appendLocales(localeFS...)
+		return core.Ok(nil)
 	}
 }
 
@@ -28,16 +31,17 @@ func WithCommands(name string, register CommandRegistration, localeFS ...fs.FS) 
 //
 // Example:
 //
-//	func addCommands(c *core.Core) {
-//	    c.Command("ping", core.Command{
+//	func addCommands(c *core.Core) core.Result {
+//	    if r := c.Command("ping", core.Command{
 //	        Description: "Ping API",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println("pong")
 //	            return core.Ok(nil)
 //	        },
-//	    })
+//	    }); !r.OK { return r }
+//	    return core.Ok(nil)
 //	}
-type CommandRegistration func(c *core.Core)
+type CommandRegistration func(c *core.Core) core.Result
 
 var (
 	registeredCommands   []CommandRegistration
@@ -55,18 +59,21 @@ var (
 //
 // Example:
 //
-//	cli.RegisterCommands(func(c *core.Core) {
-//	    c.Command("version", core.Command{
+//	cli.RegisterCommands(func(c *core.Core) core.Result {
+//	    if r := c.Command("version", core.Command{
 //	        Description: "Show version",
 //	        Action: func(opts core.Options) core.Result {
 //	            cli.Println(cli.SemVer())
 //	            return core.Ok(nil)
 //	        },
-//	    })
+//	    }); !r.OK { return r }
+//	    return core.Ok(nil)
 //	})
-func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
+func RegisterCommands(fn any, localeFS ...fs.FS) {
+	register := asCommandRegistration(fn)
+
 	registeredCommandsMu.Lock()
-	registeredCommands = append(registeredCommands, fn)
+	registeredCommands = append(registeredCommands, register)
 	attached := commandsAttached && instance != nil && instance.core != nil
 	coreInstance := instance
 	registeredCommandsMu.Unlock()
@@ -76,7 +83,47 @@ func RegisterCommands(fn CommandRegistration, localeFS ...fs.FS) {
 
 	// If commands already attached (CLI already running), attach immediately
 	if attached {
-		fn(coreInstance.core)
+		if r := register(coreInstance.core); !r.OK {
+			LogError("failed to register commands", "err", r.Error())
+		}
+	}
+}
+
+func asCommandRegistration(fn any) CommandRegistration {
+	switch register := fn.(type) {
+	case CommandRegistration:
+		return register
+	case func(*core.Core) core.Result:
+		return register
+	case func(*core.Core):
+		return func(c *core.Core) core.Result {
+			register(c)
+			return core.Ok(nil)
+		}
+	default:
+		return func(*core.Core) core.Result {
+			return core.Fail(core.E("cli.CommandRegistration", core.Sprintf("unsupported command registration %T", fn), nil))
+		}
+	}
+}
+
+func asCommandSetup(setup any) CommandSetup {
+	switch fn := setup.(type) {
+	case CommandSetup:
+		return fn
+	case CommandRegistration:
+		return CommandSetup(fn)
+	case func(*core.Core) core.Result:
+		return fn
+	case func(*core.Core):
+		return func(c *core.Core) core.Result {
+			fn(c)
+			return core.Ok(nil)
+		}
+	default:
+		return func(*core.Core) core.Result {
+			return core.Fail(core.E("cli.CommandSetup", core.Sprintf("unsupported command setup %T", setup), nil))
+		}
 	}
 }
 
@@ -163,7 +210,7 @@ func RegisteredCommands() iter.Seq[CommandRegistration] {
 
 // attachRegisteredCommands calls all registered command functions.
 // Called by Init() after creating the Core instance.
-func attachRegisteredCommands(c *core.Core) {
+func attachRegisteredCommands(c *core.Core) core.Result {
 	registeredCommandsMu.Lock()
 	snapshot := make([]CommandRegistration, len(registeredCommands))
 	copy(snapshot, registeredCommands)
@@ -171,6 +218,9 @@ func attachRegisteredCommands(c *core.Core) {
 	registeredCommandsMu.Unlock()
 
 	for _, fn := range snapshot {
-		fn(c)
+		if r := fn(c); !r.OK {
+			return r
+		}
 	}
+	return core.Ok(nil)
 }

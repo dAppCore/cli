@@ -85,7 +85,7 @@ func WithLocales(fsys fs.FS, dir string) LocaleSource {
 //	cli.Main(
 //	    cli.WithCommands("doctor", doctor.AddDoctorCommands),
 //	)
-type CommandSetup func(c *core.Core)
+type CommandSetup func(c *core.Core) core.Result
 
 // Main initialises and runs the CLI with the framework's built-in translations.
 //
@@ -93,7 +93,7 @@ type CommandSetup func(c *core.Core)
 //
 //	cli.WithAppName("core")
 //	cli.Main(config.AddConfigCommands)
-func Main(commands ...CommandSetup) {
+func Main(commands ...any) {
 	MainWithLocales(nil, commands...)
 }
 
@@ -103,7 +103,7 @@ func Main(commands ...CommandSetup) {
 //
 //	locales := []cli.LocaleSource{cli.WithLocales(embeddedLocales, "locales")}
 //	cli.MainWithLocales(locales, doctor.AddDoctorCommands)
-func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
+func MainWithLocales(locales []LocaleSource, commands ...any) {
 	// Recovery from panics
 	defer func() {
 		if r := recover(); r != nil {
@@ -145,7 +145,11 @@ func MainWithLocales(locales []LocaleSource, commands ...CommandSetup) {
 
 	// Run command setup functions
 	for _, setup := range commands {
-		setup(c)
+		if r := asCommandSetup(setup)(c); !r.OK {
+			Error(r.Error())
+			c.Exit(1)
+			return
+		}
 	}
 
 	if r := Execute(); !r.OK {

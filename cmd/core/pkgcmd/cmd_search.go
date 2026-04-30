@@ -9,7 +9,6 @@ import (
 	"dappco.re/go"
 	"dappco.re/go/cache"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/cli/pkg/i18n"
 	coreio "dappco.re/go/io"
 	"dappco.re/go/scm/repos"
 )
@@ -67,22 +66,22 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		if found, err := cacheInstance.Get(cacheKey, &ghRepos); found && err == nil {
 			fromCache = true
 			age := cacheInstance.Age(cacheKey)
-			cli.Println("%s %s %s", dimStyle.Render(i18n.T("cmd.pkg.search.cache_label")), org, dimStyle.Render(cli.Sprintf("(%s ago)", age.Round(time.Second))))
+			cli.Println("%s %s %s", dimStyle.Render(cli.T("cmd.pkg.search.cache_label")), org, dimStyle.Render(cli.Sprintf("(%s ago)", age.Round(time.Second))))
 		}
 	}
 
 	// Fetch from GitHub if not cached.
 	if !fromCache {
 		if !ghAuthenticated() {
-			return cli.Err(i18n.T("cmd.pkg.error.gh_not_authenticated"))
+			return cli.Err(cli.T("cmd.pkg.error.gh_not_authenticated"))
 		}
 
 		if core.Env("GH_TOKEN") != "" {
-			cli.Println("%s %s", dimStyle.Render(i18n.Label("note")), i18n.T("cmd.pkg.search.gh_token_warning"))
-			cli.Println("%s %s\n", dimStyle.Render(""), i18n.T("cmd.pkg.search.gh_token_unset"))
+			cli.Println("%s %s", dimStyle.Render(cli.T("i18n.label.note")), cli.T("cmd.pkg.search.gh_token_warning"))
+			cli.Println("%s %s\n", dimStyle.Render(""), cli.T("cmd.pkg.search.gh_token_unset"))
 		}
 
-		cli.Print("%s %s... ", dimStyle.Render(i18n.T("cmd.pkg.search.fetching_label")), org)
+		cli.Print("%s %s... ", dimStyle.Render(cli.T("cmd.pkg.search.fetching_label")), org)
 
 		result := cli.Core().Process().Run(context.Background(), "gh",
 			"repo", "list", org,
@@ -99,14 +98,14 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 				}
 			}
 			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
-				return cli.Err(i18n.T("cmd.pkg.error.auth_failed"))
+				return cli.Err(cli.T("cmd.pkg.error.auth_failed"))
 			}
-			return cli.Err("%s: %s", i18n.T("cmd.pkg.error.search_failed"), errorOutput)
+			return cli.Err("%s: %s", cli.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
 
 		parseResult := core.JSONUnmarshal([]byte(output), &ghRepos)
 		if !parseResult.OK {
-			return cli.Wrap(parseResult.Value.(error), i18n.T("i18n.fail.parse", "results"))
+			return cli.Wrap(parseResult.Value.(error), cli.T("i18n.fail.parse", "results"))
 		}
 
 		if cacheInstance != nil {
@@ -131,7 +130,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 	}
 
 	if len(filtered) == 0 {
-		cli.Println("%s", i18n.T("cmd.pkg.search.no_repos_found"))
+		cli.Println("%s", cli.T("cmd.pkg.search.no_repos_found"))
 		return core.Ok(nil)
 	}
 
@@ -139,12 +138,12 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	cli.Print(i18n.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
+	cli.Print(cli.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
 
 	for _, repo := range filtered {
 		visibility := ""
 		if repo.Visibility == "private" {
-			visibility = dimStyle.Render(" " + i18n.T("cmd.pkg.search.private_label"))
+			visibility = dimStyle.Render(" " + cli.T("cmd.pkg.search.private_label"))
 		}
 
 		description := repo.Description
@@ -152,7 +151,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 			description = description[:47] + "..."
 		}
 		if description == "" {
-			description = dimStyle.Render(i18n.T("cmd.pkg.no_description"))
+			description = dimStyle.Render(cli.T("cmd.pkg.no_description"))
 		}
 
 		cli.Println("  %s%s", repoNameStyle.Render(repo.Name), visibility)
@@ -160,7 +159,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 	}
 
 	cli.Blank()
-	cli.Println("%s %s", i18n.T("common.hint.install_with"), dimStyle.Render(cli.Sprintf("core pkg install %s/<repo-name>", org)))
+	cli.Println("%s %s", cli.T("common.hint.install_with"), dimStyle.Render(cli.Sprintf("core pkg install %s/<repo-name>", org)))
 
 	return core.Ok(nil)
 }

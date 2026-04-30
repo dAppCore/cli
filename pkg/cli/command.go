@@ -22,15 +22,16 @@ type CommandAction = core.CommandAction
 // RegisterCommand registers a command on the Core instance using path-based routing.
 // This is the primary way to register commands in the core/go Cli+Command pattern.
 //
-//	cli.RegisterCommand(c, "config/list", core.Command{
+//	r := cli.RegisterCommand(c, "config/list", core.Command{
 //	    Description: "List all configuration values",
 //	    Action: func(opts core.Options) core.Result {
 //	        cli.Println("listing...")
 //	        return core.Ok(nil)
 //	    },
 //	})
-func RegisterCommand(c *core.Core, path string, cmd core.Command) {
-	c.Command(path, cmd)
+//	if !r.OK { return r }
+func RegisterCommand(c *core.Core, path string, cmd core.Command) core.Result {
+	return c.Command(path, cmd)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

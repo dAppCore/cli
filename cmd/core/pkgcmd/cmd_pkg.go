@@ -18,29 +18,42 @@ var (
 )
 
 // AddPkgCommands adds the 'pkg' command and subcommands for package management.
-func AddPkgCommands(c *core.Core) {
-	c.Command("pkg/search", core.Command{
+func AddPkgCommands(c *core.Core) core.Result {
+	if r := c.Command("pkg/search", core.Command{
 		Description: "Search GitHub org for packages",
 		Action:      pkgSearchAction,
-	})
-	c.Command("pkg/install", core.Command{
+	}); !r.OK {
+		return r
+	}
+	if r := c.Command("pkg/install", core.Command{
 		Description: "Install a package from GitHub",
 		Action:      pkgInstallAction,
-	})
-	c.Command("pkg/list", core.Command{
+	}); !r.OK {
+		return r
+	}
+	if r := c.Command("pkg/list", core.Command{
 		Description: "List installed packages",
 		Action:      pkgListAction,
-	})
-	c.Command("pkg/update", core.Command{
+	}); !r.OK {
+		return r
+	}
+	if r := c.Command("pkg/update", core.Command{
 		Description: "Update installed packages",
 		Action:      pkgUpdateAction,
-	})
-	c.Command("pkg/outdated", core.Command{
+	}); !r.OK {
+		return r
+	}
+	if r := c.Command("pkg/outdated", core.Command{
 		Description: "Check for outdated packages",
 		Action:      pkgOutdatedAction,
-	})
-	c.Command("pkg/remove", core.Command{
+	}); !r.OK {
+		return r
+	}
+	if r := c.Command("pkg/remove", core.Command{
 		Description: "Remove a package (with safety checks)",
 		Action:      pkgRemoveAction,
-	})
+	}); !r.OK {
+		return r
+	}
+	return core.Ok(nil)
 }

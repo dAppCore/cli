@@ -2,7 +2,6 @@ package cli
 
 import (
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,7 +25,7 @@ func Wrap(err error, msg string) core.Result {
 }
 
 // WrapVerb wraps an error using i18n grammar for "Failed to verb subject".
-// Uses the i18n.ActionFailed function for proper grammar composition.
+// Uses the CLI translation helpers for proper grammar composition.
 // Returns nil if err is nil.
 //
 //	return cli.WrapVerb(err, "load", "config")  // "Failed to load config: <original error>"
@@ -34,12 +33,12 @@ func WrapVerb(err error, verb, subject string) core.Result {
 	if err == nil {
 		return core.Ok(nil)
 	}
-	msg := i18n.ActionFailed(verb, subject)
+	msg := actionFailed(verb, subject)
 	return core.Fail(core.E("cli", msg, err))
 }
 
 // WrapAction wraps an error using i18n grammar for "Failed to verb".
-// Uses the i18n.ActionFailed function for proper grammar composition.
+// Uses the CLI translation helpers for proper grammar composition.
 // Returns nil if err is nil.
 //
 //	return cli.WrapAction(err, "connect")  // "Failed to connect: <original error>"
@@ -47,7 +46,7 @@ func WrapAction(err error, verb string) core.Result {
 	if err == nil {
 		return core.Ok(nil)
 	}
-	msg := i18n.ActionFailed(verb, "")
+	msg := actionFailed(verb, "")
 	return core.Fail(core.E("cli", msg, err))
 }
 
@@ -170,7 +169,7 @@ func FatalWrapVerb(err error, verb, subject string) {
 	if err == nil {
 		return
 	}
-	msg := i18n.ActionFailed(verb, subject)
+	msg := actionFailed(verb, subject)
 	LogError("Fatal error", "msg", msg, "err", err, "verb", verb, "subject", subject)
 	fullMsg := core.Sprintf("%s: %v", msg, err)
 	core.Print(stderrWriter(), "%s", ErrorStyle.Render(Glyph(":cross:")+" "+fullMsg))
