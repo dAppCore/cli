@@ -3,18 +3,6 @@ module dappco.re/go/core/cli/cmd/core
 go 1.26.0
 
 require (
-	dappco.re/go v0.9.0
-	dappco.re/go/core/build v0.4.0
-	dappco.re/go/core/cache v0.3.1
-	dappco.re/go/core/cli v0.5.2
-	dappco.re/go/core/config v0.2.3
-	dappco.re/go/core/crypt v0.2.1
-	dappco.re/go/core/devops v0.2.1
-	dappco.re/go/core/help v0.1.3
-	dappco.re/go/core/i18n v0.2.3
-	dappco.re/go/core/io v0.4.1
-	dappco.re/go/core/lint v0.3.5
-	dappco.re/go/core/scm v0.6.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -22,12 +10,6 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	code.gitea.io/sdk/gitea v0.23.2 // indirect
 	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0 // indirect
-	dappco.re/go/agent v0.11.0 // indirect
-	dappco.re/go/core/container v0.2.2 // indirect
-	dappco.re/go/core/inference v0.3.0 // indirect
-	dappco.re/go/core/log v0.1.2 // indirect
-	dappco.re/go/core/process v0.5.1 // indirect
-	dappco.re/go/core/store v0.3.0 // indirect
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/ProtonMail/go-crypto v1.4.0 // indirect
 	github.com/Snider/Borg v0.2.0 // indirect
@@ -111,23 +93,3 @@ require (
 	modernc.org/sqlite v1.47.0 // indirect
 )
 
-replace (
-	dappco.re/go/agent => /Users/snider/Code/core/agent
-	dappco.re/go/core => /Users/snider/Code/core/go
-	dappco.re/go/core/build => /Users/snider/Code/core/go-build
-	dappco.re/go/core/cache => /Users/snider/Code/core/go-cache
-	dappco.re/go/core/cli => /Users/snider/Code/core/cli
-	dappco.re/go/core/config => /Users/snider/Code/core/config
-	dappco.re/go/core/container => /Users/snider/Code/core/go-container
-	dappco.re/go/core/crypt => /Users/snider/Code/core/go-crypt
-	dappco.re/go/core/devops => /Users/snider/Code/core/go-devops
-	dappco.re/go/core/help => /Users/snider/Code/go-help
-	dappco.re/go/core/i18n => /Users/snider/Code/core/go-i18n
-	dappco.re/go/core/inference => /Users/snider/Code/core/go-inference
-	dappco.re/go/core/io => /Users/snider/Code/core/go-io
-	dappco.re/go/core/lint => /Users/snider/Code/core/lint
-	dappco.re/go/core/log => /Users/snider/Code/core/go-log
-	dappco.re/go/core/process => /Users/snider/Code/core/go-process
-	dappco.re/go/core/scm => /Users/snider/Code/core/go-scm
-	dappco.re/go/core/store => /Users/snider/Code/core/go-store
-)
