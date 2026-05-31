@@ -2,7 +2,7 @@ module dappco.re/go/cli
 
 go 1.26.0
 
-require dappco.re/go v0.9.0
+require dappco.re/go v0.10.3
 
 require (
 	github.com/charmbracelet/x/ansi v0.11.6
