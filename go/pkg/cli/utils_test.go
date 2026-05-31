@@ -534,3 +534,98 @@ func TestUtils_GitCloneRef_Ugly(t *core.T) {
 	err := cliResultError(GitCloneRef(nil, "org", "repo", "target", ""))
 	core.AssertNoError(t, err)
 }
+
+// processCore returns the live runtime Core when initialised, else a fresh one.
+func TestUtils_processCore_Good(t *core.T) {
+	resetGlobals(t)
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "proc"})))
+
+	core.AssertEqual(t, instance.core, processCore())
+}
+
+func TestUtils_processCore_Bad(t *core.T) {
+	resetGlobals(t)
+
+	core.AssertNotNil(t, processCore())
+}
+
+func TestUtils_processCore_Ugly(t *core.T) {
+	resetGlobals(t)
+
+	first := processCore()
+	second := processCore()
+	core.AssertNotNil(t, first)
+	core.AssertNotNil(t, second)
+}
+
+// processOutput coerces the heterogeneous Result.Value shapes to a string.
+func TestUtils_processOutput_Good(t *core.T) {
+	core.AssertEqual(t, "hello", processOutput("hello"))
+	core.AssertEqual(t, "bytes", processOutput([]byte("bytes")))
+}
+
+func TestUtils_processOutput_Bad(t *core.T) {
+	core.AssertEqual(t, "boom", processOutput(core.NewError("boom")))
+	core.AssertEqual(t, "", processOutput(nil))
+}
+
+func TestUtils_processOutput_Ugly(t *core.T) {
+	core.AssertEqual(t, "42", processOutput(42))
+}
+
+// findExecutable resolves PATH lookups, absolute paths, and missing commands.
+func TestUtils_findExecutable_Good(t *core.T) {
+	dir := cliFakeCommands(t, map[string]string{"mytool": "echo hi\n"})
+	r := findExecutable("mytool")
+
+	core.AssertTrue(t, r.OK)
+	core.AssertEqual(t, core.Path(dir, "mytool"), r.Value.(string))
+}
+
+func TestUtils_findExecutable_Bad(t *core.T) {
+	r := findExecutable("")
+
+	core.AssertFalse(t, r.OK)
+}
+
+func TestUtils_findExecutable_Ugly(t *core.T) {
+	missing := core.Path(t.TempDir(), "nope")
+	r := findExecutable(missing)
+
+	core.AssertFalse(t, r.OK)
+}
+
+// looksLikeMultiSelectionInput accepts digit/separator strings only.
+func TestUtils_looksLikeMultiSelectionInput_Good(t *core.T) {
+	core.AssertTrue(t, looksLikeMultiSelectionInput("1, 3-5"))
+}
+
+func TestUtils_looksLikeMultiSelectionInput_Bad(t *core.T) {
+	core.AssertFalse(t, looksLikeMultiSelectionInput("hello"))
+}
+
+func TestUtils_looksLikeMultiSelectionInput_Ugly(t *core.T) {
+	core.AssertFalse(t, looksLikeMultiSelectionInput("  -, "))
+}
+
+// parseMultiSelection expands singletons and ranges into zero-based indices.
+func TestUtils_parseMultiSelection_Good(t *core.T) {
+	r := parseMultiSelection("1, 3-4", 5)
+
+	core.AssertTrue(t, r.OK)
+	core.AssertEqual(t, []int{0, 2, 3}, r.Value.([]int))
+}
+
+func TestUtils_parseMultiSelection_Bad(t *core.T) {
+	r := parseMultiSelection("9", 3)
+
+	core.AssertFalse(t, r.OK)
+}
+
+func TestUtils_parseMultiSelection_Ugly(t *core.T) {
+	core.AssertFalse(t, parseMultiSelection("5-2", 9).OK)     // reversed range
+	core.AssertFalse(t, parseMultiSelection("1-2-3", 9).OK)   // malformed range
+	core.AssertFalse(t, parseMultiSelection("x", 9).OK)       // non-numeric
+	core.AssertFalse(t, parseMultiSelection("1-x", 9).OK)     // bad range end
+	core.AssertFalse(t, parseMultiSelection("x-2", 9).OK)     // bad range start
+}
