@@ -47,6 +47,39 @@ func TestStyles_FormatAge_Ugly(t *core.T) {
 	core.AssertNotEmpty(t, got)
 }
 
+// FormatAge labels the hour, day, and week tiers between minute and month.
+func TestStyles_FormatAge_Hours(t *core.T) {
+	core.AssertContains(t, FormatAge(time.Now().Add(-3*time.Hour)), "h ago")
+}
+
+func TestStyles_FormatAge_Days(t *core.T) {
+	core.AssertContains(t, FormatAge(time.Now().Add(-3*24*time.Hour)), "d ago")
+}
+
+func TestStyles_FormatAge_Weeks(t *core.T) {
+	core.AssertContains(t, FormatAge(time.Now().Add(-14*24*time.Hour)), "w ago")
+}
+
+// resolveStyle prefers a per-column style fn but falls back when it
+// returns nil or the column has no registered fn.
+func TestStyles_Table_resolveStyle_FnHit(t *core.T) {
+	table := NewTable("Name").WithCellStyle(0, func(string) *AnsiStyle { return NewStyle().Bold() })
+
+	core.AssertNotNil(t, table.resolveStyle(0, "x"))
+}
+
+func TestStyles_Table_resolveStyle_FnNil(t *core.T) {
+	table := NewTable("Name").WithCellStyle(0, func(string) *AnsiStyle { return nil })
+
+	core.AssertEqual(t, table.Style.CellStyle, table.resolveStyle(0, "x"))
+}
+
+func TestStyles_Table_resolveStyle_NoFn(t *core.T) {
+	table := NewTable("Name")
+
+	core.AssertEqual(t, table.Style.CellStyle, table.resolveStyle(5, "x"))
+}
+
 func TestStyles_DefaultTableStyle_Good(t *core.T) {
 	style := DefaultTableStyle()
 

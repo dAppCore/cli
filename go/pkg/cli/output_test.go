@@ -562,6 +562,16 @@ func TestOutput_Severity_Ugly(t *core.T) {
 	core.AssertContains(t, out, "\n")
 }
 
+// Severity styles the high, medium, and low tiers distinctly from critical.
+func TestOutput_Severity_Levels(t *core.T) {
+	cliPlainCLI(t)
+	for _, level := range []string{"high", "medium", "low"} {
+		out := cliCaptureStdout(t, func() { Severity(level, "finding") })
+		core.AssertContains(t, out, "["+level+"]")
+		core.AssertContains(t, out, "finding")
+	}
+}
+
 func TestOutput_Result_Good(t *core.T) {
 	cliPlainCLI(t)
 	out := cliCaptureStdout(t, func() { Result(true, "passed") })
