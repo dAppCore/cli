@@ -200,6 +200,17 @@ func TestDaemonProcess_StopPIDFile_AlreadyGone(t *core.T) {
 	core.AssertTrue(t, pidFileRemoved(path))
 }
 
+// Stop tolerates a PID file that was already removed out from under it,
+// exercising removePIDFile's IsNotExist branch.
+func TestDaemonProcess_Daemon_Stop_PIDAlreadyGone(t *core.T) {
+	pid := core.Path(t.TempDir(), "vanish.pid")
+	d := NewDaemon(DaemonOptions{PIDFile: pid})
+	core.RequireNoError(t, cliResultError(d.Start(context.Background())))
+	core.RequireTrue(t, core.Remove(pid).OK)
+
+	core.AssertNoError(t, cliResultError(d.Stop(context.Background())))
+}
+
 // pidFileRemoved reports whether path no longer exists on disk.
 func pidFileRemoved(path string) bool {
 	r := core.Stat(path)
