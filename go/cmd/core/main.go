@@ -17,6 +17,7 @@ import (
 	"dappco.re/go/cli/pkg/cli"
 
 	build "dappco.re/go/build/cmd/build"
+	"dappco.re/go/lint/cmd/qa"
 )
 
 func main() {
@@ -29,5 +30,6 @@ func main() {
 		// Ecosystem surface — core {build,…}. lint/qa/go/php follow once this
 		// shape is signed off.
 		cli.WithCommands("build", build.AddBuildCommands),
+		cli.WithCommands("qa", qa.AddQACommands),
 	)
 }
