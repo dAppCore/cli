@@ -1,33 +1,33 @@
+// Command core is the Lethean/dAppCore developer CLI — the token-efficient
+// build, lint, qa, and packaging tooling that the ecosystem grew out of.
+//
+// It composes on the modern CoreGo flow: cli.Main builds a *core.Core (the same
+// substrate the GUI uses via core.New(...), just without the gui/Wails service)
+// and each command surface registers onto it through an AddXCommands(*core.Core)
+// registrar handed to cli.WithCommands. Ecosystem commands are wired EXPLICITLY
+// — the lib package is imported and its registrar passed in, not blank-imported
+// for init() self-registration (the cmd binaries are package main, not
+// importable, so that older pattern is dead).
 package main
 
 import (
 	"dappco.re/go/cli/cmd/core/config"
 	"dappco.re/go/cli/cmd/core/doctor"
-	"dappco.re/go/cli/cmd/core/help"
 	"dappco.re/go/cli/cmd/core/pkgcmd"
 	"dappco.re/go/cli/pkg/cli"
 
-	// Ecosystem commands — self-register via init() + cli.RegisterCommands()
-	_ "dappco.re/go/build/cmd/build"
-	_ "dappco.re/go/build/cmd/ci"
-	_ "dappco.re/go/build/cmd/sdk"
-	_ "dappco.re/go/crypt/cmd/crypt"
-	_ "dappco.re/go/devops/cmd/deploy"
-	_ "dappco.re/go/devops/cmd/dev"
-	_ "dappco.re/go/devops/cmd/docs"
-	_ "dappco.re/go/devops/cmd/gitcmd"
-	_ "dappco.re/go/devops/cmd/setup"
-	_ "dappco.re/go/lint/cmd/qa"
-	_ "dappco.re/go/scm/cmd/collect"
-	_ "dappco.re/go/scm/cmd/forge"
-	_ "dappco.re/go/scm/cmd/gitea"
+	build "dappco.re/go/build/cmd/build"
 )
 
 func main() {
 	cli.Main(
+		// Local CLI built-ins.
 		cli.WithCommands("config", config.AddConfigCommands),
 		cli.WithCommands("doctor", doctor.AddDoctorCommands),
-		cli.WithCommands("help", help.AddHelpCommands),
 		cli.WithCommands("pkg", pkgcmd.AddPkgCommands),
+
+		// Ecosystem surface — core {build,…}. lint/qa/go/php follow once this
+		// shape is signed off.
+		cli.WithCommands("build", build.AddBuildCommands),
 	)
 }

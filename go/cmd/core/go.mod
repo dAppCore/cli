@@ -1,4 +1,4 @@
-module dappco.re/go/core/cli/cmd/core
+module dappco.re/go/cli/cmd/core
 
 go 1.26.0
 

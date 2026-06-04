@@ -31,8 +31,8 @@ func configSetAction(opts core.Options) core.Result {
 	}
 	configuration := configurationResult.Value.(*config.Config)
 
-	if err := configuration.Set(key, value); err != nil {
-		return cli.Wrap(err, "failed to set config value")
+	if r := configuration.Set(key, value); !r.OK {
+		return cli.Err("failed to set config value: %s", r.Error())
 	}
 
 	cli.Success(key + " = " + value)
