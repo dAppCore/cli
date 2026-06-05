@@ -1,0 +1,33 @@
+go 1.26.2
+
+// Dev workspace for the `core` binary. cmd/core is its own module
+// (dappco.re/go/cli/cmd/core) that composes the ecosystem command
+// registrars — the cli lib, go-build, and lint — into one binary via
+// cli.Main. Because a workspace-tidied module records no require lines
+// for workspace-provided deps, cmd/core/go.mod carries none of the
+// dappco.re/go/* modules; they MUST be supplied here from local source.
+// Every transitive dappco dependency is listed so each `require` resolves
+// locally (no forge proxy needed mid-bump). CI builds GOWORK=off.
+use (
+	.
+	/Users/snider/Code/core/cli/go
+	/Users/snider/Code/core/go
+	/Users/snider/Code/core/go-build/go
+	/Users/snider/Code/core/lint/go
+	/Users/snider/Code/core/go-i18n/go
+	/Users/snider/Code/core/go-io/go
+	/Users/snider/Code/core/go-scm/go
+	/Users/snider/Code/core/go-log/go
+	/Users/snider/Code/core/go-config
+	/Users/snider/Code/core/go-process/go
+	/Users/snider/Code/core/go-ws/go
+	/Users/snider/Code/core/go-stream/go
+	/Users/snider/Code/core/go-session/go
+	/Users/snider/Code/core/go-store/go
+	/Users/snider/Code/core/go-crypt/go
+	/Users/snider/Code/core/go-update/go
+	/Users/snider/Code/core/go-forge/go
+	/Users/snider/Code/core/go-git/go
+	/Users/snider/Code/core/go-html/go
+	/Users/snider/Code/core/go-cache/go
+)
