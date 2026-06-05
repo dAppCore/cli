@@ -17,6 +17,7 @@ import (
 	"dappco.re/go/cli/pkg/cli"
 
 	build "dappco.re/go/build/cmd/build"
+	gocmd "dappco.re/go/lint/cmd/gocmd"
 	"dappco.re/go/lint/cmd/qa"
 )
 
@@ -27,9 +28,10 @@ func main() {
 		cli.WithCommands("doctor", doctor.AddDoctorCommands),
 		cli.WithCommands("pkg", pkgcmd.AddPkgCommands),
 
-		// Ecosystem surface — core {build,…}. lint/qa/go/php follow once this
+		// Ecosystem surface — core {build, go, qa, …}. lint/php follow once this
 		// shape is signed off.
 		cli.WithCommands("build", build.AddBuildCommands),
+		cli.WithCommands("go", gocmd.AddGoCommands),
 		cli.WithCommands("qa", qa.AddQACommands),
 	)
 }
