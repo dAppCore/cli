@@ -39,9 +39,10 @@ func main() {
 		// Demo capability so the action→CLI projection has something to mount.
 		AddDemoActions,
 
-		// Opt-in: project the action registry (the capability map) onto the CLI.
-		// Runs last so the explicit commands above win any path collision. This
-		// is the third surface for the same map the API and MCP layers project.
-		cli.MountActions,
+		// Opt-in: project the action registry (the capability map) onto the CLI,
+		// with go-i18n-generated help. Runs last so the explicit commands above
+		// win any path collision. This is the third surface for the same map the
+		// API and MCP layers project.
+		mountActionsWithGrammar,
 	)
 }

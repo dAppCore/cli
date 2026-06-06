@@ -27,6 +27,35 @@ func TestActionMount_MountActions_Bad(t *core.T) {
 	core.AssertFalse(t, MountActions(nil).OK)
 }
 
+func TestActionMount_MountActions_HelpGenerator(t *core.T) {
+	c := core.New()
+	c.Action("widget.spin", func(_ core.Context, _ core.Options) core.Result {
+		return core.Ok(nil)
+	})
+
+	// An injected generator supplies help for actions without a Description,
+	// keeping go-i18n (or any generator) out of the lean lib.
+	core.AssertTrue(t, MountActions(c, func(name string) string {
+		return "generated: " + name
+	}).OK)
+
+	cmd := c.Command("widget/spin").Value.(*core.Command)
+	core.AssertEqual(t, "generated: widget.spin", cmd.Description)
+}
+
+func TestActionMount_MountActions_HelpGenerator_DescriptionWins(t *core.T) {
+	c := core.New()
+	d := c.Action("widget.spin", func(_ core.Context, _ core.Options) core.Result {
+		return core.Ok(nil)
+	})
+	d.Description = "explicit description"
+
+	MountActions(c, func(string) string { return "generated" })
+
+	cmd := c.Command("widget/spin").Value.(*core.Command)
+	core.AssertEqual(t, "explicit description", cmd.Description) // explicit wins over generator
+}
+
 func TestActionMount_MountActions_Ugly(t *core.T) {
 	c := core.New()
 

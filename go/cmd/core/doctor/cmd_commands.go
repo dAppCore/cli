@@ -56,18 +56,19 @@ func doctorCommandsAction(_ core.Options) core.Result {
 
 	cli.Section("commands")
 	for _, path := range c.Commands() {
-		if core.Contains(path, "/") {
-			continue // top-level commands only
+		r := c.Command(path)
+		if !r.OK {
+			continue
 		}
-		description := ""
-		if r := c.Command(path); r.OK {
-			if cmd, ok := r.Value.(*core.Command); ok {
-				// Description is an i18n key by contract; cli.T resolves it when
-				// the catalog has it and passes literal descriptions through.
-				description = cli.T(cmd.Description)
-			}
+		cmd, ok := r.Value.(*core.Command)
+		if !ok || cmd.Action == nil {
+			continue // skip group placeholders — only runnable commands
 		}
-		cli.Println("  %s %s", successStyle.Render(path), dimStyle.Render(description))
+		// Render the path space-separated (the user-facing form), and resolve
+		// the description via cli.T — which translates i18n keys and passes
+		// literal/grammar-generated text through unchanged.
+		display := core.Join(" ", core.Split(path, "/")...)
+		cli.Println("  %s %s", successStyle.Render(display), dimStyle.Render(cli.T(cmd.Description)))
 	}
 	return core.Ok(nil)
 }
