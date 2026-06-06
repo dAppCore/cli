@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"dappco.re/go"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -89,14 +88,14 @@ func Pad(s string, width int) string {
 }
 
 func displayWidth(s string) int {
-	return runewidth.StringWidth(ansi.Strip(s))
+	return runewidth.StringWidth(stripANSI(s))
 }
 
 func truncateByWidth(s string, max int) string {
 	if max <= 0 || s == "" {
 		return ""
 	}
-	plain := ansi.Strip(s)
+	plain := stripANSI(s)
 	if displayWidth(plain) <= max {
 		return plain
 	}
