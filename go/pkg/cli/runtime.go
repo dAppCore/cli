@@ -156,6 +156,15 @@ func Execute() core.Result {
 	if cl == nil {
 		return core.Fail(core.E("cli.Execute", "CLI service not available", nil))
 	}
+
+	// CLI presentation belongs to pkg/cli, not surface-agnostic core/go: when no
+	// command is given, render our own catalog (space-separated paths,
+	// descriptions resolved via T) instead of core/go's slash-path PrintHelp.
+	if len(core.FilterArgs(core.Args()[1:])) == 0 {
+		PrintHelp()
+		return core.Ok(nil) // no command → show help → success (not an error)
+	}
+
 	result := cl.Run()
 	if !result.OK {
 		return result

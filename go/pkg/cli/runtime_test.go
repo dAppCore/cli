@@ -60,7 +60,7 @@ func TestRuntime_Execute_Good(t *core.T) {
 	core.RequireNoError(t, cliResultError(Init(Options{AppName: "execute"})))
 
 	err := cliResultError(Execute())
-	core.AssertError(t, err)
+	core.AssertNoError(t, err) // no command → help shown → success
 }
 
 func TestRuntime_Execute_Bad(t *core.T) {
@@ -76,7 +76,7 @@ func TestRuntime_Execute_Ugly(t *core.T) {
 	instance.core.Service("cli", core.Service{})
 
 	err := cliResultError(Execute())
-	core.AssertError(t, err)
+	core.AssertNoError(t, err) // no command → help shown → success
 }
 
 func TestRuntime_Run_Good(t *core.T) {
@@ -84,7 +84,7 @@ func TestRuntime_Run_Good(t *core.T) {
 	core.RequireNoError(t, cliResultError(Init(Options{AppName: "run"})))
 
 	err := cliResultError(Run(context.Background()))
-	core.AssertError(t, err)
+	core.AssertNoError(t, err) // no command → help shown → success
 }
 
 func TestRuntime_Run_Bad(t *core.T) {
@@ -99,7 +99,7 @@ func TestRuntime_Run_Ugly(t *core.T) {
 	core.RequireNoError(t, cliResultError(Init(Options{AppName: "run"})))
 
 	err := cliResultError(Run(nil))
-	core.AssertError(t, err)
+	core.AssertNoError(t, err) // no command → help shown → success
 }
 
 func TestRuntime_RunWithTimeout_Good(t *core.T) {
