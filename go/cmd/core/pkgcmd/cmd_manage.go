@@ -19,7 +19,7 @@ func pkgListAction(_ core.Options) core.Result {
 func runPkgList() core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml_workspace"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.no_repos_yaml_workspace"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
@@ -88,7 +88,7 @@ func pkgUpdateAction(opts core.Options) core.Result {
 		packages = append(packages, pkg)
 	}
 	if !all && len(packages) == 0 {
-		return cli.Err(cli.T("cmd.pkg.error.specify_package"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.specify_package"))
 	}
 	if r := runPkgUpdate(packages, all); !r.OK {
 		return r
@@ -99,7 +99,7 @@ func pkgUpdateAction(opts core.Options) core.Result {
 func runPkgUpdate(packages []string, all bool) core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)
@@ -172,7 +172,7 @@ func pkgOutdatedAction(_ core.Options) core.Result {
 func runPkgOutdated() core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)

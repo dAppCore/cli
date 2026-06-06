@@ -17,7 +17,7 @@ import (
 func pkgRemoveAction(opts core.Options) core.Result {
 	name := opts.String("_arg")
 	if name == "" {
-		return cli.Err(cli.T("cmd.pkg.error.repo_required"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.repo_required"))
 	}
 	force := opts.Bool("force")
 	if r := runPkgRemove(name, force); !r.OK {
@@ -30,7 +30,7 @@ func runPkgRemove(name string, force bool) core.Result {
 	// Find package path via registry.
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)

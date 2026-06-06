@@ -73,7 +73,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 	// Fetch from GitHub if not cached.
 	if !fromCache {
 		if !ghAuthenticated() {
-			return cli.Err(cli.T("cmd.pkg.error.gh_not_authenticated"))
+			return cli.Err("%s", cli.T("cmd.pkg.error.gh_not_authenticated"))
 		}
 
 		if core.Env("GH_TOKEN") != "" {
@@ -98,7 +98,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 				}
 			}
 			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
-				return cli.Err(cli.T("cmd.pkg.error.auth_failed"))
+				return cli.Err("%s", cli.T("cmd.pkg.error.auth_failed"))
 			}
 			return cli.Err("%s: %s", cli.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
@@ -138,7 +138,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	cli.Print(cli.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
+	cli.Print("%s\n\n", cli.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}))
 
 	for _, repo := range filtered {
 		visibility := ""
