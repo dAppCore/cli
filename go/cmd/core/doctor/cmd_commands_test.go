@@ -9,7 +9,7 @@ func TestCmdCommands_AddDoctorCommands_Good(t *T) {
 	AddDoctorCommands(c)
 
 	AssertTrue(t, c.Command("doctor").OK)
-	AssertContains(t, c.Command("doctor").Value.(Command).Description, "environment")
+	AssertContains(t, c.Command("doctor").Value.(*Command).Description, "environment")
 }
 
 func TestCmdCommands_AddDoctorCommands_Bad(t *T) {

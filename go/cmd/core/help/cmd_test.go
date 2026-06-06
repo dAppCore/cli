@@ -9,7 +9,7 @@ func TestCmd_AddHelpCommands_Good(t *T) {
 	AddHelpCommands(c)
 
 	AssertTrue(t, c.Command("help").OK)
-	AssertContains(t, c.Command("help").Value.(Command).Description, "help")
+	AssertContains(t, c.Command("help").Value.(*Command).Description, "help")
 }
 
 func TestCmd_AddHelpCommands_Bad(t *T) {

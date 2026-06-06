@@ -13,6 +13,7 @@ package main
 import (
 	"dappco.re/go/cli/cmd/core/config"
 	"dappco.re/go/cli/cmd/core/doctor"
+	"dappco.re/go/cli/cmd/core/help"
 	"dappco.re/go/cli/cmd/core/pkgcmd"
 	"dappco.re/go/cli/pkg/cli"
 
@@ -26,6 +27,7 @@ func main() {
 		// Local CLI built-ins.
 		cli.WithCommands("config", config.AddConfigCommands),
 		cli.WithCommands("doctor", doctor.AddDoctorCommands),
+		cli.WithCommands("help", help.AddHelpCommands),
 		cli.WithCommands("pkg", pkgcmd.AddPkgCommands),
 
 		// Ecosystem surface — core {build, go, qa, …}. lint/php follow once this

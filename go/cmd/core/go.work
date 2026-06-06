@@ -12,6 +12,7 @@ use (
 	.
 	/Users/snider/Code/core/cli/go
 	/Users/snider/Code/core/go
+	/Users/snider/Code/core/docs/go
 	/Users/snider/Code/core/go-build/go
 	/Users/snider/Code/core/lint/go
 	/Users/snider/Code/core/go-i18n/go

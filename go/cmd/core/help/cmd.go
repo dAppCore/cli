@@ -3,7 +3,7 @@ package help
 import (
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/help"
+	"dappco.re/go/core/docs/pkg/help"
 )
 
 // AddHelpCommands registers the help command and subcommands.
@@ -47,12 +47,12 @@ func helpAction(opts core.Options) core.Result {
 		return core.Ok(nil)
 	}
 
-	topic, err := catalog.Get(topicID)
-	if err != nil {
-		return cli.Err("Error: %v", err)
+	res := catalog.Get(topicID)
+	if !res.OK {
+		return cli.Err("topic not found: %s", topicID)
 	}
 
-	renderTopic(topic)
+	renderTopic(res.Value.(*help.Topic))
 	return core.Ok(nil)
 }
 
