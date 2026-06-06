@@ -1,0 +1,70 @@
+// Action-to-command bridge.
+//
+// MountActions projects the Core Action registry — the capability map — onto
+// the CLI command tree, the same way the API and MCP surfaces project it into
+// REST routes and tool definitions. One map, three surfaces; entitlements gate
+// who may invoke what, where.
+package cli
+
+import (
+	core "dappco.re/go"
+)
+
+// MountActions registers every action in c's capability map as a CLI command.
+//
+// The dotted action name maps to a command path by replacing dots with slashes
+// ("git.log" -> "git/log"), so `core git log` resolves to the action. An
+// explicit, executable command already bound to a path is left untouched —
+// hand-written commands win over projected ones. Invocation routes through
+// Action.Run, so disabled or unentitled actions still report their gate at call
+// time rather than being silently hidden.
+//
+//	cli.MountActions(cli.Core())
+func MountActions(c *core.Core) core.Result {
+	if c == nil {
+		return core.Fail(core.E("cli.MountActions", "nil core", nil))
+	}
+	for _, name := range c.Actions() {
+		path := core.Join("/", core.Split(name, ".")...)
+
+		// Don't clobber an explicit, executable command at this path.
+		if existing := c.Command(path); existing.OK {
+			if cmd, ok := existing.Value.(*core.Command); ok && cmd.Action != nil {
+				continue
+			}
+		}
+
+		name := name // capture per iteration for the closure
+		if r := c.Command(path, core.Command{
+			Description: actionHelp(c.Action(name)),
+			Action: func(opts core.Options) core.Result {
+				return c.Action(name).Run(actionContext(), opts)
+			},
+		}); !r.OK {
+			return r
+		}
+	}
+	return core.Ok(nil)
+}
+
+// actionContext returns the CLI runtime context when initialised, else a
+// background context (e.g. when MountActions runs under test).
+func actionContext() core.Context {
+	if instance != nil && instance.ctx != nil {
+		return instance.ctx
+	}
+	return core.Background()
+}
+
+// actionHelp derives a command description for an action: its own Description if
+// set, else a readable form of the dotted name. Grammar-aware help generation
+// via go-i18n is the planned enhancement here.
+func actionHelp(a *core.Action) string {
+	if a == nil {
+		return ""
+	}
+	if a.Description != "" {
+		return a.Description
+	}
+	return core.Join(" ", core.Split(a.Name, ".")...)
+}
