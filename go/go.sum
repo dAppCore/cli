@@ -1,5 +1,5 @@
-dappco.re/go v0.10.3 h1:aViRNxdg2jG84P6RsiD+aSta+GcFJwGXMNQPjFPbJ9g=
-dappco.re/go v0.10.3/go.mod h1:xapr7fLK4/9Pu2iSCr4qZuIuatmtx1j56zS/oPDbGyQ=
+dappco.re/go v0.10.4 h1:vir5AK8AkHbTxhPUT0et6Tc0P8i/i+gLInM0LRLt1EU=
+dappco.re/go v0.10.4/go.mod h1:xapr7fLK4/9Pu2iSCr4qZuIuatmtx1j56zS/oPDbGyQ=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
 github.com/mattn/go-runewidth v0.0.21 h1:jJKAZiQH+2mIinzCJIaIG9Be1+0NR+5sz/lYEEjdM8w=
