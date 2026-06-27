@@ -55,7 +55,22 @@ func NewService(config CliConfig) func(*core.Core) core.Result {
 //
 // Usage example: `r := cli.Register(c); svc := r.Value.(*cli.Service)`
 func Register(c *core.Core) core.Result {
-	return NewService(CliConfig{})(c)
+	// Stand up the actual CLI surface — register the *core.Cli command
+	// primitive so c.Cli() resolves and Core.Run() drives it (ServiceStartup →
+	// cli.Run() → ServiceShutdown). Registering this service IS adding a
+	// working CLI; it composes like any other Core service — no cli.Main.
+	if r := core.CliRegister(c); !r.OK {
+		return r
+	}
+	r := NewService(CliConfig{})(c)
+	if !r.OK {
+		return r
+	}
+	svc := r.Value.(*Service)
+	c.Action("cli.version", svc.handleVersion)
+	c.Action("cli.app_name", svc.handleAppName)
+	c.Action("cli.build_info", svc.handleBuildInfo)
+	return core.Ok(nil)
 }
 
 // OnStartup registers the cli action handlers on the attached Core.

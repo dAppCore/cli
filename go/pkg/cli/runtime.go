@@ -70,9 +70,11 @@ func Init(opts Options) core.Result {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create Core instance with CLI service (registered automatically by core.New)
+	// Create Core instance + opt in the CLI primitive (core.New no longer
+	// auto-registers it).
 	c := core.New(
 		core.WithOption("name", opts.AppName),
+		core.WithCli(),
 	)
 	c.App().Name = opts.AppName
 	c.App().Version = opts.Version
