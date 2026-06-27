@@ -70,12 +70,16 @@ func Init(opts Options) core.Result {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create Core instance + opt in the CLI primitive (core.New no longer
-	// auto-registers it).
+	// Create Core instance, then stand up the CLI via the package's own
+	// service (registers the primitive once) — never core.WithCli() here, which
+	// would force the default cli back in and double-register.
 	c := core.New(
 		core.WithOption("name", opts.AppName),
-		core.WithCli(),
 	)
+	if r := Register(c); !r.OK {
+		cancel()
+		return r
+	}
 	c.App().Name = opts.AppName
 	c.App().Version = opts.Version
 
