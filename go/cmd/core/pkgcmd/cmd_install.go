@@ -12,7 +12,7 @@ import (
 func pkgInstallAction(opts core.Options) core.Result {
 	repoArg := opts.String("_arg")
 	if repoArg == "" {
-		return cli.Err(cli.T("cmd.pkg.error.repo_required"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.repo_required"))
 	}
 	targetDir := opts.String("dir")
 	addToReg := opts.Bool("add")
@@ -28,7 +28,7 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) core.Res
 	// Parse org/repo argument.
 	parts := core.Split(repoArg, "/")
 	if len(parts) != 2 {
-		return cli.Err(cli.T("cmd.pkg.error.invalid_repo_format"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.invalid_repo_format"))
 	}
 	org, repoName := parts[0], parts[1]
 
@@ -97,7 +97,7 @@ func runPkgInstall(repoArg, targetDirectory string, addToRegistry bool) core.Res
 func addToRegistryFile(org, repoName string) core.Result {
 	registryPath, err := repos.FindRegistry(coreio.Local)
 	if err != nil {
-		return cli.Err(cli.T("cmd.pkg.error.no_repos_yaml"))
+		return cli.Err("%s", cli.T("cmd.pkg.error.no_repos_yaml"))
 	}
 
 	registry, err := repos.LoadRegistry(coreio.Local, registryPath)

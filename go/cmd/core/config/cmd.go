@@ -38,9 +38,9 @@ func AddConfigCommands(c *core.Core) core.Result {
 }
 
 func loadConfig() core.Result {
-	configuration, err := config.New()
-	if err != nil {
-		return cli.Wrap(err, "failed to load config")
+	configResult := config.New()
+	if !configResult.OK {
+		return cli.Err("failed to load config: %s", configResult.Error())
 	}
-	return core.Ok(configuration)
+	return core.Ok(configResult.Value.(*config.Config))
 }

@@ -277,3 +277,110 @@ func TestTracker_TaskTracker_String_Ugly(t *core.T) {
 	core.AssertContains(t, tr.String(), "✓")
 	core.AssertContains(t, tr.String(), "⚠")
 }
+
+// renderLine emits one styled line for each task state into the writer.
+func TestTracker_TaskTracker_renderLine_Good(t *core.T) {
+	out := core.NewBuilder()
+	tr := NewTaskTracker().WithOutput(out)
+	tr.Add("build").Done("compiled")
+
+	tr.renderLine(0, 0)
+
+	core.AssertContains(t, out.String(), "build")
+	core.AssertContains(t, out.String(), "compiled")
+}
+
+func TestTracker_TaskTracker_renderLine_Bad(t *core.T) {
+	out := core.NewBuilder()
+	tr := NewTaskTracker().WithOutput(out)
+	tr.Add("deploy").Fail("boom")
+
+	tr.renderLine(0, 0)
+
+	core.AssertContains(t, out.String(), "deploy")
+	core.AssertContains(t, out.String(), "boom")
+}
+
+func TestTracker_TaskTracker_renderLine_Ugly(t *core.T) {
+	out := core.NewBuilder()
+	tr := NewTaskTracker().WithOutput(out)
+	tr.Add("pending-task") // stays taskPending
+	tr.Add("active").Update("working")
+
+	tr.renderLine(0, 0) // pending branch
+	tr.renderLine(1, 1) // running branch + spinner
+
+	core.AssertContains(t, out.String(), "pending-task")
+	core.AssertContains(t, out.String(), "active")
+}
+
+// allDone reports completion only when every task has finished.
+func TestTracker_TaskTracker_allDone_Good(t *core.T) {
+	tr := NewTaskTracker().WithOutput(core.NewBuilder())
+	tr.Add("a").Done("ok")
+	tr.Add("b").Fail("no")
+
+	core.AssertTrue(t, tr.allDone())
+}
+
+func TestTracker_TaskTracker_allDone_Bad(t *core.T) {
+	tr := NewTaskTracker().WithOutput(core.NewBuilder())
+	tr.Add("a").Done("ok")
+	tr.Add("b").Update("running")
+
+	core.AssertFalse(t, tr.allDone())
+}
+
+func TestTracker_TaskTracker_allDone_Ugly(t *core.T) {
+	tr := NewTaskTracker().WithOutput(core.NewBuilder())
+
+	core.AssertTrue(t, tr.allDone())
+}
+
+// waitLive renders and returns immediately when every task is already done.
+func TestTracker_TaskTracker_waitLive_Good(t *core.T) {
+	out := core.NewBuilder()
+	tr := NewTaskTracker().WithOutput(out)
+	tr.Add("build").Done("done")
+
+	core.AssertNotPanics(t, func() { tr.waitLive() })
+	core.AssertContains(t, out.String(), "build")
+}
+
+func TestTracker_TaskTracker_waitLive_Bad(t *core.T) {
+	tr := NewTaskTracker().WithOutput(core.NewBuilder())
+
+	core.AssertNotPanics(t, func() { tr.waitLive() })
+	core.AssertTrue(t, tr.allDone())
+}
+
+func TestTracker_TaskTracker_waitLive_Ugly(t *core.T) {
+	out := core.NewBuilder()
+	tr := NewTaskTracker().WithOutput(out)
+	tr.Add("a").Fail("err")
+	tr.Add("b").Done("ok")
+
+	core.AssertNotPanics(t, func() { tr.waitLive() })
+	core.AssertContains(t, out.String(), "a")
+}
+
+// trackerSpinnerFrame cycles frames and respects the active glyph theme.
+func TestTracker_trackerSpinnerFrame_Good(t *core.T) {
+	frame := trackerSpinnerFrame(0)
+
+	core.AssertNotEmpty(t, frame)
+	core.AssertEqual(t, trackerSpinnerFrame(len(spinnerFramesUnicode)), trackerSpinnerFrame(0))
+}
+
+func TestTracker_trackerSpinnerFrame_Bad(t *core.T) {
+	original := currentTheme
+	currentTheme = ThemeASCII
+	t.Cleanup(func() { currentTheme = original })
+
+	core.AssertEqual(t, spinnerFramesASCII[0], trackerSpinnerFrame(0))
+	core.AssertEqual(t, spinnerFramesASCII[1], trackerSpinnerFrame(1))
+}
+
+func TestTracker_trackerSpinnerFrame_Ugly(t *core.T) {
+	core.AssertNotPanics(t, func() { _ = trackerSpinnerFrame(99999) })
+}

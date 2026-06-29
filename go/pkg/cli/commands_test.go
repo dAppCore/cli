@@ -117,3 +117,51 @@ func TestCommands_RegisteredCommands_Ugly(t *core.T) {
 	}
 	core.AssertEqual(t, 2, count)
 }
+
+// asCommandRegistration normalises every accepted callable shape.
+func TestCommands_asCommandRegistration_Good(t *core.T) {
+	var typed CommandRegistration = func(*core.Core) core.Result { return core.Ok("typed") }
+
+	core.AssertEqual(t, "typed", asCommandRegistration(typed)(core.New()).Value.(string))
+}
+
+func TestCommands_asCommandRegistration_Bad(t *core.T) {
+	r := asCommandRegistration("not a function")(core.New())
+
+	core.AssertFalse(t, r.OK)
+}
+
+func TestCommands_asCommandRegistration_Ugly(t *core.T) {
+	resultFn := func(*core.Core) core.Result { return core.Ok("fn-result") }
+	voidCalled := false
+	voidFn := func(*core.Core) { voidCalled = true }
+
+	core.AssertEqual(t, "fn-result", asCommandRegistration(resultFn)(core.New()).Value.(string))
+	core.AssertTrue(t, asCommandRegistration(voidFn)(core.New()).OK)
+	core.AssertTrue(t, voidCalled)
+}
+
+// asCommandSetup normalises every accepted callable shape.
+func TestCommands_asCommandSetup_Good(t *core.T) {
+	var typed CommandSetup = func(*core.Core) core.Result { return core.Ok("setup") }
+
+	core.AssertEqual(t, "setup", asCommandSetup(typed)(core.New()).Value.(string))
+}
+
+func TestCommands_asCommandSetup_Bad(t *core.T) {
+	r := asCommandSetup(42)(core.New())
+
+	core.AssertFalse(t, r.OK)
+}
+
+func TestCommands_asCommandSetup_Ugly(t *core.T) {
+	var reg CommandRegistration = func(*core.Core) core.Result { return core.Ok("reg") }
+	resultFn := func(*core.Core) core.Result { return core.Ok("fn") }
+	voidCalled := false
+	voidFn := func(*core.Core) { voidCalled = true }
+
+	core.AssertEqual(t, "reg", asCommandSetup(reg)(core.New()).Value.(string))
+	core.AssertEqual(t, "fn", asCommandSetup(resultFn)(core.New()).Value.(string))
+	core.AssertTrue(t, asCommandSetup(voidFn)(core.New()).OK)
+	core.AssertTrue(t, voidCalled)
+}

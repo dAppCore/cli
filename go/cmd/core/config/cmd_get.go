@@ -19,7 +19,7 @@ func configGetAction(opts core.Options) core.Result {
 	configuration := configurationResult.Value.(*config.Config)
 
 	var value any
-	if err := configuration.Get(key, &value); err != nil {
+	if r := configuration.Get(key, &value); !r.OK {
 		return cli.Err("key not found: %s", key)
 	}
 

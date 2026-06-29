@@ -156,6 +156,55 @@ func bgColorHex(hex string) string {
 	return core.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
 }
 
+// stripANSI removes ANSI escape sequences from s, returning only the visible
+// text. It is the zero-dependency replacement for charmbracelet/x/ansi.Strip:
+// the CLI emits only SGR sequences (see AnsiStyle.Render), but the full CSI and
+// OSC forms are handled so display-width and truncation stay correct for any
+// styled input. Escape bytes are all ASCII, so scanning by byte is safe over
+// UTF-8 content — multibyte runes (>= 0x80) are copied through untouched.
+func stripANSI(s string) string {
+	if !core.Contains(s, "\033") {
+		return s
+	}
+	out := core.NewBuilder()
+	for i := 0; i < len(s); {
+		if s[i] != 0x1b { // not ESC — a visible byte
+			out.WriteByte(s[i])
+			i++
+			continue
+		}
+		if i+1 >= len(s) {
+			break // dangling ESC at end of string
+		}
+		switch s[i+1] {
+		case '[': // CSI: ESC [ params… final-byte (0x40–0x7E)
+			i += 2
+			for i < len(s) && (s[i] < 0x40 || s[i] > 0x7e) {
+				i++
+			}
+			if i < len(s) {
+				i++ // consume the final byte
+			}
+		case ']': // OSC: ESC ] … terminated by BEL or ST (ESC \)
+			i += 2
+			for i < len(s) {
+				if s[i] == 0x07 { // BEL
+					i++
+					break
+				}
+				if s[i] == 0x1b && i+1 < len(s) && s[i+1] == '\\' { // ST
+					i += 2
+					break
+				}
+				i++
+			}
+		default: // other two-byte escape (ESC c, ESC M, …)
+			i += 2
+		}
+	}
+	return out.String()
+}
+
 // hexToRGB converts a hex string to RGB values.
 func hexToRGB(hex string) (int, int, int) {
 	hex = core.TrimPrefix(hex, "#")

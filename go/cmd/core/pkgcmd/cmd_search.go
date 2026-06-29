@@ -52,9 +52,9 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		cacheDirectory = core.Path(core.PathDir(registryPath), ".core", "cache")
 	}
 
-	cacheInstance, err := cache.New(coreio.Local, cacheDirectory, 0)
-	if err != nil {
-		cacheInstance = nil
+	var cacheInstance *cache.Cache
+	if r := cache.New(coreio.Local, cacheDirectory, 0); r.OK {
+		cacheInstance, _ = r.Value.(*cache.Cache)
 	}
 
 	cacheKey := cache.GitHubReposKey(org)
@@ -63,7 +63,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 
 	// Try cache first (unless refresh requested).
 	if cacheInstance != nil && !refresh {
-		if found, err := cacheInstance.Get(cacheKey, &ghRepos); found && err == nil {
+		if getResult := cacheInstance.Get(cacheKey, &ghRepos); getResult.OK && getResult.Value == true {
 			fromCache = true
 			age := cacheInstance.Age(cacheKey)
 			cli.Println("%s %s %s", dimStyle.Render(cli.T("cmd.pkg.search.cache_label")), org, dimStyle.Render(cli.Sprintf("(%s ago)", age.Round(time.Second))))
@@ -73,7 +73,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 	// Fetch from GitHub if not cached.
 	if !fromCache {
 		if !ghAuthenticated() {
-			return cli.Err(cli.T("cmd.pkg.error.gh_not_authenticated"))
+			return cli.Err("%s", cli.T("cmd.pkg.error.gh_not_authenticated"))
 		}
 
 		if core.Env("GH_TOKEN") != "" {
@@ -98,7 +98,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 				}
 			}
 			if core.Contains(errorOutput, "401") || core.Contains(errorOutput, "Bad credentials") {
-				return cli.Err(cli.T("cmd.pkg.error.auth_failed"))
+				return cli.Err("%s", cli.T("cmd.pkg.error.auth_failed"))
 			}
 			return cli.Err("%s: %s", cli.T("cmd.pkg.error.search_failed"), errorOutput)
 		}
@@ -109,8 +109,8 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		}
 
 		if cacheInstance != nil {
-			if err := cacheInstance.Set(cacheKey, ghRepos); err != nil {
-				cli.LogWarn("failed to cache package search results", "err", err)
+			if setResult := cacheInstance.Set(cacheKey, ghRepos); !setResult.OK {
+				cli.LogWarn("failed to cache package search results", "err", setResult.Error())
 			}
 		}
 
@@ -138,7 +138,7 @@ func runPkgSearch(org, pattern, repoType string, limit int, refresh bool) core.R
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	cli.Print(cli.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}) + "\n\n")
+	cli.Print("%s\n\n", cli.T("cmd.pkg.search.found_repos", map[string]int{"Count": len(filtered)}))
 
 	for _, repo := range filtered {
 		visibility := ""

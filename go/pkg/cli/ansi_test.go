@@ -233,3 +233,27 @@ func TestAnsi_AnsiStyle_Render_Ugly(t *core.T) {
 	core.AssertEqual(t, "ready", got)
 	core.AssertNotContains(t, got, ansiReset)
 }
+
+func TestAnsi_stripANSI_Good(t *core.T) {
+	old := ColorEnabled()
+	t.Cleanup(func() { SetColorEnabled(old) })
+	SetColorEnabled(true)
+
+	styled := NewStyle().Bold().Foreground("#ef4444").Render("danger")
+	core.AssertContains(t, styled, "\033[") // precondition: actually styled
+	core.AssertEqual(t, "danger", stripANSI(styled))
+}
+
+func TestAnsi_stripANSI_Bad(t *core.T) {
+	core.AssertEqual(t, "plain text", stripANSI("plain text"))
+	core.AssertEqual(t, "", stripANSI(""))
+}
+
+func TestAnsi_stripANSI_Ugly(t *core.T) {
+	// Multiple SGR runs around separate segments.
+	core.AssertEqual(t, "ab", stripANSI("\033[31ma\033[0m\033[1mb\033[0m"))
+	// OSC-8 hyperlink wrapper (ESC ] 8 ; ; URL BEL text ESC ] 8 ; ; BEL).
+	core.AssertEqual(t, "link", stripANSI("\033]8;;https://x\007link\033]8;;\007"))
+	// Truncated trailing CSI with no final byte — drop the dangling escape.
+	core.AssertEqual(t, "x", stripANSI("x\033[31"))
+}

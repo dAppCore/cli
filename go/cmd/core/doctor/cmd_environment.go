@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"runtime"
+
 	"dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
 	io "dappco.re/go/io"
@@ -8,6 +10,30 @@ import (
 )
 
 var environmentFS = (&core.Fs{}).New("/")
+
+// doctorEnvironmentAction shows detected system information: OS/arch, the Go
+// runtime, the shell, and the resolved paths of the tools doctor knows about.
+func doctorEnvironmentAction(_ core.Options) core.Result {
+	cli.Section("system")
+	cli.Println("  %s %s/%s", cli.KeyStyle.Render("OS"), runtime.GOOS, runtime.GOARCH)
+	cli.Println("  %s %s", cli.KeyStyle.Render("Go"), runtime.Version())
+	if shell := core.Getenv("SHELL"); shell != "" {
+		cli.Println("  %s %s", cli.KeyStyle.Render("Shell"), shell)
+	}
+
+	cli.Blank()
+	cli.Section("tools")
+	for _, toolCheck := range append(requiredChecks(), optionalChecks()...) {
+		if r := (core.App{}).Find(toolCheck.command, toolCheck.name); r.OK {
+			if app, ok := r.Value.(*core.App); ok {
+				cli.Println("  %s %s", successStyle.Render(toolCheck.name), dimStyle.Render(app.Path))
+				continue
+			}
+		}
+		cli.Println("  %s %s", dimStyle.Render(toolCheck.name), dimStyle.Render(cli.T("i18n.label.missing")))
+	}
+	return core.Ok(nil)
+}
 
 // checkGitHubSSH checks if SSH keys exist for GitHub access.
 // Returns true if any standard SSH key file exists in ~/.ssh/.

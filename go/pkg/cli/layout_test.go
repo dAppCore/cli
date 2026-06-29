@@ -217,6 +217,22 @@ func TestLayout_Composite_C_Ugly(t *core.T) {
 	core.AssertContains(t, composite.String(), "two")
 }
 
+// toRenderable passes through an existing Renderable and Sprint-coerces
+// non-string values, as well as wrapping plain strings.
+func TestLayout_Composite_C_Renderable(t *core.T) {
+	composite := Layout("C")
+	composite.C(StringBlock("already-renderable"))
+
+	core.AssertContains(t, composite.String(), "already-renderable")
+}
+
+func TestLayout_Composite_C_NonString(t *core.T) {
+	composite := Layout("C")
+	composite.C(7)
+
+	core.AssertContains(t, composite.String(), "7")
+}
+
 func TestLayout_Composite_R_Good(t *core.T) {
 	composite := Layout("R")
 	composite.R("right")

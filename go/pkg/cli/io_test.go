@@ -63,3 +63,18 @@ func TestIo_SetStderr_Ugly(t *core.T) {
 	writeString(stderrWriter(), "x")
 	core.AssertEqual(t, "x", errOut.String())
 }
+
+// ioFailWriter always fails its Write, to exercise writeString's error path.
+type ioFailWriter struct{}
+
+func (ioFailWriter) Write([]byte) (int, error) { return 0, core.NewError("write failed") }
+
+// writeString ignores a nil writer and logs (without panicking) when the
+// underlying write fails.
+func TestIo_writeString_Nil(t *core.T) {
+	core.AssertNotPanics(t, func() { writeString(nil, "x") })
+}
+
+func TestIo_writeString_Error(t *core.T) {
+	core.AssertNotPanics(t, func() { writeString(ioFailWriter{}, "x") })
+}

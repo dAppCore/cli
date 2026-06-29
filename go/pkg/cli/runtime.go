@@ -70,10 +70,16 @@ func Init(opts Options) core.Result {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create Core instance with CLI service (registered automatically by core.New)
+	// Create Core instance, then stand up the CLI via the package's own
+	// service (registers the primitive once) — never core.WithCli() here, which
+	// would force the default cli back in and double-register.
 	c := core.New(
 		core.WithOption("name", opts.AppName),
 	)
+	if r := Register(c); !r.OK {
+		cancel()
+		return r
+	}
 	c.App().Name = opts.AppName
 	c.App().Version = opts.Version
 
@@ -156,6 +162,15 @@ func Execute() core.Result {
 	if cl == nil {
 		return core.Fail(core.E("cli.Execute", "CLI service not available", nil))
 	}
+
+	// CLI presentation belongs to pkg/cli, not surface-agnostic core/go: when no
+	// command is given, render our own catalog (space-separated paths,
+	// descriptions resolved via T) instead of core/go's slash-path PrintHelp.
+	if len(core.FilterArgs(core.Args()[1:])) == 0 {
+		PrintHelp()
+		return core.Ok(nil) // no command → show help → success (not an error)
+	}
+
 	result := cl.Run()
 	if !result.OK {
 		return result

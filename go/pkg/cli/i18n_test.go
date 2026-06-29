@@ -22,3 +22,22 @@ func TestI18n_T_Ugly(t *core.T) {
 	core.AssertEqual(t, "", result)
 	core.AssertEmpty(t, result)
 }
+
+// T routes through the live Core i18n service once the runtime is
+// initialised, resolving keys from the bundled en.json locale.
+func TestI18n_T_LiveInstance(t *core.T) {
+	resetGlobals(t)
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "i18ntest"})))
+
+	core.AssertNotNil(t, instance)
+	core.AssertNotEmpty(t, T("cmd.doctor.short"))
+}
+
+// T falls back to the magic-key translator for keys absent from the
+// Core service even when the runtime is initialised.
+func TestI18n_T_LiveInstanceFallback(t *core.T) {
+	resetGlobals(t)
+	core.RequireNoError(t, cliResultError(Init(Options{AppName: "i18ntest"})))
+
+	core.AssertEqual(t, "Workspace:", T("i18n.label.workspace"))
+}
