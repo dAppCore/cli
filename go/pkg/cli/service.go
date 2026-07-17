@@ -59,8 +59,13 @@ func Register(c *core.Core) core.Result {
 	// primitive so c.Cli() resolves and Core.Run() drives it (ServiceStartup →
 	// cli.Run() → ServiceShutdown). Registering this service IS adding a
 	// working CLI; it composes like any other Core service — no cli.Main.
-	if r := core.CliRegister(c); !r.OK {
-		return r
+	// Idempotent: RegisterService errors on a second same-name registration,
+	// so skip it once the primitive is already up (a repeat Register(c) call
+	// must be safe, matching Init()'s own already-initialised short-circuit).
+	if c.Cli() == nil {
+		if r := core.CliRegister(c); !r.OK {
+			return r
+		}
 	}
 	r := NewService(CliConfig{})(c)
 	if !r.OK {
@@ -70,7 +75,7 @@ func Register(c *core.Core) core.Result {
 	c.Action("cli.version", svc.handleVersion)
 	c.Action("cli.app_name", svc.handleAppName)
 	c.Action("cli.build_info", svc.handleBuildInfo)
-	return core.Ok(nil)
+	return core.Ok(svc)
 }
 
 // OnStartup registers the cli action handlers on the attached Core.

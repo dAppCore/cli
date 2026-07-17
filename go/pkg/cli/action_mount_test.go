@@ -6,6 +6,7 @@ import (
 
 func TestActionMount_MountActions_Good(t *core.T) {
 	c := core.New()
+	core.RequireTrue(t, core.CliRegister(c).OK)
 	ran := false
 	c.Action("demo.ping", func(_ core.Context, _ core.Options) core.Result {
 		ran = true
