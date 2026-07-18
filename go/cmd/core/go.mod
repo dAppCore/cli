@@ -3,9 +3,9 @@ module dappco.re/go/cli/cmd/core
 go 1.26.2
 
 require (
-	dappco.re/go v0.11.0
+	dappco.re/go v0.12.0
 	dappco.re/go/build v0.1.0
-	dappco.re/go/cli v0.11.2
+	dappco.re/go/cli v0.11.4
 	dappco.re/go/config v0.18.0
 	dappco.re/go/i18n v0.12.1
 	dappco.re/go/io v0.15.1
