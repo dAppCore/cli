@@ -1,0 +1,97 @@
+name: core
+
+# Builds the `core` binary — the developer CLI the whole CoreGO ecosystem grew
+# out of — with dAppCore/build.
+#
+# The binary is the point of the exercise. It composes dappco.re/go/build and
+# dappco.re/go/lint, so a machine with `core` on it has the build and QA
+# tooling for everything else without installing anything further. Publishing
+# it on a tag is what makes that true for a CI runner as well as a desk.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: core on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build core
+        id: build
+        uses: dAppCore/build@v4
+        with:
+          build-name: core
+          # cmd/core is its own module rather than a package of the parent one,
+          # so the module root is named explicitly. Detection would otherwise
+          # find go/go.mod and build the library module, which has no command.
+          go-directory: go/cmd/core
+          main-package: "."
+          STACK: go
+          # Stamped from the ref so `core --version` reports something true
+          # rather than the 0.0.0 it currently prints.
+          ldflags: -s -w -X main.version=${{ github.ref_name }}
+          # An artifact on every run; a release only on a tag.
+          package: true
+
+      - name: Check the binary answers
+        shell: bash
+        working-directory: go/cmd/core
+        run: |
+          set -uo pipefail
+          BIN="${{ steps.build.outputs.BINARY_PATH }}"
+          test -f "$BIN"
+
+          # Two quirks decide the shape of this check, both worth knowing:
+          #
+          #   bare `core`   writes a colourised list and exits 0. Greppable only
+          #                 after stripping ANSI, which is not worth doing here.
+          #   `core --help` writes a plain list — one command per line, which is
+          #                 the machine-readable one — and exits 1.
+          #
+          # So: use --help for the output, and do not treat its exit code as the
+          # verdict. The next step reports that code rather than hiding it.
+          "./$BIN" --help > surfaces.txt 2>/dev/null || true
+          cat surfaces.txt
+
+          # `build` comes from dappco.re/go/build; `go/qa` and `qa/*` from
+          # dappco.re/go/lint. Absent means one of them failed to compose, which
+          # is the whole reason this binary is interesting.
+          for surface in build go/qa qa/audit doctor release; do
+            grep -qE "^  ${surface}$" surfaces.txt \
+              || { echo "::error::'$surface' missing — a command surface did not register"; exit 1; }
+          done
+          echo "[DEBUG_LOG] $(grep -cE '^  [a-z]' surfaces.txt) command surfaces registered"
+
+      - name: Note the --help exit code
+        if: always()
+        shell: bash
+        working-directory: go/cmd/core
+        run: |
+          # Reported, not asserted. `core --help` prints the command list and
+          # then exits 1, where bare `core` and `core help` both exit 0. Worth
+          # fixing in the CLI runtime; not worth failing a build over.
+          set +e
+          "./${{ steps.build.outputs.BINARY_PATH }}" --help >/dev/null 2>&1
+          code=$?
+          echo "[DEBUG_LOG] core --help exit=$code"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::core --help exits $code while bare core and core help exit 0"
+          fi
