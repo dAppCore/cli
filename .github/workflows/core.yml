@@ -45,6 +45,10 @@ jobs:
           go-directory: go/cmd/core
           main-package: "."
           STACK: go
+          # Explicit, so the root action's darwin/universal default — a Wails v2
+          # idea with no Go equivalent — does not reach the toolchain. Each
+          # runner builds for itself; the matrix is what covers the platforms.
+          build-platform: ""
           # Stamped from the ref so `core --version` reports something true
           # rather than the 0.0.0 it currently prints.
           ldflags: -s -w -X main.version=${{ github.ref_name }}
