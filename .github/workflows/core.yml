@@ -50,11 +50,8 @@ jobs:
           # runner builds for itself; the matrix is what covers the platforms.
           build-platform: ""
           # Stamped from the ref so `core --version` reports something true
-          # rather than the 0.0.0 it currently prints. The variable lives in
-          # pkg/cli, not main: -X names a package-qualified symbol, and one
-          # that does not exist is discarded without a word, which is why
-          # v0.12.3 shipped still saying 0.0.0.
-          ldflags: -s -w -X dappco.re/go/cli/pkg/cli.AppVersion=${{ github.ref_name }}
+          # rather than the 0.0.0 it currently prints.
+          ldflags: -s -w -X dappco.re/go/cli.Version=${{ github.ref_name }}
           # An artifact on every run; a release only on a tag.
           package: true
           # A zip is a download; a .deb is an install. The Linux job attaches

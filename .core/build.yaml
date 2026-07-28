@@ -16,10 +16,7 @@ build:
   ldflags:
     - -s
     - -w
-    # The variable lives in pkg/cli, not main. -X names a package-qualified
-    # symbol and discards one it cannot find without a word, which is how
-    # builds kept reporting 0.0.0.
-    - -X dappco.re/go/cli/pkg/cli.AppVersion={{.Version}}
+    - -X dappco.re/go/cli.Version={{.Version}}
   env: []
 
 targets:
