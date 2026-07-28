@@ -60,42 +60,43 @@ jobs:
         # app-working-directory, which is the repository root.
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           BIN="${{ steps.build.outputs.BINARY_PATH }}"
           test -f "$BIN"
 
-          # Two quirks decide the shape of this check, both worth knowing:
-          #
-          #   bare `core`   writes a colourised list and exits 0. Greppable only
-          #                 after stripping ANSI, which is not worth doing here.
-          #   `core --help` writes a plain list — one command per line, which is
-          #                 the machine-readable one — and exits 1.
-          #
-          # So: use --help for the output, and do not treat its exit code as the
-          # verdict. The next step reports that code rather than hiding it.
-          "./$BIN" --help > surfaces.txt 2>/dev/null || true
+          # --help now prints the same catalog as a bare invocation and exits 0.
+          # It is colourised, so ANSI is stripped before matching — grepping the
+          # raw output silently matches nothing, which would make this check
+          # pass for the wrong reason if it were ever inverted.
+          "./$BIN" --help 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' > surfaces.txt
           cat surfaces.txt
 
-          # `build` comes from dappco.re/go/build; `go/qa` and `qa/*` from
-          # dappco.re/go/lint. Absent means one of them failed to compose, which
-          # is the whole reason this binary is interesting.
-          for surface in build go/qa qa/audit doctor release; do
-            grep -qE "^  ${surface}$" surfaces.txt \
+          # `build` comes from dappco.re/go/build; `go qa` and `qa audit` from
+          # dappco.re/go/lint. Absent means one failed to compose, which is the
+          # whole reason this binary is interesting.
+          for surface in "build" "go qa" "qa audit" "doctor" "release"; do
+            grep -qE "^  ${surface}( |\$)" surfaces.txt \
               || { echo "::error::'$surface' missing — a command surface did not register"; exit 1; }
           done
           echo "[DEBUG_LOG] $(grep -cE '^  [a-z]' surfaces.txt) command surfaces registered"
 
-      - name: Note the --help exit code
-        if: always()
+          # Both invocations must agree. They used to print different catalogs:
+          # bare rendered pkg/cli's space-separated one, --help fell through to
+          # core/go's slash-path one and exited 1.
+          "./$BIN" 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' > bare.txt
+          diff -q bare.txt surfaces.txt \
+            || { echo "::error::core and core --help disagree"; exit 1; }
+
+      - name: Every help invocation exits 0
         shell: bash
         run: |
-          # Reported, not asserted. `core --help` prints the command list and
-          # then exits 1, where bare `core` and `core help` both exit 0. Worth
-          # fixing in the CLI runtime; not worth failing a build over.
-          set +e
-          "./${{ steps.build.outputs.BINARY_PATH }}" --help >/dev/null 2>&1
-          code=$?
-          echo "[DEBUG_LOG] core --help exit=$code"
-          if [ "$code" -ne 0 ]; then
-            echo "::warning::core --help exits $code while bare core and core help exit 0"
-          fi
+          set -uo pipefail
+          BIN="${{ steps.build.outputs.BINARY_PATH }}"
+          # Asserted rather than reported: --help used to exit 1, which is the
+          # first thing a user or a script tries.
+          for form in "--help" "-h" "help" ""; do
+            "./$BIN" $form >/dev/null 2>&1
+            code=$?
+            echo "[DEBUG_LOG] core ${form:-<bare>} exit=$code"
+            [ "$code" -eq 0 ] || { echo "::error::core ${form:-<bare>} exits $code"; exit 1; }
+          done
