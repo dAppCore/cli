@@ -165,7 +165,14 @@ func Execute() core.Result {
 	// CLI presentation belongs to pkg/cli, not surface-agnostic core/go: when no
 	// command is given, render our own catalog (space-separated paths,
 	// descriptions resolved via T) instead of core/go's slash-path PrintHelp.
-	if len(core.FilterArgs(core.Args()[1:])) == 0 {
+	//
+	// A leading help flag means the same thing. Without this, core/go's Cli
+	// reads --help as a command name, fails to find one, prints its own
+	// slash-path catalog and returns an error — so `core --help` showed a
+	// different catalog from bare `core` and exited 1, which is the one
+	// invocation every user and every script tries first.
+	args := core.FilterArgs(core.Args()[1:])
+	if len(args) == 0 || isCatalogRequest(args[0]) {
 		PrintHelp()
 		return core.Ok(nil) // no command → show help → success (not an error)
 	}
@@ -175,6 +182,22 @@ func Execute() core.Result {
 		return result
 	}
 	return core.Ok(nil)
+}
+
+// isCatalogRequest reports whether an argument asks for the command catalog.
+//
+// Only checked in first position: `core --help` wants the catalog, while
+// `core build --help` is asking about `build` and belongs to that command.
+//
+//	isCatalogRequest("--help") // true
+//	isCatalogRequest("build")  // false
+func isCatalogRequest(arg string) bool {
+	switch arg {
+	case "--help", "-help", "-h", "--h":
+		return true
+	default:
+		return false
+	}
 }
 
 // Run executes the CLI and watches an external context for cancellation.

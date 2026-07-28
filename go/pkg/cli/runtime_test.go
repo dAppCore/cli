@@ -175,3 +175,29 @@ func TestRuntime_Shutdown_Ugly(t *core.T) {
 	core.AssertNotPanics(t, func() { Shutdown() })
 	core.AssertNotNil(t, instance)
 }
+
+// isCatalogRequest decides whether a leading argument asks for the command
+// catalog. Before it existed, core/go's Cli read --help as a command name,
+// failed to find one, printed its own slash-path catalog and returned an
+// error — so `core --help` disagreed with bare `core` on both the output and
+// the exit code.
+func TestRuntime_isCatalogRequest_Good(t *core.T) {
+	for _, arg := range []string{"--help", "-help", "-h", "--h"} {
+		core.AssertTrue(t, isCatalogRequest(arg), arg)
+	}
+}
+
+func TestRuntime_isCatalogRequest_Bad(t *core.T) {
+	for _, arg := range []string{"build", "doctor", "go/qa", ""} {
+		core.AssertFalse(t, isCatalogRequest(arg), arg)
+	}
+}
+
+func TestRuntime_isCatalogRequest_Ugly(t *core.T) {
+	// Near-misses that must not be mistaken for a help flag: a command whose
+	// name merely starts with h, a flag that only contains "help", and the
+	// bare dashes a shell can pass through.
+	for _, arg := range []string{"help", "--helpful", "-hx", "--", "-"} {
+		core.AssertFalse(t, isCatalogRequest(arg), arg)
+	}
+}
