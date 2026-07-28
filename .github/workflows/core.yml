@@ -51,9 +51,15 @@ jobs:
           build-platform: ""
           # Stamped from the ref so `core --version` reports something true
           # rather than the 0.0.0 it currently prints.
-          ldflags: -s -w -X main.version=${{ github.ref_name }}
+          ldflags: -s -w -X dappco.re/go/cli.Version=${{ github.ref_name }}
           # An artifact on every run; a release only on a tag.
           package: true
+          # A zip is a download; a .deb is an install. The Linux job attaches
+          # one so `apt install ./core_<version>_amd64.deb` works, which puts
+          # core on PATH and takes it off again cleanly.
+          deb: true
+          deb-maintainer: "Lethean <dev@lethean.io>"
+          deb-description: "Core developer CLI — build, lint, QA and packaging for CoreGO"
 
       - name: Check the binary answers
         # No working-directory: BINARY_PATH is relative to

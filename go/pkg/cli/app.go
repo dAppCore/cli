@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 
 	"dappco.re/go"
+	climodule "dappco.re/go/cli"
 	"dappco.re/go/i18n"
 )
 
@@ -18,12 +19,16 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X dappco.re/go/cli/pkg/cli.AppVersion=1.2.0 \
+//	go build -ldflags="-X dappco.re/go/cli.Version=1.2.0 \
 //	  -X dappco.re/go/cli/pkg/cli.BuildCommit=df94c24 \
 //	  -X dappco.re/go/cli/pkg/cli.BuildDate=2026-02-06 \
 //	  -X dappco.re/go/cli/pkg/cli.BuildPreRelease=dev.8"
+//
+// AppVersion takes its value from the module root's Version, which is where
+// the release stamps it. Assigning it here still works for a caller setting
+// the version programmatically.
 var (
-	AppVersion      = "0.0.0"
+	AppVersion      = climodule.Version
 	BuildCommit     = "unknown"
 	BuildDate       = "unknown"
 	BuildPreRelease = ""
