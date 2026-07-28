@@ -53,19 +53,13 @@ type Daemon struct {
 	started  bool
 }
 
+// processAlive and processSignal are the only parts of this file that differ by
+// platform: syscall.Kill is POSIX-only, while Signal, SIGTERM, SIGKILL, ESRCH
+// and EPERM all exist on Windows. They live in daemon_signal_unix.go and
+// daemon_signal_windows.go, and the tests replace them either way.
 var (
-	processNow   = time.Now
-	processSleep = time.Sleep
-	processAlive = func(pid int) bool {
-		err := syscall.Kill(pid, syscall.Signal(0))
-		return err == nil || core.Is(err, syscall.EPERM)
-	}
-	processSignal = func(pid int, sig syscall.Signal) core.Result {
-		if err := syscall.Kill(pid, sig); err != nil {
-			return core.Fail(err)
-		}
-		return core.Ok(nil)
-	}
+	processNow          = time.Now
+	processSleep        = time.Sleep
 	processPollInterval = 100 * time.Millisecond
 	processShutdownWait = 30 * time.Second
 )

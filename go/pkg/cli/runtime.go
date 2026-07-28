@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"dappco.re/go"
-	"golang.org/x/sys/unix"
 )
 
 var (
@@ -86,7 +85,7 @@ func Init(opts Options) core.Result {
 	// Register signal service
 	signalSvc := &signalService{
 		cancel:   cancel,
-		sigChan:  make(chan unix.Signal, 1),
+		sigChan:  make(chan string, 1),
 		stopLock: c.Lock("cli.signal.stop"),
 	}
 	if opts.OnReload != nil {
@@ -271,8 +270,11 @@ func Shutdown() {
 // --- Signal Srv (internal) ---
 
 type signalService struct {
-	cancel   context.CancelFunc
-	sigChan  chan unix.Signal
+	cancel context.CancelFunc
+	// sigChan carries signal *names* ("SIGINT", "SIGTERM", "SIGHUP") — the
+	// same vocabulary core.Signal's "signal.received" action publishes, and
+	// portable in a way golang.org/x/sys/unix is not.
+	sigChan  chan string
 	onReload func() error
 	stopLock *core.Lock
 	stopped  bool
@@ -287,7 +289,7 @@ func (s *signalService) start(ctx context.Context) core.Result {
 					return
 				}
 				switch sig {
-				case unix.SIGHUP:
+				case "SIGHUP":
 					if s.onReload != nil {
 						if err := s.onReload(); err != nil {
 							LogError("reload failed", "err", err)
@@ -295,7 +297,7 @@ func (s *signalService) start(ctx context.Context) core.Result {
 							LogInfo("configuration reloaded")
 						}
 					}
-				case unix.SIGINT, unix.SIGTERM:
+				case "SIGINT", "SIGTERM":
 					s.cancel()
 					return
 				}

@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"io" // Note: AX-6 - io.Reader/io.Writer stream IO contract for prompt writes and interception.
-	"syscall"
 	"time"
 	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
@@ -29,68 +28,10 @@ func processCore() *core.Core {
 	return core.New()
 }
 
-func runProcessOutput(ctx context.Context, command string, args ...string) core.Result {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
-		return core.Fail(err)
-	}
-	commandResult := findExecutable(command)
-	if !commandResult.OK {
-		return commandResult
-	}
-	commandPath := commandResult.Value.(string)
-
-	var pipe [2]int
-	if err := syscall.Pipe(pipe[:]); err != nil {
-		return core.Fail(err)
-	}
-	readFD, writeFD := pipe[0], pipe[1]
-	defer syscall.Close(readFD)
-
-	argv := append([]string{commandPath}, args...)
-	pid, err := syscall.ForkExec(commandPath, argv, &syscall.ProcAttr{
-		Env:   core.Environ(),
-		Files: []uintptr{0, uintptr(writeFD), uintptr(writeFD)},
-	})
-	syscall.Close(writeFD)
-	if err != nil {
-		return core.Fail(err)
-	}
-
-	out := core.NewBuilder()
-	buf := make([]byte, 4096)
-	for {
-		n, readErr := syscall.Read(readFD, buf)
-		if n > 0 {
-			out.WriteString(string(buf[:n]))
-		}
-		if readErr != nil {
-			if readErr == syscall.EINTR {
-				continue
-			}
-			break
-		}
-		if n == 0 {
-			break
-		}
-	}
-
-	var status syscall.WaitStatus
-	if _, err := syscall.Wait4(pid, &status, 0, nil); err != nil {
-		return core.Fail(err)
-	}
-	output := out.String()
-	if status.ExitStatus() == 0 {
-		return core.Ok(output)
-	}
-	if output != "" {
-		return core.Fail(core.NewError(output))
-	}
-	return core.Fail(core.E("cli.process", core.Sprintf("%s exited with status %d", command, status.ExitStatus()), nil))
-}
-
+// findExecutable resolves a command against PATH the POSIX way: a bare name
+// joined onto each PATH entry. Windows needs PATHEXT to turn "gh" into gh.exe,
+// so run_process_windows.go resolves through exec.LookPath instead and this
+// function is unused there.
 func findExecutable(command string) core.Result {
 	if command == "" {
 		return core.Fail(core.NewError("empty command"))
