@@ -4,7 +4,7 @@ import (
 	"unicode"
 
 	"dappco.re/go"
-	clii18n "dappco.re/go/cli/pkg/i18n"
+	"dappco.re/go/i18n"
 )
 
 // T translates a key using the CLI's Core i18n service.
@@ -23,7 +23,7 @@ func T(key string, args ...any) string {
 			}
 		}
 	}
-	return clii18n.Default().T(key, args...)
+	return i18n.Default().T(key, args...)
 }
 
 func wordLabel(word string) string {

@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
+	"dappco.re/go/i18n"
 )
 
 //go:embed locales/*.json

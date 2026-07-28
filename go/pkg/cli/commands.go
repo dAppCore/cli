@@ -6,7 +6,7 @@ import (
 	"iter"
 
 	"dappco.re/go"
-	"dappco.re/go/cli/pkg/i18n"
+	"dappco.re/go/i18n"
 )
 
 // WithCommands returns a CommandSetup that registers a command group.

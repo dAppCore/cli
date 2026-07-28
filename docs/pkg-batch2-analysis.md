@@ -61,7 +61,7 @@ The `cli` package is a comprehensive application runtime and UI framework design
 ### 4. Dependencies
 - `github.com/spf13/cobra`: The underlying command routing engine.
 - `forge.lthn.ai/core/cli/pkg/framework`: The dependency injection and service lifecycle container.
-- `forge.lthn.ai/core/cli/pkg/i18n`: For translation and semantic grammar generation.
+- `dappco.re/go/i18n`: For translation and semantic grammar generation. (The CLI's own pkg/i18n was removed; go-i18n is the engine.)
 - `forge.lthn.ai/core/cli/pkg/log`: For structured logging.
 - `golang.org/x/term`: For TTY detection.
 

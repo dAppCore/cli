@@ -18,12 +18,22 @@ import (
 	"dappco.re/go/cli/pkg/cli"
 
 	build "dappco.re/go/build/cmd/build"
+	buildlocales "dappco.re/go/build/locales"
 	gocmd "dappco.re/go/lint/cmd/gocmd"
 	"dappco.re/go/lint/cmd/qa"
+	lintlocales "dappco.re/go/lint/locales"
 )
 
 func main() {
-	cli.Main(
+	// Each module that registers commands ships the strings for them, and the
+	// binary composing those commands is the only place that knows which to
+	// load. Dir "." because each embeds its locales at its own package root.
+	locales := []cli.LocaleSource{
+		cli.WithLocales(buildlocales.FS, "."),
+		cli.WithLocales(lintlocales.FS, "."),
+	}
+
+	cli.MainWithLocales(locales,
 		// Local CLI built-ins.
 		cli.WithCommands("config", config.AddConfigCommands),
 		cli.WithCommands("doctor", doctor.AddDoctorCommands),
