@@ -177,7 +177,16 @@ func Execute() core.Result {
 		return core.Ok(nil) // no command → show help → success (not an error)
 	}
 
-	result := cl.Run()
+	// Resolved and parsed here rather than by cl.Run: core/go's parser reads
+	// only `--key=value`, so `--key value` set the key to true and lost the
+	// value. See dispatch.go.
+	cmd, rest := resolveCommand(instance.core, args)
+	if cmd == nil {
+		PrintHelp()
+		return core.Fail(core.E("cli.Execute", "unknown command: "+core.Join(" ", args...), nil))
+	}
+
+	result := cmd.Run(parseOptionsFor(cmd, rest))
 	if !result.OK {
 		return result
 	}
