@@ -56,8 +56,9 @@ jobs:
           package: true
 
       - name: Check the binary answers
+        # No working-directory: BINARY_PATH is relative to
+        # app-working-directory, which is the repository root.
         shell: bash
-        working-directory: go/cmd/core
         run: |
           set -uo pipefail
           BIN="${{ steps.build.outputs.BINARY_PATH }}"
@@ -87,7 +88,6 @@ jobs:
       - name: Note the --help exit code
         if: always()
         shell: bash
-        working-directory: go/cmd/core
         run: |
           # Reported, not asserted. `core --help` prints the command list and
           # then exits 1, where bare `core` and `core help` both exit 0. Worth
