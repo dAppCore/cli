@@ -1,13 +1,13 @@
 cloud.google.com/go v0.123.0 h1:2NAUJwPR47q+E35uaJeYoNhuNEM9kM8SjgRgdeOJUSE=
 cloud.google.com/go v0.123.0/go.mod h1:xBoMV08QcqUGuPW65Qfm1o9Y4zKZBpGS+7bImXLTAZU=
-dappco.re/go v0.11.0 h1:ag+nt9p9vP+J+GKxLu+o+pBDRADlVVWKs34zPZhXMJ4=
-dappco.re/go v0.11.0/go.mod h1:xapr7fLK4/9Pu2iSCr4qZuIuatmtx1j56zS/oPDbGyQ=
+dappco.re/go v0.12.0 h1:lotJop5nvhrIQ1J2L5IP37H72ihnQnIjNzFT0iMEfx0=
+dappco.re/go v0.12.0/go.mod h1:xapr7fLK4/9Pu2iSCr4qZuIuatmtx1j56zS/oPDbGyQ=
 dappco.re/go/build v0.1.0 h1:7flP0O/nH5mdWx3LKqVTXmd+nnCtiGqR7M5oipa8a8o=
 dappco.re/go/build v0.1.0/go.mod h1:WE5B6aJV+AZJI3wIg6IhiP4eX3DY+fg0tK/hSjsPDIw=
 dappco.re/go/cache v0.12.1 h1:fvzdtzItfZknUTxHIKeL/bENJIme8vhOzjFafXch/6k=
 dappco.re/go/cache v0.12.1/go.mod h1:anhDQgRZxFCRXsN+nR38bnyUEPdgtPeDwimsdjxsnKQ=
-dappco.re/go/cli v0.11.2 h1:XjDJnqregqgEatt6nzY9k8hy6IvWgGS1ESzz0bDmEuw=
-dappco.re/go/cli v0.11.2/go.mod h1:6O04J7O47AZLUquIrS7MhDWkSlBPnmTG8h9SQoVhqgk=
+dappco.re/go/cli v0.12.0 h1:pm1p/ob8lG5u7aZ77HGEwF/iQXJOUmBdb/C8/nRQyHI=
+dappco.re/go/cli v0.12.0/go.mod h1:ZpAi1hdkGAoxKxtVKHU4OD0kvTvHUF0pQPrP232a09s=
 dappco.re/go/config v0.18.0 h1:D31NSq8vE/J3Z1lM0tsOLzToJ7MMxkk1SFdFqOv3Hg4=
 dappco.re/go/config v0.18.0/go.mod h1:43oQx/mHqo+H2zzHcSVlZ5Lq1NF0aVhXlWKWt4XXXqc=
 dappco.re/go/core/docs v0.1.0 h1:qDUs8/BhNqAhN5djEbkVsQUEURCUZjrQLyUPwIfFHvU=
