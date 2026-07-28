@@ -5,7 +5,11 @@ version: 1
 
 project:
   name: core
-  repository: host-uk/core
+  # Where the releases actually are. This said host-uk/core, the predecessor
+  # repository, whose newest release is a February draft — so every installer
+  # generated from this file sent people to download a binary that was not
+  # there.
+  repository: dAppCore/cli
 
 build:
   targets:
