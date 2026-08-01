@@ -1,6 +1,10 @@
 package cli
 
-import core "dappco.re/go"
+import (
+	"maps"
+
+	core "dappco.re/go"
+)
 
 func TestLayout_ParseVariant_Good(t *core.T) {
 	result := ParseVariant("H[LC]F")
@@ -69,10 +73,7 @@ func TestLayout_Composite_Regions_Ugly(t *core.T) {
 
 func TestLayout_Composite_Slots_Good(t *core.T) {
 	composite := Layout("HC")
-	slots := map[Region]*Slot{}
-	for region, slot := range composite.Slots() {
-		slots[region] = slot
-	}
+	slots := maps.Collect(composite.Slots())
 
 	core.AssertLen(t, slots, 2)
 	core.AssertEqual(t, RegionHeader, slots[RegionHeader].region)
