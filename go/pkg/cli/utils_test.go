@@ -623,9 +623,9 @@ func TestUtils_parseMultiSelection_Bad(t *core.T) {
 }
 
 func TestUtils_parseMultiSelection_Ugly(t *core.T) {
-	core.AssertFalse(t, parseMultiSelection("5-2", 9).OK)     // reversed range
-	core.AssertFalse(t, parseMultiSelection("1-2-3", 9).OK)   // malformed range
-	core.AssertFalse(t, parseMultiSelection("x", 9).OK)       // non-numeric
-	core.AssertFalse(t, parseMultiSelection("1-x", 9).OK)     // bad range end
-	core.AssertFalse(t, parseMultiSelection("x-2", 9).OK)     // bad range start
+	core.AssertFalse(t, parseMultiSelection("5-2", 9).OK)   // reversed range
+	core.AssertFalse(t, parseMultiSelection("1-2-3", 9).OK) // malformed range
+	core.AssertFalse(t, parseMultiSelection("x", 9).OK)     // non-numeric
+	core.AssertFalse(t, parseMultiSelection("1-x", 9).OK)   // bad range end
+	core.AssertFalse(t, parseMultiSelection("x-2", 9).OK)   // bad range start
 }
