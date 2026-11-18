@@ -3,10 +3,10 @@ package doctor
 import (
 	"runtime"
 
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	io "dappco.re/go/io"
-	"dappco.re/go/scm/repos"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	io "github.com/dappcore/go-io/go"
+	"github.com/dappcore/go-scm/go/repos"
 )
 
 var environmentFS = (&core.Fs{}).New("/")

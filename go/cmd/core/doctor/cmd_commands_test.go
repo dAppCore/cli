@@ -1,7 +1,7 @@
 package doctor
 
 import (
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func TestCmdCommands_AddDoctorCommands_Good(t *T) {

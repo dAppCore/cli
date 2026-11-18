@@ -1,9 +1,9 @@
 package config
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/config"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	"github.com/dappcore/config/go"
 )
 
 func configPathAction(_ core.Options) core.Result {

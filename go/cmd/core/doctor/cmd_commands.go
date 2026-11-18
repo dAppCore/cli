@@ -17,8 +17,8 @@
 package doctor
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
 )
 
 // AddDoctorCommands registers the 'doctor' command and all subcommands.

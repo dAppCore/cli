@@ -6,7 +6,7 @@ import (
 
 	"time"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 func TestRun_Good_CancelledContext(t *core.T) {

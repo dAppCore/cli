@@ -1,16 +1,16 @@
-module dappco.re/go/cli/cmd/core
+module github.com/dappcore/cli/go/cmd/core
 
 go 1.26.2
 
 require (
-	dappco.re/go v0.12.0
-	dappco.re/go/build v0.3.0
-	dappco.re/go/cli v0.12.1
-	dappco.re/go/config v0.18.0
-	dappco.re/go/i18n v0.12.1
-	dappco.re/go/io v0.15.3
-	dappco.re/go/lint v0.1.0
-	dappco.re/go/scm v0.22.0
+	github.com/dappcore/go v0.12.0
+	github.com/dappcore/go-build/go v0.3.0
+	github.com/dappcore/cli/go v0.12.1
+	github.com/dappcore/config/go v0.18.0
+	github.com/dappcore/go-i18n/go v0.12.1
+	github.com/dappcore/go-io/go v0.15.3
+	github.com/dappcore/lint/go v0.1.0
+	github.com/dappcore/go-scm/go v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -18,10 +18,10 @@ require github.com/yuin/goldmark v1.8.5 // indirect
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	dappco.re/go/cache v0.12.1
-	dappco.re/go/core/docs v0.1.0
-	dappco.re/go/log v0.13.1 // indirect
-	dappco.re/go/process v0.16.1 // indirect
+	github.com/dappcore/go-cache/go v0.12.1
+	github.com/dappcore/docs/go v0.1.0
+	github.com/dappcore/go-log/go v0.13.1 // indirect
+	github.com/dappcore/go-process/go v0.16.1 // indirect
 	github.com/ProtonMail/go-crypto v1.4.0 // indirect
 	github.com/Snider/Borg v0.2.0 // indirect
 	github.com/TwiN/go-color v1.4.1 // indirect
@@ -93,4 +93,4 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace dappco.re/go/cli => ../..
+replace github.com/dappcore/cli/go => ../..

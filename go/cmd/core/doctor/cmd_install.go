@@ -3,8 +3,8 @@ package doctor
 import (
 	"runtime"
 
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
 )
 
 // doctorInstallAction prints OS-specific instructions for installing the tools

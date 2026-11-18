@@ -1,6 +1,6 @@
 # Architecture
 
-`dappco.re/go/cli` is a thin CLI layer on top of `dappco.re/go`. The module keeps terminal interaction, command registration, process lifecycle, and package-management commands out of application repositories while still using Core's Result and service patterns.
+`github.com/dappcore/cli/go` is a thin CLI layer on top of `github.com/dappcore/go`. The module keeps terminal interaction, command registration, process lifecycle, and package-management commands out of application repositories while still using Core's Result and service patterns.
 
 The main packages are:
 

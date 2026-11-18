@@ -1,6 +1,6 @@
 package term
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleIsTerminal() {
 	core.Println("IsTerminal")

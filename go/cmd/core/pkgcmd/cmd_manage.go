@@ -1,10 +1,10 @@
 package pkgcmd
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	coreio "dappco.re/go/io"
-	"dappco.re/go/scm/repos"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	coreio "github.com/dappcore/go-io/go"
+	"github.com/dappcore/go-scm/go/repos"
 )
 
 func pkgListAction(_ core.Options) core.Result {

@@ -16,7 +16,7 @@ import (
 	"context"
 	"syscall"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 func runProcessOutput(ctx context.Context, command string, args ...string) core.Result {

@@ -14,7 +14,7 @@ package cli
 import (
 	"syscall"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 var processAlive = func(pid int) bool {

@@ -1,14 +1,14 @@
 package frame
 
 import (
-	"dappco.re/go"
+	"github.com/dappcore/go"
 	xterm "golang.org/x/term"
 )
 
 type Writer = core.Writer
 
 // TODO(mantis-558): Replace the direct x/term calls below with
-// dappco.re/go terminal primitives once core/go exposes them.
+// github.com/dappcore/go terminal primitives once core/go exposes them.
 
 func stdoutWriter() Writer {
 	return core.Stdout()

@@ -6,7 +6,7 @@ import (
 	"time"
 	"unicode" // Note: AX-6 - unicode.IsSpace/IsDigit classify interactive selection tokens.
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 func GhAuthenticated() bool {

@@ -9,8 +9,8 @@
 package main
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
 )
 
 // AddDemoActions registers a sample action so `core demo echo <text>` exercises

@@ -1,11 +1,11 @@
-dappco.re/go v0.12.0 h1:lotJop5nvhrIQ1J2L5IP37H72ihnQnIjNzFT0iMEfx0=
-dappco.re/go v0.12.0/go.mod h1:xapr7fLK4/9Pu2iSCr4qZuIuatmtx1j56zS/oPDbGyQ=
-dappco.re/go/i18n v0.12.1 h1:Pm1DF9I0O8bckTr815OrnR+G+7EvbQhP2Vk4ItC0mB4=
-dappco.re/go/i18n v0.12.1/go.mod h1:AYx1QkPfW+qvzLCfJnuOlc4J+grwlgFzoHnoke4TAYg=
-dappco.re/go/log v0.13.1 h1:sfrB1hrxODsCo0A8psIvBqDkQD2mpoQ8S5S72zO2KlI=
-dappco.re/go/log v0.13.1/go.mod h1:FBMMEdmIvbXfvv3qOdW6acFnwMFgTw56csevEIELi/c=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
+github.com/dappcore/go v0.14.0 h1:xC8tLIo0iqiZmJA+hEyKQSZYLpfrGHRiM4k2WcipXdk=
+github.com/dappcore/go v0.14.0/go.mod h1:0wbxM1oMhcDWzFXP8iOuC90oW8/xt4mqJjElZ+cOVWI=
+github.com/dappcore/go-i18n/go v0.13.0 h1:cT19EYzeGfbIslJjHRv6I2vZPcDt7G5B+ZrAvrdC0bs=
+github.com/dappcore/go-i18n/go v0.13.0/go.mod h1:qmEMZbGVothNi3kqzgaJntbgTyjJ0xBRxSpSSlpbMHE=
+github.com/dappcore/go-log/go v0.14.0 h1:RMLAADMns39B9EnCFlCdu8hSViMhtzIbA7deFGkz7t0=
+github.com/dappcore/go-log/go v0.14.0/go.mod h1:sc+3dEKFmpNB4ooxAd4Buj09isT0lSOJFq2RB+AkJzY=
 github.com/mattn/go-runewidth v0.0.27 h1:Feg/Oou5zI/wnpgDF6omIU0OokC9GxLC/WRknhVlIR0=
 github.com/mattn/go-runewidth v0.0.27/go.mod h1:3qAiGCV4Koz/yuveO58qUefmUTRm8r0IGEXZ9jeHp/8=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=

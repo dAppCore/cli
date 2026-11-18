@@ -1,6 +1,6 @@
 package pkgcmd
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleAddPkgCommands() {
 	core.Println("AddPkgCommands")

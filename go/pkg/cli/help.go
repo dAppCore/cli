@@ -9,7 +9,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // helpEntry is one row of the command catalog: a space-separated command path

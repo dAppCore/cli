@@ -11,17 +11,17 @@
 package main
 
 import (
-	"dappco.re/go/cli/cmd/core/config"
-	"dappco.re/go/cli/cmd/core/doctor"
-	"dappco.re/go/cli/cmd/core/help"
-	"dappco.re/go/cli/cmd/core/pkgcmd"
-	"dappco.re/go/cli/pkg/cli"
+	"github.com/dappcore/cli/go/cmd/core/config"
+	"github.com/dappcore/cli/go/cmd/core/doctor"
+	"github.com/dappcore/cli/go/cmd/core/help"
+	"github.com/dappcore/cli/go/cmd/core/pkgcmd"
+	"github.com/dappcore/cli/go/pkg/cli"
 
-	build "dappco.re/go/build/cmd/build"
-	buildlocales "dappco.re/go/build/locales"
-	gocmd "dappco.re/go/lint/cmd/gocmd"
-	"dappco.re/go/lint/cmd/qa"
-	lintlocales "dappco.re/go/lint/locales"
+	build "github.com/dappcore/go-build/go/cmd/build"
+	buildlocales "github.com/dappcore/go-build/go/locales"
+	gocmd "github.com/dappcore/lint/go/cmd/gocmd"
+	"github.com/dappcore/lint/go/cmd/qa"
+	lintlocales "github.com/dappcore/lint/go/locales"
 )
 
 func main() {

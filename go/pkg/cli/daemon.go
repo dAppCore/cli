@@ -2,8 +2,8 @@
 package cli
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/internal/term"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/internal/term"
 )
 
 // Mode represents the CLI execution mode.

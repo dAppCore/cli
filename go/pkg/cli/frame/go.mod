@@ -1,12 +1,12 @@
-module dappco.re/go/cli/frame
+module github.com/dappcore/cli/go/pkg/cli/frame
 
 go 1.26.0
 
 require (
-	dappco.re/go v0.12.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/charmbracelet/x/ansi v0.11.6
+	github.com/dappcore/go v0.14.0
 	github.com/mattn/go-runewidth v0.0.21
 	golang.org/x/term v0.42.0
 )

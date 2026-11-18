@@ -4,8 +4,8 @@ import (
 	"iter"
 	"time"
 
-	"dappco.re/go"
-	"dappco.re/go/cli/internal/term"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/internal/term"
 )
 
 var spinnerFramesUnicode = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}

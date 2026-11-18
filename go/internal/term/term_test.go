@@ -1,7 +1,7 @@
 package term
 
 import (
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func TestTerm_IsTerminal_Good(t *T) {

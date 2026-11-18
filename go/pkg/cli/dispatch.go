@@ -14,7 +14,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // ArgsKey holds every positional argument. "_arg" carries the first for the

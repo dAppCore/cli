@@ -1,6 +1,6 @@
 package cli
 
-import "dappco.re/go"
+import "github.com/dappcore/go"
 
 // Sprintf formats a string using a format template.
 //

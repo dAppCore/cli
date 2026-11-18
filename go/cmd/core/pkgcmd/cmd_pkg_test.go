@@ -1,7 +1,7 @@
 package pkgcmd
 
 import (
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func TestCmdPkg_AddPkgCommands_Good(t *T) {

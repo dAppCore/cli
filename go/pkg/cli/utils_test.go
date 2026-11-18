@@ -3,7 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 	"time"
 )
 
