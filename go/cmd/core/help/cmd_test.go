@@ -1,7 +1,7 @@
 package help
 
 import (
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func TestCmd_AddHelpCommands_Good(t *T) {

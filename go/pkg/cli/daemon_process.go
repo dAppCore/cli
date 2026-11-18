@@ -7,7 +7,7 @@ import (
 	"syscall"  // Note: AX-6 — SIGTERM/SIGINT signal handling.
 	"time"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 // DaemonOptions configures a background process helper.

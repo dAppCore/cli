@@ -16,7 +16,7 @@ build:
   ldflags:
     - -s
     - -w
-    - -X dappco.re/go/cli.Version={{.Version}}
+    - -X github.com/dappcore/cli/go.Version={{.Version}}
   env: []
 
 targets:

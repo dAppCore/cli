@@ -3,8 +3,8 @@ package cli
 import (
 	"unicode"
 
-	"dappco.re/go"
-	"dappco.re/go/i18n"
+	"github.com/dappcore/go"
+	"github.com/dappcore/go-i18n/go"
 )
 
 // T translates a key using the CLI's Core i18n service.

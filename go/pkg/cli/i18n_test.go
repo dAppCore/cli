@@ -1,6 +1,6 @@
 package cli
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func TestI18n_T_Good(t *core.T) {
 	result := T("some.key")

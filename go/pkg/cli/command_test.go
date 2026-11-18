@@ -1,7 +1,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestCommand_RegisterCommand_Good(t *core.T) {

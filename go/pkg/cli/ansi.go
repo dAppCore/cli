@@ -1,6 +1,6 @@
 package cli
 
-import "dappco.re/go"
+import "github.com/dappcore/go"
 
 // ANSI escape codes
 const (

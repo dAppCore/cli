@@ -3,7 +3,7 @@ package cli
 import (
 	"context"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // serviceFor builds a *Service attached to a fresh Core, as a consumer

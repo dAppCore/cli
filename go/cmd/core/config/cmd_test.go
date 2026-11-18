@@ -1,7 +1,7 @@
 package config
 
 import (
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func TestCmd_AddConfigCommands_Good(t *T) {

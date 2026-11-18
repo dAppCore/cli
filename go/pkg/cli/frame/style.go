@@ -4,7 +4,7 @@ import (
 	"sync"
 	"unicode"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/mattn/go-runewidth"
 )

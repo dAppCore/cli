@@ -1,6 +1,6 @@
 package help
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleAddHelpCommands() {
 	core.Println("AddHelpCommands")

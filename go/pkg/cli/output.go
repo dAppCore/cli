@@ -3,7 +3,7 @@ package cli
 import (
 	"io"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 // Blank prints an empty line.

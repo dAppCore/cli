@@ -1,7 +1,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestDaemon_Mode_String_Good(t *core.T) {

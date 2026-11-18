@@ -2,8 +2,8 @@
 package doctor
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
 )
 
 // Style aliases from shared

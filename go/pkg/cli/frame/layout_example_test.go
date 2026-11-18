@@ -1,6 +1,6 @@
 package frame
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleComposite_C() {
 	core.Println("Composite_C")

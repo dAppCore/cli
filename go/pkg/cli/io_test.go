@@ -1,7 +1,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestIo_SetStdin_Good(t *core.T) {

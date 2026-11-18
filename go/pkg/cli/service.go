@@ -16,7 +16,7 @@ package cli
 import (
 	"context"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // CliConfig configures the cli service. Empty config uses the package-

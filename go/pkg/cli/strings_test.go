@@ -1,7 +1,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestStrings_Sprintf_Good(t *core.T) {

@@ -27,7 +27,7 @@ package cli
 import (
 	"syscall"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 // processAccess is what both operations need: SYNCHRONIZE to wait on the

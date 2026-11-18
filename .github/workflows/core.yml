@@ -3,8 +3,8 @@ name: core
 # Builds the `core` binary — the developer CLI the whole CoreGO ecosystem grew
 # out of — with dAppCore/build.
 #
-# The binary is the point of the exercise. It composes dappco.re/go/build and
-# dappco.re/go/lint, so a machine with `core` on it has the build and QA
+# The binary is the point of the exercise. It composes github.com/dappcore/go-build/go and
+# github.com/dappcore/lint/go, so a machine with `core` on it has the build and QA
 # tooling for everything else without installing anything further. Publishing
 # it on a tag is what makes that true for a CI runner as well as a desk.
 
@@ -51,7 +51,7 @@ jobs:
           build-platform: ""
           # Stamped from the ref so `core --version` reports something true
           # rather than the 0.0.0 it currently prints.
-          ldflags: -s -w -X dappco.re/go/cli.Version=${{ github.ref_name }}
+          ldflags: -s -w -X github.com/dappcore/cli/go.Version=${{ github.ref_name }}
           # An artifact on every run; a release only on a tag.
           package: true
           # A zip is a download; a .deb is an install. The Linux job attaches
@@ -77,8 +77,8 @@ jobs:
           "./$BIN" --help 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' > surfaces.txt
           cat surfaces.txt
 
-          # `build` comes from dappco.re/go/build; `go qa` and `qa audit` from
-          # dappco.re/go/lint. Absent means one failed to compose, which is the
+          # `build` comes from github.com/dappcore/go-build/go; `go qa` and `qa audit` from
+          # github.com/dappcore/lint/go. Absent means one failed to compose, which is the
           # whole reason this binary is interesting.
           for surface in "build" "go qa" "qa audit" "doctor" "release"; do
             grep -qE "^  ${surface}( |\$)" surfaces.txt \

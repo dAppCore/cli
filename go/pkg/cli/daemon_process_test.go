@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // withProcessMocks swaps the package signal/alive/clock indirection vars

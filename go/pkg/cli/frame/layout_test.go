@@ -1,7 +1,7 @@
 package frame
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestLayout_Composite_Regions_Good(t *core.T) {

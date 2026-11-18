@@ -4,7 +4,7 @@ package cli
 import (
 	"time"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 	"github.com/mattn/go-runewidth"
 )
 

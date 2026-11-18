@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"iter"
 
-	"dappco.re/go"
-	"dappco.re/go/i18n"
+	"github.com/dappcore/go"
+	"github.com/dappcore/go-i18n/go"
 )
 
 // WithCommands returns a CommandSetup that registers a command group.

@@ -1,6 +1,6 @@
 package frame
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleAnsiStyle_Bold() {
 	core.Println("AnsiStyle_Bold")

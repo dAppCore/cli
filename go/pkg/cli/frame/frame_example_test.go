@@ -1,6 +1,6 @@
 package frame
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleFrame_Back() {
 	core.Println("Frame_Back")

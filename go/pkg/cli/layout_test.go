@@ -3,7 +3,7 @@ package cli
 import (
 	"maps"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestLayout_ParseVariant_Good(t *core.T) {

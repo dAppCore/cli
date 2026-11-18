@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"io"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 func newReader() *bufio.Reader {

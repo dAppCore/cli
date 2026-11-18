@@ -1,7 +1,7 @@
 package frame
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestFrameComponents_StatusLine_Good(t *core.T) {

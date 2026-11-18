@@ -1,6 +1,6 @@
 package doctor
 
-import . "dappco.re/go"
+import . "github.com/dappcore/go"
 
 func TestRequiredChecksIncludesGo(t *T) {
 	checks := requiredChecks()

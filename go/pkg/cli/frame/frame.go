@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"

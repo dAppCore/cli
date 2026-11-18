@@ -1,7 +1,7 @@
 package frame
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestStyle_ColorEnabled_Good(t *core.T) {

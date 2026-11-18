@@ -7,7 +7,7 @@
 package cli
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // HelpGenerator derives a command description from an action's dotted name. It

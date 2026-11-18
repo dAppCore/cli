@@ -1,6 +1,6 @@
 package cli
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ExampleRegisterCommands() {
 	core.Println("RegisterCommands")

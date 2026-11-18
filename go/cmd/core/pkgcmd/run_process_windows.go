@@ -19,7 +19,7 @@ package pkgcmd
 import (
 	"os/exec"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func pkgRunProcess(dir, command string, args ...string) core.Result {

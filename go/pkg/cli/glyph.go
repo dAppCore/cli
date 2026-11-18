@@ -3,7 +3,7 @@ package cli
 import (
 	"unicode"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 // GlyphTheme defines which symbols to use.

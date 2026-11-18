@@ -5,9 +5,9 @@ import (
 	"io/fs"
 	"runtime/debug"
 
-	"dappco.re/go"
-	climodule "dappco.re/go/cli"
-	"dappco.re/go/i18n"
+	"github.com/dappcore/go"
+	climodule "github.com/dappcore/cli/go"
+	"github.com/dappcore/go-i18n/go"
 )
 
 //go:embed locales/*.json
@@ -19,10 +19,10 @@ var AppName = "core"
 
 // Build-time variables set via ldflags (SemVer 2.0.0):
 //
-//	go build -ldflags="-X dappco.re/go/cli.Version=1.2.0 \
-//	  -X dappco.re/go/cli/pkg/cli.BuildCommit=df94c24 \
-//	  -X dappco.re/go/cli/pkg/cli.BuildDate=2026-02-06 \
-//	  -X dappco.re/go/cli/pkg/cli.BuildPreRelease=dev.8"
+//	go build -ldflags="-X github.com/dappcore/cli/go.Version=1.2.0 \
+//	  -X github.com/dappcore/cli/go/pkg/cli.BuildCommit=df94c24 \
+//	  -X github.com/dappcore/cli/go/pkg/cli.BuildDate=2026-02-06 \
+//	  -X github.com/dappcore/cli/go/pkg/cli.BuildPreRelease=dev.8"
 //
 // AppVersion takes its value from the module root's Version, which is where
 // the release stamps it. Assigning it here still works for a caller setting

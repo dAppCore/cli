@@ -3,7 +3,7 @@ package cli
 import (
 	"iter"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 // Region represents one of the 5 HLCRF regions.

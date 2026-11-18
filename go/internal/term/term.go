@@ -1,7 +1,7 @@
 package term
 
 import (
-	"dappco.re/go"
+	"github.com/dappcore/go"
 	xterm "golang.org/x/term"
 )
 

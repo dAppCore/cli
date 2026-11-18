@@ -1,6 +1,6 @@
 package cli
 
-import "dappco.re/go"
+import "github.com/dappcore/go"
 
 type Reader = core.Reader
 type Writer = core.Writer

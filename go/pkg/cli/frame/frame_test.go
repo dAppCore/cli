@@ -1,7 +1,7 @@
 package frame
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 	tea "github.com/charmbracelet/bubbletea"
 	"time"
 )

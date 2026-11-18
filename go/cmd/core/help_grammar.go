@@ -1,13 +1,13 @@
 // help_grammar.go provides cmd/core's go-i18n-backed help generator, injected
-// into cli.MountActions. This keeps the grammar dependency (dappco.re/go/i18n)
+// into cli.MountActions. This keeps the grammar dependency (github.com/dappcore/go-i18n/go)
 // in the binary, not the lean cli lib — pkg/cli only knows the HelpGenerator
 // func type.
 package main
 
 import (
-	"dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	grammar "dappco.re/go/i18n"
+	"github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	grammar "github.com/dappcore/go-i18n/go"
 )
 
 // grammarHelp composes a readable command description from a dotted action name

@@ -1,10 +1,10 @@
 # Agent Notes
 
-This repository is the `dappco.re/go/cli` module. It provides the shared command-line runtime, terminal UI helpers, daemon helpers, package commands, and i18n utilities used by Core command tools.
+This repository is the `github.com/dappcore/cli/go` module. It provides the shared command-line runtime, terminal UI helpers, daemon helpers, package commands, and i18n utilities used by Core command tools.
 
 Work in this repo should follow the v0.9 Core conventions:
 
-- Import `dappco.re/go` as `core` when a file needs Core wrappers.
+- Import `github.com/dappcore/go` as `core` when a file needs Core wrappers.
 - Keep public-symbol tests in the sibling `<source>_test.go` file using `Test<File>_<Symbol>_{Good,Bad,Ugly}`.
 - Keep public-symbol examples in the sibling `<source>_example_test.go` file.
 - Prefer `core.Result` for fallible production functions so callers branch on `r.OK`.

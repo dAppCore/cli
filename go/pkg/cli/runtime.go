@@ -17,7 +17,7 @@ import (
 	"context"
 	"time"
 
-	"dappco.re/go"
+	"github.com/dappcore/go"
 )
 
 var (

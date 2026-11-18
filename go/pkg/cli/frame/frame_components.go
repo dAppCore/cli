@@ -1,6 +1,6 @@
 package frame
 
-import "dappco.re/go"
+import "github.com/dappcore/go"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Built-in Region Components
