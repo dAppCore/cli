@@ -3,7 +3,7 @@ module dappco.re/go/cli/frame
 go 1.26.0
 
 require (
-	dappco.re/go v0.9.0
+	dappco.re/go v0.12.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/charmbracelet/x/ansi v0.11.6

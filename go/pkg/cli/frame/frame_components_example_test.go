@@ -7,19 +7,9 @@ func ExampleBreadcrumb() {
 	// Output: Breadcrumb
 }
 
-func ExampleHintsModel_View() {
-	core.Println("HintsModel_View")
-	// Output: HintsModel_View
-}
-
 func ExampleKeyHints() {
 	core.Println("KeyHints")
 	// Output: KeyHints
-}
-
-func ExampleLineModel_View() {
-	core.Println("LineModel_View")
-	// Output: LineModel_View
 }
 
 func ExampleModel_View() {

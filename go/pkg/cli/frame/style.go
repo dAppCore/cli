@@ -112,9 +112,11 @@ func hexToRGB(hex string) (int, int, int) {
 	if len(hex) != 6 {
 		return 255, 255, 255
 	}
-	r := core.ParseInt(hex[0:2], 16, 8)
-	g := core.ParseInt(hex[2:4], 16, 8)
-	b := core.ParseInt(hex[4:6], 16, 8)
+	// bitSize 16, not 8: an 8-bit *signed* parse rejects 0x80-0xff, which
+	// turned every bright channel (e.g. #ff0000) into the white fallback.
+	r := core.ParseInt(hex[0:2], 16, 16)
+	g := core.ParseInt(hex[2:4], 16, 16)
+	b := core.ParseInt(hex[4:6], 16, 16)
 	if !r.OK || !g.OK || !b.OK {
 		return 255, 255, 255
 	}
