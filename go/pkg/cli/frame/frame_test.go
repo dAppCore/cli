@@ -103,7 +103,7 @@ func TestFrame_Frame_WithOutput_Bad(t *core.T) {
 
 func TestFrame_Frame_WithOutput_Ugly(t *core.T) {
 	f := NewFrame("C")
-	var buf bytes.Buffer
+	var buf core.Buffer
 
 	f.WithOutput(&buf).Content(StaticModel("content")).Run()
 	core.AssertContains(t, buf.String(), "content")

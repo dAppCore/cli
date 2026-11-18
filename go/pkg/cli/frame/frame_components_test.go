@@ -12,6 +12,9 @@ func TestFrameComponents_StatusLine_Good(t *core.T) {
 }
 
 func TestFrameComponents_StatusLine_Bad(t *core.T) {
+	original := ColorEnabled()
+	SetColorEnabled(false) // plain-text expectations: colour off, whatever the terminal
+	defer SetColorEnabled(original)
 	got := StatusLine("").View(80, 1)
 
 	core.AssertNotContains(t, got, "ready")
@@ -33,6 +36,9 @@ func TestFrameComponents_LineModel_View_Good(t *core.T) {
 }
 
 func TestFrameComponents_LineModel_View_Bad(t *core.T) {
+	original := ColorEnabled()
+	SetColorEnabled(false) // plain-text expectations: colour off, whatever the terminal
+	defer SetColorEnabled(original)
 	m := &statusLineModel{}
 
 	core.AssertEqual(t, "", m.View(80, 1))
@@ -40,6 +46,9 @@ func TestFrameComponents_LineModel_View_Bad(t *core.T) {
 }
 
 func TestFrameComponents_LineModel_View_Ugly(t *core.T) {
+	original := ColorEnabled()
+	SetColorEnabled(false) // plain-text expectations: colour off, whatever the terminal
+	defer SetColorEnabled(original)
 	m := &statusLineModel{title: ":check:"}
 
 	core.AssertEqual(t, "✓", m.View(80, 1))
@@ -82,6 +91,9 @@ func TestFrameComponents_HintsModel_View_Bad(t *core.T) {
 }
 
 func TestFrameComponents_HintsModel_View_Ugly(t *core.T) {
+	original := ColorEnabled()
+	SetColorEnabled(false) // plain-text expectations: colour off, whatever the terminal
+	defer SetColorEnabled(original)
 	m := &keyHintsModel{hints: []string{":cross:"}}
 
 	core.AssertEqual(t, "✗", m.View(80, 1))
